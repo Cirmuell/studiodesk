@@ -66,7 +66,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
               return (
                 <Link
                   key={t.to}
-                  to={t.to}
+                  to={t.to as never}
                   className="flex flex-col items-center justify-center -mt-6"
                   aria-label={t.label}
                 >
@@ -87,7 +87,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
             return (
               <Link
                 key={t.to}
-                to={t.to}
+                to={t.to as never}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl transition",
                   active ? "text-primary" : "text-muted-foreground",
