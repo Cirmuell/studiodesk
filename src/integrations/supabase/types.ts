@@ -14,7 +14,331 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          client_id: string | null
+          content: Json
+          created_at: string
+          currency: string
+          due_date: string | null
+          id: string
+          issued_date: string | null
+          number: string | null
+          pdf_url: string | null
+          project_id: string | null
+          status: string
+          subtotal: number
+          tax: number
+          title: string | null
+          total: number
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          content?: Json
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          issued_date?: string | null
+          number?: string | null
+          pdf_url?: string | null
+          project_id?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          title?: string | null
+          total?: number
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          content?: Json
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          issued_date?: string | null
+          number?: string | null
+          pdf_url?: string | null
+          project_id?: string | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          title?: string | null
+          total?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_runs: {
+        Row: {
+          confidence: string
+          created_at: string
+          currency: string
+          hours: number | null
+          id: string
+          line_items: Json
+          project_id: string | null
+          range_high: number
+          range_low: number
+          rationale: string | null
+          recommended_total: number
+          scope: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: string
+          created_at?: string
+          currency?: string
+          hours?: number | null
+          id?: string
+          line_items?: Json
+          project_id?: string | null
+          range_high: number
+          range_low: number
+          rationale?: string | null
+          recommended_total: number
+          scope?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: string
+          created_at?: string
+          currency?: string
+          hours?: number | null
+          id?: string
+          line_items?: Json
+          project_id?: string | null
+          range_high?: number
+          range_low?: number
+          rationale?: string | null
+          recommended_total?: number
+          scope?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_runs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          bank_details: string | null
+          business_name: string | null
+          country: string
+          created_at: string
+          currency: string
+          day_rate_max: number | null
+          day_rate_min: number | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          owner_name: string | null
+          phone: string | null
+          services: string | null
+          tagline: string | null
+          updated_at: string
+          value_prop: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_details?: string | null
+          business_name?: string | null
+          country?: string
+          created_at?: string
+          currency?: string
+          day_rate_max?: number | null
+          day_rate_min?: number | null
+          email?: string | null
+          id: string
+          logo_url?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          services?: string | null
+          tagline?: string | null
+          updated_at?: string
+          value_prop?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_details?: string | null
+          business_name?: string | null
+          country?: string
+          created_at?: string
+          currency?: string
+          day_rate_max?: number | null
+          day_rate_min?: number | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          services?: string | null
+          tagline?: string | null
+          updated_at?: string
+          value_prop?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          budget: number | null
+          client_id: string | null
+          created_at: string
+          currency: string
+          deadline: string | null
+          deliverables: string | null
+          id: string
+          notes: string | null
+          scope: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget?: number | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          deadline?: string | null
+          deliverables?: string | null
+          id?: string
+          notes?: string | null
+          scope?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget?: number | null
+          client_id?: string | null
+          created_at?: string
+          currency?: string
+          deadline?: string | null
+          deliverables?: string | null
+          id?: string
+          notes?: string | null
+          scope?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rate_cards: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          name: string
+          notes: string | null
+          rate: number
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          name: string
+          notes?: string | null
+          rate: number
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          rate?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
