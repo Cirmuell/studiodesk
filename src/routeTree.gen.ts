@@ -17,6 +17,7 @@ import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
 import { Route as ApiDocumentsIdPdfRouteImport } from './routes/api/documents.$id.pdf'
 
 const AuthRoute = AuthRouteImport.update({
@@ -58,6 +59,12 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDocumentsIdRoute =
+  AuthenticatedDocumentsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedDocumentsRoute,
+  } as any)
 const ApiDocumentsIdPdfRoute = ApiDocumentsIdPdfRouteImport.update({
   id: '/api/documents/$id/pdf',
   path: '/api/documents/$id/pdf',
@@ -68,20 +75,22 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/clients': typeof AuthenticatedClientsRoute
-  '/documents': typeof AuthenticatedDocumentsRoute
+  '/documents': typeof AuthenticatedDocumentsRouteWithChildren
   '/pricing': typeof AuthenticatedPricingRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/clients': typeof AuthenticatedClientsRoute
-  '/documents': typeof AuthenticatedDocumentsRoute
+  '/documents': typeof AuthenticatedDocumentsRouteWithChildren
   '/pricing': typeof AuthenticatedPricingRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
+  '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
 }
 export interface FileRoutesById {
@@ -89,11 +98,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
-  '/_authenticated/documents': typeof AuthenticatedDocumentsRoute
+  '/_authenticated/documents': typeof AuthenticatedDocumentsRouteWithChildren
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
 }
 export interface FileRouteTypes {
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/projects'
     | '/settings'
+    | '/documents/$id'
     | '/api/documents/$id/pdf'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/settings'
     | '/'
+    | '/documents/$id'
     | '/api/documents/$id/pdf'
   id:
     | '__root__'
@@ -127,6 +139,7 @@ export interface FileRouteTypes {
     | '/_authenticated/projects'
     | '/_authenticated/settings'
     | '/_authenticated/'
+    | '/_authenticated/documents/$id'
     | '/api/documents/$id/pdf'
   fileRoutesById: FileRoutesById
 }
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documents/$id': {
+      id: '/_authenticated/documents/$id'
+      path: '/$id'
+      fullPath: '/documents/$id'
+      preLoaderRoute: typeof AuthenticatedDocumentsIdRouteImport
+      parentRoute: typeof AuthenticatedDocumentsRoute
+    }
     '/api/documents/$id/pdf': {
       id: '/api/documents/$id/pdf'
       path: '/api/documents/$id/pdf'
@@ -204,9 +224,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedDocumentsRouteChildren {
+  AuthenticatedDocumentsIdRoute: typeof AuthenticatedDocumentsIdRoute
+}
+
+const AuthenticatedDocumentsRouteChildren: AuthenticatedDocumentsRouteChildren =
+  {
+    AuthenticatedDocumentsIdRoute: AuthenticatedDocumentsIdRoute,
+  }
+
+const AuthenticatedDocumentsRouteWithChildren =
+  AuthenticatedDocumentsRoute._addFileChildren(
+    AuthenticatedDocumentsRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
-  AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRoute
+  AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRouteWithChildren
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -215,7 +249,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
-  AuthenticatedDocumentsRoute: AuthenticatedDocumentsRoute,
+  AuthenticatedDocumentsRoute: AuthenticatedDocumentsRouteWithChildren,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

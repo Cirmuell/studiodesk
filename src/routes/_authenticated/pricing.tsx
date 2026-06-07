@@ -1,130 +1,165 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { formatCurrency, getClient, getProject, pricingRuns, projects } from "@/lib/mock-data";
+import { listProjects } from "@/lib/projects.functions";
+import { listPricingRuns, runPricingAnalysis } from "@/lib/pricing.functions";
+import { formatCurrency, timeAgo } from "@/lib/format";
 import { ArrowRight, Check, Sparkles, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/pricing")({
   head: () => ({ meta: [{ title: "Pricing Studio — Studio" }] }),
-  component: PricingPage,
+  component: () => (
+    <Suspense fallback={<AppShell title="Pricing Studio">{null}</AppShell>}>
+      <PricingPage />
+    </Suspense>
+  ),
 });
 
 function PricingPage() {
-  const [hours, setHours] = useState(40);
-  const [projectId, setProjectId] = useState(projects[0].id);
-  const project = getProject(projectId)!;
-  const client = getClient(project.clientId)!;
+  const fetchProjects = useServerFn(listProjects);
+  const fetchRuns = useServerFn(listPricingRuns);
+  const runAnalysis = useServerFn(runPricingAnalysis);
+  const qc = useQueryClient();
 
-  // mock-derived estimate
-  const recommended = Math.round(hours * 140 + (client.tier === "enterprise" ? 2500 : client.tier === "preferred" ? 1200 : 600));
-  const low = Math.round(recommended * 0.88);
-  const high = Math.round(recommended * 1.15);
+  const { data: projects } = useSuspenseQuery({ queryKey: ["projects"], queryFn: () => fetchProjects() });
+  const { data: runs } = useSuspenseQuery({ queryKey: ["pricing_runs"], queryFn: () => fetchRuns() });
+
+  const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
+  const selected = projects.find((p) => p.id === projectId);
+  const [hours, setHours] = useState(40);
+  const [scope, setScope] = useState(selected?.scope ?? "");
+  const [tier, setTier] = useState<"standard" | "preferred" | "enterprise">(
+    (selected?.client?.tier as "standard" | "preferred" | "enterprise") ?? "standard",
+  );
+
+  const mut = useMutation({
+    mutationFn: () =>
+      runAnalysis({ data: { project_id: projectId || undefined, scope, hours, client_tier: tier } }),
+    onSuccess: () => {
+      toast.success("Pricing recommendation ready");
+      qc.invalidateQueries({ queryKey: ["pricing_runs"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const latest = mut.data ?? runs[0];
 
   return (
     <AppShell title="Pricing Studio" subtitle="AI grounded in your context">
-      {/* AI hero */}
-      <section className="relative overflow-hidden rounded-3xl p-5 mb-5 bg-gradient-to-br from-primary/15 via-accent/40 to-secondary border border-primary/15">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center">
-            <Sparkles className="size-3.5" />
-          </span>
-          <p className="text-xs uppercase tracking-[0.18em] font-semibold text-primary">AI estimate</p>
-        </div>
-        <p className="font-display text-4xl text-foreground">{formatCurrency(recommended)}</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Range {formatCurrency(low)} – {formatCurrency(high)} · {client.tier} client
-        </p>
-
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {[
-            ["Confidence", "High"],
-            ["Hours", `${hours}h`],
-            ["Day-rate", "$1,120"],
-          ].map(([k, v]) => (
-            <div key={k} className="bg-surface/70 backdrop-blur rounded-xl px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{k}</p>
-              <p className="text-sm font-semibold mt-0.5">{v}</p>
+      {latest && (
+        <section className="relative overflow-hidden rounded-3xl p-5 mb-5 bg-gradient-to-br from-primary/15 via-accent/40 to-secondary border border-primary/15">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center">
+              <Sparkles className="size-3.5" />
+            </span>
+            <p className="text-xs uppercase tracking-[0.18em] font-semibold text-primary">AI estimate</p>
+          </div>
+          <p className="font-display text-4xl text-foreground">{formatCurrency(latest.recommended_total, latest.currency)}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Range {formatCurrency(latest.range_low, latest.currency)} – {formatCurrency(latest.range_high, latest.currency)} · {latest.confidence} confidence
+          </p>
+          {latest.rationale && (
+            <p className="text-xs text-foreground/80 mt-3 leading-relaxed">{latest.rationale}</p>
+          )}
+          {Array.isArray(latest.line_items) && latest.line_items.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              {(latest.line_items as { label: string; amount: number }[]).map((li, i) => (
+                <div key={i} className="flex justify-between text-xs">
+                  <span className="text-foreground/80 truncate pr-2">{li.label}</span>
+                  <span className="font-medium">{formatCurrency(li.amount, latest.currency)}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          )}
+        </section>
+      )}
 
-      {/* Inputs */}
       <div className="card-soft p-4 mb-5 space-y-4">
         <Field label="Project">
           <select
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            onChange={(e) => {
+              setProjectId(e.target.value);
+              const p = projects.find((x) => x.id === e.target.value);
+              if (p?.scope) setScope(p.scope);
+              if (p?.client?.tier) setTier(p.client.tier as typeof tier);
+            }}
+            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
           >
+            <option value="">— Custom (no project) —</option>
             {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
+              <option key={p.id} value={p.id}>{p.title}</option>
             ))}
           </select>
         </Field>
 
+        <Field label="Client tier">
+          <select value={tier} onChange={(e) => setTier(e.target.value as typeof tier)} className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm">
+            <option value="standard">Standard</option>
+            <option value="preferred">Preferred</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
+        </Field>
+
         <Field label={`Estimated hours · ${hours}`}>
-          <input
-            type="range"
-            min={8}
-            max={160}
-            step={4}
-            value={hours}
-            onChange={(e) => setHours(Number(e.target.value))}
-            className="w-full accent-[color:var(--color-primary)]"
-          />
-          <div className="flex justify-between text-[11px] text-muted-foreground">
-            <span>8h</span>
-            <span>160h</span>
-          </div>
+          <input type="range" min={8} max={300} step={4} value={hours} onChange={(e) => setHours(Number(e.target.value))} className="w-full accent-[color:var(--color-primary)]" />
         </Field>
 
         <Field label="Scope summary">
           <textarea
-            defaultValue={project.scope}
-            rows={3}
-            className="w-full px-3 py-2.5 rounded-xl bg-muted border border-border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+            value={scope}
+            onChange={(e) => setScope(e.target.value)}
+            rows={4}
+            placeholder="Describe deliverables, milestones, constraints…"
+            className="w-full px-3 py-2.5 rounded-xl bg-muted border border-border text-sm resize-none"
           />
         </Field>
       </div>
 
-      <button className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 active:scale-[0.99] transition shadow-[var(--shadow-pop)]">
+      <button
+        onClick={() => {
+          if (scope.trim().length < 10) {
+            toast.error("Add a richer scope (10+ characters) for a useful estimate.");
+            return;
+          }
+          mut.mutate();
+        }}
+        disabled={mut.isPending}
+        className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 disabled:opacity-60 shadow-[var(--shadow-pop)]"
+      >
         <Wand2 className="size-4" />
-        Run pricing analysis
+        {mut.isPending ? "Analysing…" : "Run pricing analysis"}
       </button>
-
       <p className="text-[11px] text-muted-foreground text-center mt-3 px-6">
-        AI estimate, not financial advice. Review before sending to clients.
+        AI estimate grounded in your studio profile and the Nigerian market. Review before sending.
       </p>
 
-      {/* History */}
       <h2 className="font-display text-lg mt-8 mb-3">Recent analyses</h2>
-      <div className="space-y-2.5">
-        {pricingRuns.map((r) => {
-          const p = getProject(r.projectId)!;
-          return (
-            <div key={r.id} className="card-soft p-4 flex items-center gap-3">
-              <div className={cn(
-                "size-10 rounded-xl grid place-items-center",
-                r.confidence === "high" ? "bg-success/15 text-success" : "bg-warning/20 text-warning-foreground",
-              )}>
+      {runs.length === 0 ? (
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center">No analyses yet.</p>
+      ) : (
+        <div className="space-y-2.5">
+          {runs.map((r) => (
+            <Link to="/pricing" key={r.id} className="card-soft p-4 flex items-center gap-3">
+              <div className={cn("size-10 rounded-xl grid place-items-center", r.confidence === "high" ? "bg-success/15 text-success" : "bg-warning/20 text-warning-foreground")}>
                 <Check className="size-[18px]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{p.title}</p>
-                <p className="text-xs text-muted-foreground">{r.createdAt} · {r.confidence} confidence</p>
+                <p className="text-sm font-medium truncate">{r.project?.title ?? "Custom scope"}</p>
+                <p className="text-xs text-muted-foreground">{timeAgo(r.created_at)} · {r.confidence} confidence</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold">{formatCurrency(r.recommendedTotal)}</p>
+                <p className="text-sm font-semibold">{formatCurrency(r.recommended_total, r.currency)}</p>
                 <ArrowRight className="size-3.5 text-muted-foreground inline-block mt-0.5" />
               </div>
-            </div>
-          );
-        })}
-      </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </AppShell>
   );
 }
