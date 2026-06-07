@@ -3,13 +3,21 @@ import { Home, Users, Briefcase, Calculator, FileText, Bell, Plus } from "lucide
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-const tabs = [
+type Tab = {
+  to: string;
+  label: string;
+  icon: typeof Home;
+  exact?: boolean;
+  accent?: boolean;
+};
+
+const tabs: Tab[] = [
   { to: "/", label: "Home", icon: Home, exact: true },
   { to: "/projects", label: "Projects", icon: Briefcase },
   { to: "/pricing", label: "Pricing", icon: Calculator, accent: true },
   { to: "/documents", label: "Docs", icon: FileText },
   { to: "/clients", label: "Clients", icon: Users },
-] as const;
+];
 
 interface AppShellProps {
   title: string;
