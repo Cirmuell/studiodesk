@@ -12,7 +12,7 @@ import {
 } from "@/lib/mock-data";
 import { ArrowUpRight, Calculator, FileText, Sparkles, TrendingUp } from "lucide-react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Studio — Your creative business at a glance" },

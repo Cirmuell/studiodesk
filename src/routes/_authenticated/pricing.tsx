@@ -5,7 +5,7 @@ import { formatCurrency, getClient, getProject, pricingRuns, projects } from "@/
 import { ArrowRight, Check, Sparkles, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/pricing")({
+export const Route = createFileRoute("/_authenticated/pricing")({
   head: () => ({ meta: [{ title: "Pricing Studio — Studio" }] }),
   component: PricingPage,
 });

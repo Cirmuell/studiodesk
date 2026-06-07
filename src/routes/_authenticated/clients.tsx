@@ -4,7 +4,7 @@ import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { clients } from "@/lib/mock-data";
 import { Plus, Search } from "lucide-react";
 
-export const Route = createFileRoute("/clients")({
+export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({ meta: [{ title: "Clients — Studio" }] }),
   component: ClientsPage,
 });

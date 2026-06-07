@@ -5,7 +5,7 @@ import { docs, formatCurrency, getClient, type DocType } from "@/lib/mock-data";
 import { FileText, Plus, Receipt, ScrollText, FileCheck2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/documents")({
+export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({ meta: [{ title: "Documents — Studio" }] }),
   component: DocumentsPage,
 });
