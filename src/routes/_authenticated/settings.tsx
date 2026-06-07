@@ -3,7 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { Building2, CreditCard, Globe2, LogOut, Receipt, Shield, Sparkles, User2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Studio" }] }),
   component: SettingsPage,
 });

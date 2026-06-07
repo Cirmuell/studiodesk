@@ -6,7 +6,7 @@ import { formatCurrency, getClient, projects, type ProjectStatus } from "@/lib/m
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/projects")({
+export const Route = createFileRoute("/_authenticated/projects")({
   head: () => ({ meta: [{ title: "Projects — Studio" }] }),
   component: ProjectsPage,
 });
