@@ -44,6 +44,9 @@ function SettingsPage() {
     currency: profile?.currency ?? "NGN",
     logo_url: profile?.logo_url ?? "",
     signature_url: profile?.signature_url ?? "",
+    gemini_api_key: profile?.gemini_api_key ?? "",
+    openai_api_key: profile?.openai_api_key ?? "",
+    lovable_api_key: profile?.lovable_api_key ?? "",
   });
 
   useEffect(() => {
@@ -62,6 +65,9 @@ function SettingsPage() {
         currency: profile.currency ?? "NGN",
         logo_url: profile.logo_url ?? "",
         signature_url: profile.signature_url ?? "",
+        gemini_api_key: profile.gemini_api_key ?? "",
+        openai_api_key: profile.openai_api_key ?? "",
+        lovable_api_key: profile.lovable_api_key ?? "",
       });
     }
   }, [profile]);
@@ -127,6 +133,9 @@ function SettingsPage() {
           currency: form.currency,
           logo_url: form.logo_url || null,
           signature_url: form.signature_url || null,
+          gemini_api_key: form.gemini_api_key || null,
+          openai_api_key: form.openai_api_key || null,
+          lovable_api_key: form.lovable_api_key || null,
         },
       }),
     onSuccess: () => {
@@ -289,6 +298,36 @@ function SettingsPage() {
         </div>
       </Group>
 
+      <Group title="AI & API Keys Configuration">
+        <div className="card-soft p-4 space-y-3">
+          <Input
+            label="Gemini API Key"
+            value={form.gemini_api_key}
+            onChange={(v) => setForm({ ...form, gemini_api_key: v })}
+            type="password"
+            placeholder="Key starting with AIzaSy..."
+          />
+          <Input
+            label="OpenAI API Key"
+            value={form.openai_api_key}
+            onChange={(v) => setForm({ ...form, openai_api_key: v })}
+            type="password"
+            placeholder="Key starting with sk-..."
+          />
+          <Input
+            label="Lovable API Key"
+            value={form.lovable_api_key}
+            onChange={(v) => setForm({ ...form, lovable_api_key: v })}
+            type="password"
+            placeholder="Lovable gateway key"
+          />
+          <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+            <Sparkles className="size-3 text-primary mt-0.5 shrink-0" />
+            Save your own API keys to run pricing analysis and document generation. Keys are stored securely in your database.
+          </p>
+        </div>
+      </Group>
+
       <Group title="Payment">
         <div className="card-soft p-4">
           <Textarea label="Bank details / payment instructions" value={form.bank_details} onChange={(v) => setForm({ ...form, bank_details: v })} icon={CreditCard} placeholder="Account name, bank, number, sort code…" />
@@ -323,13 +362,13 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Input({ label, value, onChange, type = "text", icon: Icon }: { label: string; value: string; onChange: (v: string) => void; type?: string; icon?: React.ComponentType<{ className?: string }> }) {
+function Input({ label, value, onChange, type = "text", icon: Icon, placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; icon?: React.ComponentType<{ className?: string }>; placeholder?: string }) {
   return (
     <label className="block">
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
         {Icon && <Icon className="size-3" />} {label}
       </span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1" />
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1" />
     </label>
   );
 }

@@ -1,5 +1,8 @@
--- Add signature_url to profiles table
+-- Add signature_url and API keys to profiles table
 ALTER TABLE public.profiles ADD COLUMN signature_url TEXT;
+ALTER TABLE public.profiles ADD COLUMN gemini_api_key TEXT;
+ALTER TABLE public.profiles ADD COLUMN openai_api_key TEXT;
+ALTER TABLE public.profiles ADD COLUMN lovable_api_key TEXT;
 
 -- Create brand-assets storage bucket
 INSERT INTO storage.buckets (id, name, public)

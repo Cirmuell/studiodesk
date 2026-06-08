@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateObject } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { getAiProvider } from "./ai-gateway.server";
 
 const PricingSchema = z.object({
   recommended_total: z.number(),
@@ -44,15 +44,14 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI gateway is not configured");
-
     // Pull business context
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country")
+      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country, gemini_api_key, openai_api_key, lovable_api_key")
       .eq("id", context.userId)
       .maybeSingle();
+
+    const { provider, model } = getAiProvider(profile);
 
     const { data: rateCards } = await context.supabase
       .from("rate_cards")
@@ -62,7 +61,7 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     const currency = profile?.currency || "NGN";
     const country = profile?.country || "NG";
 
-    const gateway = createLovableAiGatewayProvider(apiKey);
+
 
     const systemPrompt = `You are a pricing analyst for independent creatives in Nigeria.
 Quote in ${currency}. Reflect Nigerian market rates (Lagos/Abuja creative industry benchmarks).
@@ -89,7 +88,7 @@ Produce a pricing recommendation with line items, a range, confidence, and a sho
     let result;
     try {
       result = await generateObject({
-        model: gateway("google/gemini-3-flash-preview"),
+        model: provider(model),
         schema: PricingSchema,
         system: systemPrompt,
         prompt: userPrompt,
