@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/public/portal/$token/pdf")({
           type: docRow.type,
           number: docRow.number,
           title: docRow.title,
-          content: docRow.content ?? {},
+          content: (docRow.content ?? {}) as never,
           subtotal: Number(docRow.subtotal ?? 0),
           tax: Number(docRow.tax ?? 0),
           total: Number(docRow.total ?? 0),
