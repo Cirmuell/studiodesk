@@ -48,11 +48,9 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z.object({
-      data: z.object({
-        gemini_api_key: z.string().max(500).optional().nullable(),
-        openai_api_key: z.string().max(500).optional().nullable(),
-        lovable_api_key: z.string().max(500).optional().nullable(),
-      }),
+      gemini_api_key: z.string().max(500).optional().nullable(),
+      openai_api_key: z.string().max(500).optional().nullable(),
+      lovable_api_key: z.string().max(500).optional().nullable(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
@@ -66,7 +64,7 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin
       .from("admin_settings")
-      .update(data.data)
+      .update(data)
       .eq("id", "default");
 
     if (error) throw new Error(error.message);
