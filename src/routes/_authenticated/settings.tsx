@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState, useEffect } from "react";
@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { listRateCards, createRateCard, deleteRateCard } from "@/lib/rate-cards.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, CreditCard, LogOut, Plus, Receipt, Sparkles, Trash2, Upload } from "lucide-react";
+import { Building2, CreditCard, LogOut, Plus, Receipt, Sparkles, Trash2, Upload, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -44,9 +44,6 @@ function SettingsPage() {
     currency: profile?.currency ?? "NGN",
     logo_url: profile?.logo_url ?? "",
     signature_url: profile?.signature_url ?? "",
-    gemini_api_key: profile?.gemini_api_key ?? "",
-    openai_api_key: profile?.openai_api_key ?? "",
-    lovable_api_key: profile?.lovable_api_key ?? "",
   });
 
   useEffect(() => {
@@ -65,9 +62,6 @@ function SettingsPage() {
         currency: profile.currency ?? "NGN",
         logo_url: profile.logo_url ?? "",
         signature_url: profile.signature_url ?? "",
-        gemini_api_key: profile.gemini_api_key ?? "",
-        openai_api_key: profile.openai_api_key ?? "",
-        lovable_api_key: profile.lovable_api_key ?? "",
       });
     }
   }, [profile]);
@@ -133,9 +127,6 @@ function SettingsPage() {
           currency: form.currency,
           logo_url: form.logo_url || null,
           signature_url: form.signature_url || null,
-          gemini_api_key: form.gemini_api_key || null,
-          openai_api_key: form.openai_api_key || null,
-          lovable_api_key: form.lovable_api_key || null,
         },
       }),
     onSuccess: () => {
@@ -298,35 +289,23 @@ function SettingsPage() {
         </div>
       </Group>
 
-      <Group title="AI & API Keys Configuration">
-        <div className="card-soft p-4 space-y-3">
-          <Input
-            label="Gemini API Key"
-            value={form.gemini_api_key}
-            onChange={(v) => setForm({ ...form, gemini_api_key: v })}
-            type="password"
-            placeholder="Key starting with AIzaSy..."
-          />
-          <Input
-            label="OpenAI API Key"
-            value={form.openai_api_key}
-            onChange={(v) => setForm({ ...form, openai_api_key: v })}
-            type="password"
-            placeholder="Key starting with sk-..."
-          />
-          <Input
-            label="Lovable API Key"
-            value={form.lovable_api_key}
-            onChange={(v) => setForm({ ...form, lovable_api_key: v })}
-            type="password"
-            placeholder="Lovable gateway key"
-          />
-          <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
-            <Sparkles className="size-3 text-primary mt-0.5 shrink-0" />
-            Save your own API keys to run pricing analysis and document generation. Keys are stored securely in your database.
-          </p>
-        </div>
-      </Group>
+
+
+      {profile?.is_admin && (
+        <Group title="Administration">
+          <div className="card-soft p-4 space-y-3 border-primary/20 bg-primary/5">
+            <p className="text-xs text-muted-foreground">
+              You are signed in as an administrator. You can configure system-wide settings and API keys here.
+            </p>
+            <Link
+              to={"/admin" as any}
+              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 hover:opacity-90 transition"
+            >
+              <Shield className="size-4" /> Open Admin Dashboard
+            </Link>
+          </div>
+        </Group>
+      )}
 
       <Group title="Payment">
         <div className="card-soft p-4">

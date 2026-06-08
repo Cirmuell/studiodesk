@@ -32,9 +32,6 @@ export const updateProfile = createServerFn({ method: "POST" })
       bank_details: z.string().max(1000).optional().nullable(),
       logo_url: z.string().max(1000).optional().nullable(),
       signature_url: z.string().max(1000).optional().nullable(),
-      gemini_api_key: z.string().max(500).optional().nullable(),
-      openai_api_key: z.string().max(500).optional().nullable(),
-      lovable_api_key: z.string().max(500).optional().nullable(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {

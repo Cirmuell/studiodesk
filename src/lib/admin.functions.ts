@@ -1,0 +1,55 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+// Helper to verify if user is admin
+async function verifyIsAdmin(userId: string) {
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .maybeSingle();
+    
+  if (error || !profile?.is_admin) {
+    throw new Error("Unauthorized: Admin access required");
+  }
+}
+
+export const getAdminSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await verifyIsAdmin(context.userId);
+
+    const { data, error } = await supabaseAdmin
+      .from("admin_settings")
+      .select("*")
+      .eq("id", "default")
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+export const updateAdminSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      data: z.object({
+        gemini_api_key: z.string().max(500).optional().nullable(),
+        openai_api_key: z.string().max(500).optional().nullable(),
+        lovable_api_key: z.string().max(500).optional().nullable(),
+      }),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await verifyIsAdmin(context.userId);
+
+    const { error } = await supabaseAdmin
+      .from("admin_settings")
+      .update(data.data)
+      .eq("id", "default");
+
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
