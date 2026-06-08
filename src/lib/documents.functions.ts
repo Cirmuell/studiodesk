@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { generateObject } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { getAiProvider } from "./ai-gateway.server";
 
 const LineItemSchema = z.object({
   label: z.string(),
@@ -84,8 +84,7 @@ export const draftDocument = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI gateway is not configured");
+    const { provider, model } = getAiProvider();
 
     const [{ data: profile }, projectRes, clientRes] = await Promise.all([
       context.supabase.from("profiles").select("*").eq("id", context.userId).maybeSingle(),
@@ -100,7 +99,7 @@ export const draftDocument = createServerFn({ method: "POST" })
     const client = clientRes.data;
     const currency = profile?.currency || "NGN";
 
-    const gateway = createLovableAiGatewayProvider(apiKey);
+
     const sys = `You draft ${data.type}s for independent creatives in Nigeria. Use clear, friendly business English. Amounts in ${currency}. Include realistic line items derived from the project scope.`;
     const prompt = `STUDIO: ${profile?.business_name ?? "Independent studio"} (${profile?.owner_name ?? ""})
 CLIENT: ${client?.name ?? "Unknown"} ${client?.company ? "— " + client.company : ""}
@@ -114,7 +113,7 @@ Generate a complete ${data.type} draft.`;
     let result;
     try {
       result = await generateObject({
-        model: gateway("google/gemini-3-flash-preview"),
+        model: provider(model),
         schema: DocContentSchema,
         system: sys,
         prompt,
