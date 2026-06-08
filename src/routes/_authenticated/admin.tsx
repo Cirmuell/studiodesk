@@ -70,6 +70,9 @@ function AdminPage() {
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
               Your account does not have administrator permissions. If you are the SaaS owner, please toggle <code className="bg-muted px-1.5 py-0.5 rounded text-[11px]">is_admin = true</code> in the profiles table in Supabase.
             </p>
+            <div className="text-[11px] text-destructive bg-destructive/5 border border-destructive/10 px-3 py-2 rounded-lg max-w-xs mx-auto mt-2 font-mono text-left overflow-x-auto">
+              Error: {error instanceof Error ? error.message : String(error)}
+            </div>
           </div>
           <Link
             to="/settings"
