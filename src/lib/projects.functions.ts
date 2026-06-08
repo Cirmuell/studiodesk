@@ -56,3 +56,34 @@ export const updateProject = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const getProject = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const [{ data: project, error: pErr }, { data: pricing_runs }, { data: documents }] = await Promise.all([
+      context.supabase
+        .from("projects")
+        .select("*, client:clients(id, name, company, email, phone, tier)")
+        .eq("id", data.id)
+        .single(),
+      context.supabase
+        .from("pricing_runs")
+        .select("id, recommended_total, range_low, range_high, currency, confidence, rationale, created_at")
+        .eq("project_id", data.id)
+        .order("created_at", { ascending: false }),
+      context.supabase
+        .from("documents")
+        .select("id, type, number, title, status, total, currency, updated_at")
+        .eq("project_id", data.id)
+        .order("updated_at", { ascending: false }),
+    ]);
+    if (pErr || !project) throw new Error(pErr?.message ?? "Project not found");
+    const { client, ...rest } = project as typeof project & { client: unknown };
+    return {
+      project: rest,
+      client: client as { id: string; name: string; company: string | null; email: string | null; phone: string | null; tier: string } | null,
+      pricing_runs: pricing_runs ?? [],
+      documents: documents ?? [],
+    };
+  });
