@@ -9,20 +9,24 @@ export async function getAiProvider() {
 
   // Fall back to database-stored admin settings if environment keys are missing
   if (!lovableKey && !geminiKey && !openaiKey) {
-    try {
-      const { data } = await supabaseAdmin
-        .from("admin_settings")
-        .select("*")
-        .eq("id", "default")
-        .maybeSingle();
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { data } = await supabaseAdmin
+          .from("admin_settings")
+          .select("*")
+          .eq("id", "default")
+          .maybeSingle();
 
-      if (data) {
-        lovableKey = data.lovable_api_key || undefined;
-        geminiKey = data.gemini_api_key || undefined;
-        openaiKey = data.openai_api_key || undefined;
+        if (data) {
+          lovableKey = data.lovable_api_key || undefined;
+          geminiKey = data.gemini_api_key || undefined;
+          openaiKey = data.openai_api_key || undefined;
+        }
+      } catch (err) {
+        console.warn("Failed to fetch admin settings from database:", err);
       }
-    } catch (err) {
-      console.warn("Failed to fetch admin settings from database:", err);
+    } else {
+      console.warn("SUPABASE_SERVICE_ROLE_KEY is missing. Skipping database admin settings check.");
     }
   }
 

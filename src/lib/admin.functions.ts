@@ -23,6 +23,17 @@ export const getAdminSettings = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await verifyIsAdmin(context.supabase, context.userId);
 
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn("SUPABASE_SERVICE_ROLE_KEY is missing. Returning empty settings.");
+      return {
+        id: "default",
+        gemini_api_key: null,
+        openai_api_key: null,
+        lovable_api_key: null,
+        updated_at: new Date().toISOString(),
+      };
+    }
+
     const { data, error } = await supabaseAdmin
       .from("admin_settings")
       .select("*")
@@ -46,6 +57,12 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await verifyIsAdmin(context.supabase, context.userId);
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error(
+        "Cannot save settings: SUPABASE_SERVICE_ROLE_KEY is missing in this environment. Please configure it in Vercel."
+      );
+    }
 
     const { error } = await supabaseAdmin
       .from("admin_settings")
