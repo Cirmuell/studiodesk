@@ -22,7 +22,7 @@ export function getAiProvider(profile?: {
   if (geminiKey) {
     const provider = createOpenAICompatible({
       name: "gemini",
-      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
       headers: { Authorization: `Bearer ${geminiKey}` },
     });
     return {
