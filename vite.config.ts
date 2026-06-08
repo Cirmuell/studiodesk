@@ -25,7 +25,7 @@ export default defineConfig({
           navigateFallbackDenylist: [/^\/api\//, /^\/~oauth/, /^\/auth/],
           runtimeCaching: [
             {
-              urlPattern: ({ request }) => request.mode === "navigate",
+              urlPattern: ({ request }: { request: Request }) => request.mode === "navigate",
               handler: "NetworkFirst",
               options: {
                 cacheName: "html-shell",
@@ -44,7 +44,7 @@ export default defineConfig({
               },
             },
             {
-              urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:png|jpg|jpeg|svg|webp|ico)$/.test(url.pathname),
+              urlPattern: /\.(?:png|jpg|jpeg|svg|webp|ico)$/,
               handler: "CacheFirst",
               options: {
                 cacheName: "images",
