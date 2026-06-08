@@ -30,6 +30,8 @@ export const updateProfile = createServerFn({ method: "POST" })
       day_rate_min: z.number().nonnegative().optional().nullable(),
       day_rate_max: z.number().nonnegative().optional().nullable(),
       bank_details: z.string().max(1000).optional().nullable(),
+      logo_url: z.string().max(1000).optional().nullable(),
+      signature_url: z.string().max(1000).optional().nullable(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {

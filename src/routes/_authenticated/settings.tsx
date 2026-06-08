@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { listRateCards, createRateCard, deleteRateCard } from "@/lib/rate-cards.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, CreditCard, LogOut, Plus, Receipt, Sparkles, Trash2 } from "lucide-react";
+import { Building2, CreditCard, LogOut, Plus, Receipt, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -42,6 +42,8 @@ function SettingsPage() {
     day_rate_max: profile?.day_rate_max ?? "",
     bank_details: profile?.bank_details ?? "",
     currency: profile?.currency ?? "NGN",
+    logo_url: profile?.logo_url ?? "",
+    signature_url: profile?.signature_url ?? "",
   });
 
   useEffect(() => {
@@ -58,9 +60,55 @@ function SettingsPage() {
         day_rate_max: profile.day_rate_max ?? "",
         bank_details: profile.bank_details ?? "",
         currency: profile.currency ?? "NGN",
+        logo_url: profile.logo_url ?? "",
+        signature_url: profile.signature_url ?? "",
       });
     }
   }, [profile]);
+
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
+
+  const handleFileUpload = async (file: File, type: "logo" | "signature") => {
+    if (!profile?.id) {
+      toast.error("User profile not loaded yet");
+      return;
+    }
+
+    const setUploading = type === "logo" ? setUploadingLogo : setUploadingSignature;
+    setUploading(true);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const filePath = `${profile.id}/${type}_${Date.now()}.${fileExt}`;
+
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from("brand-assets")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("brand-assets")
+        .getPublicUrl(filePath);
+
+      setForm((prev) => ({
+        ...prev,
+        [type === "logo" ? "logo_url" : "signature_url"]: publicUrl,
+      }));
+      toast.success(`${type === "logo" ? "Logo" : "Signature"} uploaded successfully`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const saveMut = useMutation({
     mutationFn: () =>
@@ -77,6 +125,8 @@ function SettingsPage() {
           day_rate_max: form.day_rate_max ? Number(form.day_rate_max) : null,
           bank_details: form.bank_details || null,
           currency: form.currency,
+          logo_url: form.logo_url || null,
+          signature_url: form.signature_url || null,
         },
       }),
     onSuccess: () => {
@@ -125,6 +175,86 @@ function SettingsPage() {
           <Input label="Phone" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
           <Textarea label="Address" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
           <Input label="Currency" value={form.currency} onChange={(v) => setForm({ ...form, currency: v.toUpperCase() })} />
+        </div>
+      </Group>
+
+      <Group title="Brand assets">
+        <div className="card-soft p-4 space-y-4">
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-2">
+              Brand Logo
+            </span>
+            <div className="flex items-center gap-4">
+              {form.logo_url ? (
+                <div className="relative group border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0">
+                  <img src={form.logo_url} alt="Brand Logo" className="max-w-full max-h-full object-contain" />
+                  <button
+                    onClick={() => setForm({ ...form, logo_url: "" })}
+                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
+                    title="Remove Logo"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div className="border border-dashed border-border rounded-lg size-20 flex flex-col items-center justify-center text-muted-foreground bg-muted shrink-0">
+                  <span className="text-[10px]">No Logo</span>
+                </div>
+              )}
+              <label className="flex items-center gap-2 px-4 h-10 rounded-lg bg-muted border border-border text-sm font-medium cursor-pointer hover:bg-muted/80 transition-colors">
+                <Upload className="size-4 text-muted-foreground" />
+                {uploadingLogo ? "Uploading..." : form.logo_url ? "Replace Logo" : "Upload Logo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingLogo}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, "logo");
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-2">
+              Signature (for documents)
+            </span>
+            <div className="flex items-center gap-4">
+              {form.signature_url ? (
+                <div className="relative group border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0">
+                  <img src={form.signature_url} alt="Brand Signature" className="max-w-full max-h-full object-contain" />
+                  <button
+                    onClick={() => setForm({ ...form, signature_url: "" })}
+                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
+                    title="Remove Signature"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div className="border border-dashed border-border rounded-lg size-20 flex flex-col items-center justify-center text-muted-foreground bg-muted shrink-0">
+                  <span className="text-[10px]">No Signature</span>
+                </div>
+              )}
+              <label className="flex items-center gap-2 px-4 h-10 rounded-lg bg-muted border border-border text-sm font-medium cursor-pointer hover:bg-muted/80 transition-colors">
+                <Upload className="size-4 text-muted-foreground" />
+                {uploadingSignature ? "Uploading..." : form.signature_url ? "Replace Signature" : "Upload Signature"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingSignature}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, "signature");
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
         </div>
       </Group>
 
