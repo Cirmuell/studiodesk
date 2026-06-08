@@ -248,6 +248,9 @@ export type Database = {
           id: string
           logo_url: string | null
           signature_url: string | null
+          gemini_api_key: string | null
+          openai_api_key: string | null
+          lovable_api_key: string | null
           owner_name: string | null
           phone: string | null
           services: string | null
@@ -268,6 +271,9 @@ export type Database = {
           id: string
           logo_url?: string | null
           signature_url?: string | null
+          gemini_api_key?: string | null
+          openai_api_key?: string | null
+          lovable_api_key?: string | null
           owner_name?: string | null
           phone?: string | null
           services?: string | null
@@ -288,6 +294,9 @@ export type Database = {
           id?: string
           logo_url?: string | null
           signature_url?: string | null
+          gemini_api_key?: string | null
+          openai_api_key?: string | null
+          lovable_api_key?: string | null
           owner_name?: string | null
           phone?: string | null
           services?: string | null

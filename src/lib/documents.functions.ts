@@ -84,8 +84,6 @@ export const draftDocument = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { provider, model } = getAiProvider();
-
     const [{ data: profile }, projectRes, clientRes] = await Promise.all([
       context.supabase.from("profiles").select("*").eq("id", context.userId).maybeSingle(),
       data.project_id
@@ -99,6 +97,7 @@ export const draftDocument = createServerFn({ method: "POST" })
     const client = clientRes.data;
     const currency = profile?.currency || "NGN";
 
+    const { provider, model } = getAiProvider(profile);
 
     const sys = `You draft ${data.type}s for independent creatives in Nigeria. Use clear, friendly business English. Amounts in ${currency}. Include realistic line items derived from the project scope.`;
     const prompt = `STUDIO: ${profile?.business_name ?? "Independent studio"} (${profile?.owner_name ?? ""})

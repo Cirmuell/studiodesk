@@ -44,14 +44,14 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { provider, model } = getAiProvider();
-
     // Pull business context
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country")
+      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country, gemini_api_key, openai_api_key, lovable_api_key")
       .eq("id", context.userId)
       .maybeSingle();
+
+    const { provider, model } = getAiProvider(profile);
 
     const { data: rateCards } = await context.supabase
       .from("rate_cards")
