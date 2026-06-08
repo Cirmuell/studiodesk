@@ -134,7 +134,7 @@ function DashboardInner() {
       ) : (
         <div className="space-y-2.5 mb-6">
           {activeProjects.map((p) => (
-            <Link key={p.id} to="/projects" className="card-soft p-3.5 flex items-center gap-3 active:scale-[0.99] transition">
+            <Link key={p.id} to="/projects/$id" params={{ id: p.id }} className="card-soft p-3.5 flex items-center gap-3 active:scale-[0.99] transition">
               <ClientAvatar name={p.client?.name ?? p.title} />
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm truncate">{p.title}</p>
@@ -154,7 +154,7 @@ function DashboardInner() {
       ) : (
         <div className="space-y-2.5">
           {recentDocs.map((d) => (
-            <div key={d.id} className="card-soft p-3.5 flex items-center gap-3">
+            <Link to="/documents/$id" params={{ id: d.id }} key={d.id} className="card-soft p-3.5 flex items-center gap-3 active:scale-[0.99] transition">
               <div className="size-10 rounded-xl bg-muted grid place-items-center text-muted-foreground">
                 <FileText className="size-[18px]" />
               </div>
@@ -168,7 +168,7 @@ function DashboardInner() {
                 <p className="text-sm font-semibold">{formatCurrency(d.total, d.currency)}</p>
                 {d.client?.tier && <TierBadge tier={d.client.tier} />}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

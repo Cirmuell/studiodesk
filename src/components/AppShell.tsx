@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Briefcase, Calculator, FileText, Bell, Plus } from "lucide-react";
+import { Home, Users, Briefcase, Calculator, FileText, Settings as SettingsIcon, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -45,12 +45,13 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
           </div>
           <div className="flex items-center gap-2">
             {action}
-            <button
-              aria-label="Notifications"
+            <Link
+              to="/settings"
+              aria-label="Settings"
               className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground transition"
             >
-              <Bell className="size-[18px]" />
-            </button>
+              <SettingsIcon className="size-[18px]" />
+            </Link>
           </div>
         </div>
       </header>

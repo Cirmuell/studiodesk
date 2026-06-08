@@ -6,8 +6,9 @@ import { AppShell } from "@/components/AppShell";
 import { getDocument, updateDocument, type DocContent } from "@/lib/documents.functions";
 import { formatCurrency } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Download, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, Save, Sparkles, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { SharePanel } from "@/components/SharePanel";
 
 export const Route = createFileRoute("/_authenticated/documents/$id")({
   head: () => ({ meta: [{ title: "Document — Studio" }] }),
@@ -122,6 +123,9 @@ function DocPage() {
       <Link to="/documents" className="inline-flex items-center gap-1 text-xs text-muted-foreground mb-4">
         <ArrowLeft className="size-3.5" /> All documents
       </Link>
+
+      <SharePanel documentId={id} />
+
 
       <div className="card-soft p-4 mb-4">
         <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Title</label>

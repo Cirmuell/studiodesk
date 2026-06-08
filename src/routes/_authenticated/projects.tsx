@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
@@ -97,7 +97,12 @@ function ProjectsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((p) => (
-            <div key={p.id} className="card-soft p-4">
+            <Link
+              to="/projects/$id"
+              params={{ id: p.id }}
+              key={p.id}
+              className="card-soft p-4 block active:scale-[0.99] transition"
+            >
               <div className="flex items-start gap-3">
                 <ClientAvatar name={p.client?.name ?? p.title} />
                 <div className="flex-1 min-w-0">
@@ -113,7 +118,7 @@ function ProjectsPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
