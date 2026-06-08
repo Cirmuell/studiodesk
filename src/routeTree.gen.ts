@@ -12,13 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as PortalTokenRouteImport } from './routes/portal.$token'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
 import { Route as ApiDocumentsIdPdfRouteImport } from './routes/api/documents.$id.pdf'
+import { Route as ApiPublicPortalTokenPdfRouteImport } from './routes/api/public/portal.$token.pdf'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -33,6 +36,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const PortalTokenRoute = PortalTokenRouteImport.update({
+  id: '/portal/$token',
+  path: '/portal/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -59,6 +67,11 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedProjectsRoute,
+} as any)
 const AuthenticatedDocumentsIdRoute =
   AuthenticatedDocumentsIdRouteImport.update({
     id: '/$id',
@@ -70,6 +83,11 @@ const ApiDocumentsIdPdfRoute = ApiDocumentsIdPdfRouteImport.update({
   path: '/api/documents/$id/pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPortalTokenPdfRoute = ApiPublicPortalTokenPdfRouteImport.update({
+  id: '/api/public/portal/$token/pdf',
+  path: '/api/public/portal/$token/pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -77,21 +95,27 @@ export interface FileRoutesByFullPath {
   '/clients': typeof AuthenticatedClientsRoute
   '/documents': typeof AuthenticatedDocumentsRouteWithChildren
   '/pricing': typeof AuthenticatedPricingRoute
-  '/projects': typeof AuthenticatedProjectsRoute
+  '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/portal/$token': typeof PortalTokenRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
+  '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
+  '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/clients': typeof AuthenticatedClientsRoute
   '/documents': typeof AuthenticatedDocumentsRouteWithChildren
   '/pricing': typeof AuthenticatedPricingRoute
-  '/projects': typeof AuthenticatedProjectsRoute
+  '/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/portal/$token': typeof PortalTokenRoute
   '/': typeof AuthenticatedIndexRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
+  '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
+  '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -100,11 +124,14 @@ export interface FileRoutesById {
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
   '/_authenticated/documents': typeof AuthenticatedDocumentsRouteWithChildren
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
-  '/_authenticated/projects': typeof AuthenticatedProjectsRoute
+  '/_authenticated/projects': typeof AuthenticatedProjectsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/portal/$token': typeof PortalTokenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/documents/$id': typeof AuthenticatedDocumentsIdRoute
+  '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
+  '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -116,8 +143,11 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/projects'
     | '/settings'
+    | '/portal/$token'
     | '/documents/$id'
+    | '/projects/$id'
     | '/api/documents/$id/pdf'
+    | '/api/public/portal/$token/pdf'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -126,9 +156,12 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/projects'
     | '/settings'
+    | '/portal/$token'
     | '/'
     | '/documents/$id'
+    | '/projects/$id'
     | '/api/documents/$id/pdf'
+    | '/api/public/portal/$token/pdf'
   id:
     | '__root__'
     | '/_authenticated'
@@ -138,15 +171,20 @@ export interface FileRouteTypes {
     | '/_authenticated/pricing'
     | '/_authenticated/projects'
     | '/_authenticated/settings'
+    | '/portal/$token'
     | '/_authenticated/'
     | '/_authenticated/documents/$id'
+    | '/_authenticated/projects/$id'
     | '/api/documents/$id/pdf'
+    | '/api/public/portal/$token/pdf'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PortalTokenRoute: typeof PortalTokenRoute
   ApiDocumentsIdPdfRoute: typeof ApiDocumentsIdPdfRoute
+  ApiPublicPortalTokenPdfRoute: typeof ApiPublicPortalTokenPdfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -171,6 +209,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/portal/$token': {
+      id: '/portal/$token'
+      path: '/portal/$token'
+      fullPath: '/portal/$token'
+      preLoaderRoute: typeof PortalTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -207,6 +252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/projects/$id': {
+      id: '/_authenticated/projects/$id'
+      path: '/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof AuthenticatedProjectsIdRouteImport
+      parentRoute: typeof AuthenticatedProjectsRoute
+    }
     '/_authenticated/documents/$id': {
       id: '/_authenticated/documents/$id'
       path: '/$id'
@@ -219,6 +271,13 @@ declare module '@tanstack/react-router' {
       path: '/api/documents/$id/pdf'
       fullPath: '/api/documents/$id/pdf'
       preLoaderRoute: typeof ApiDocumentsIdPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/portal/$token/pdf': {
+      id: '/api/public/portal/$token/pdf'
+      path: '/api/public/portal/$token/pdf'
+      fullPath: '/api/public/portal/$token/pdf'
+      preLoaderRoute: typeof ApiPublicPortalTokenPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -238,11 +297,24 @@ const AuthenticatedDocumentsRouteWithChildren =
     AuthenticatedDocumentsRouteChildren,
   )
 
+interface AuthenticatedProjectsRouteChildren {
+  AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
+}
+
+const AuthenticatedProjectsRouteChildren: AuthenticatedProjectsRouteChildren = {
+  AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
+}
+
+const AuthenticatedProjectsRouteWithChildren =
+  AuthenticatedProjectsRoute._addFileChildren(
+    AuthenticatedProjectsRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
   AuthenticatedDocumentsRoute: typeof AuthenticatedDocumentsRouteWithChildren
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
-  AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
+  AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -251,7 +323,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
   AuthenticatedDocumentsRoute: AuthenticatedDocumentsRouteWithChildren,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
-  AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
+  AuthenticatedProjectsRoute: AuthenticatedProjectsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
@@ -262,7 +334,9 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PortalTokenRoute: PortalTokenRoute,
   ApiDocumentsIdPdfRoute: ApiDocumentsIdPdfRoute,
+  ApiPublicPortalTokenPdfRoute: ApiPublicPortalTokenPdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
