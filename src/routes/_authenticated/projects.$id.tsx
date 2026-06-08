@@ -92,7 +92,7 @@ function ProjectPage() {
         <EmptyHint text="No pricing runs yet for this project." />
       ) : (
         <div className="space-y-2.5 mb-6">
-          {pricing_runs.map((r) => (
+          {pricing_runs.map((r: { id: string; recommended_total: number; range_low: number; range_high: number; currency: string; confidence: string; created_at: string }) => (
             <div key={r.id} className="card-soft p-4 flex items-center gap-3">
               <div className={cn("size-10 rounded-xl grid place-items-center", r.confidence === "high" ? "bg-success/15 text-success" : "bg-warning/20 text-warning-foreground")}>
                 <Sparkles className="size-[18px]" />
@@ -116,7 +116,7 @@ function ProjectPage() {
         <EmptyHint text="No documents yet — draft one from Docs." />
       ) : (
         <div className="space-y-2.5">
-          {documents.map((d) => (
+          {documents.map((d: { id: string; type: string; number: string | null; title: string | null; total: number | null; currency: string; updated_at: string }) => (
             <Link key={d.id} to="/documents/$id" params={{ id: d.id }} className="card-soft p-3.5 flex items-center gap-3">
               <div className="size-10 rounded-xl bg-muted grid place-items-center text-muted-foreground">
                 <FileText className="size-[18px]" />
