@@ -2,10 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/integrations/supabase/types";
 
 // Helper to verify if user is admin
-async function verifyIsAdmin(userId: string) {
-  const { data: profile, error } = await supabaseAdmin
+async function verifyIsAdmin(supabase: SupabaseClient<Database>, userId: string) {
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", userId)
@@ -19,7 +21,7 @@ async function verifyIsAdmin(userId: string) {
 export const getAdminSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await verifyIsAdmin(context.userId);
+    await verifyIsAdmin(context.supabase, context.userId);
 
     const { data, error } = await supabaseAdmin
       .from("admin_settings")
@@ -43,7 +45,7 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    await verifyIsAdmin(context.userId);
+    await verifyIsAdmin(context.supabase, context.userId);
 
     const { error } = await supabaseAdmin
       .from("admin_settings")
