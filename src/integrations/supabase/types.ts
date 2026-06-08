@@ -247,6 +247,7 @@ export type Database = {
           email: string | null
           id: string
           logo_url: string | null
+          signature_url: string | null
           owner_name: string | null
           phone: string | null
           services: string | null
@@ -266,6 +267,7 @@ export type Database = {
           email?: string | null
           id: string
           logo_url?: string | null
+          signature_url?: string | null
           owner_name?: string | null
           phone?: string | null
           services?: string | null
@@ -285,6 +287,7 @@ export type Database = {
           email?: string | null
           id?: string
           logo_url?: string | null
+          signature_url?: string | null
           owner_name?: string | null
           phone?: string | null
           services?: string | null

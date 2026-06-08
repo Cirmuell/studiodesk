@@ -29,6 +29,8 @@ export interface PdfInput {
     phone?: string | null;
     address?: string | null;
     bank_details?: string | null;
+    logo_url?: string | null;
+    signature_url?: string | null;
   } | null;
   client: {
     name?: string | null;
@@ -73,14 +75,49 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   };
 
   // Header
-  page.drawText((input.profile?.business_name || "Studio").toUpperCase(), {
-    x: margin, y, size: 16, font: bold, color: ink,
-  });
+  let hasLogo = false;
+  let logoHeightOffset = 0;
+  if (input.profile?.logo_url) {
+    try {
+      const response = await fetch(input.profile.logo_url);
+      const imageBytes = await response.arrayBuffer();
+      let img;
+      try {
+        img = await doc.embedPng(imageBytes);
+      } catch {
+        img = await doc.embedJpg(imageBytes);
+      }
+      const dims = img.scaleToFit(120, 35);
+      page.drawImage(img, {
+        x: margin,
+        y: y - dims.height + 6,
+        width: dims.width,
+        height: dims.height,
+      });
+      logoHeightOffset = dims.height + 6;
+      hasLogo = true;
+    } catch (err) {
+      console.error("Failed to embed logo image:", err);
+    }
+  }
+
   page.drawText(input.type.toUpperCase(), {
     x: 595 - margin - bold.widthOfTextAtSize(input.type.toUpperCase(), 14),
     y, size: 14, font: bold, color: accent,
   });
-  y -= 18;
+
+  if (hasLogo) {
+    y -= logoHeightOffset;
+    page.drawText((input.profile?.business_name || "").toUpperCase(), {
+      x: margin, y, size: 11, font: bold, color: ink,
+    });
+    y -= 14;
+  } else {
+    page.drawText((input.profile?.business_name || "Studio").toUpperCase(), {
+      x: margin, y, size: 16, font: bold, color: ink,
+    });
+    y -= 18;
+  }
   if (input.profile?.email) {
     page.drawText(input.profile.email, { x: margin, y, size: 9, font, color: muted });
   }
@@ -244,6 +281,35 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
       ensure(12);
       page.drawText(ln, { x: margin, y, size: 9, font, color: ink });
       y -= 11;
+    }
+  }
+
+  // Signature
+  if (input.profile?.signature_url) {
+    try {
+      const response = await fetch(input.profile.signature_url);
+      const imageBytes = await response.arrayBuffer();
+      let img;
+      try {
+        img = await doc.embedPng(imageBytes);
+      } catch {
+        img = await doc.embedJpg(imageBytes);
+      }
+      const dims = img.scaleToFit(120, 35);
+      ensure(dims.height + 30);
+      y -= 18;
+      page.drawText("SIGNATURE", { x: margin, y, size: 8, font: bold, color: muted });
+      y -= (dims.height + 6);
+      page.drawImage(img, {
+        x: margin,
+        y,
+        width: dims.width,
+        height: dims.height,
+      });
+      y -= 12;
+      page.drawText(input.profile.owner_name || "", { x: margin, y, size: 9, font, color: ink });
+    } catch (err) {
+      console.error("Failed to embed signature image:", err);
     }
   }
 
