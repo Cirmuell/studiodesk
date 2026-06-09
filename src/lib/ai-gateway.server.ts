@@ -45,8 +45,8 @@ export async function getAiProvider() {
   if (geminiKey) {
     const provider = createOpenAICompatible({
       name: "gemini",
-      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
-      headers: { Authorization: `Bearer ${geminiKey}` },
+      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      apiKey: geminiKey,
     });
     return {
       provider,
@@ -58,7 +58,7 @@ export async function getAiProvider() {
     const provider = createOpenAICompatible({
       name: "openai",
       baseURL: "https://api.openai.com/v1",
-      headers: { Authorization: `Bearer ${openaiKey}` },
+      apiKey: openaiKey,
     });
     return {
       provider,
