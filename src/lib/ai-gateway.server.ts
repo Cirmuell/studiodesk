@@ -3,32 +3,35 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export async function getAiProvider() {
-  let lovableKey = process.env.LOVABLE_API_KEY;
-  let geminiKey = process.env.GEMINI_API_KEY;
-  let openaiKey = process.env.OPENAI_API_KEY;
+  let lovableKey = undefined;
+  let geminiKey = undefined;
+  let openaiKey = undefined;
 
-  // Fall back to database-stored admin settings if environment keys are missing
-  if (!lovableKey && !geminiKey && !openaiKey) {
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const { data } = await supabaseAdmin
-          .from("admin_settings")
-          .select("*")
-          .eq("id", "default")
-          .maybeSingle();
+  // 1. Try to load custom keys from the database settings first (highest priority)
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const { data } = await supabaseAdmin
+        .from("admin_settings")
+        .select("*")
+        .eq("id", "default")
+        .maybeSingle();
 
-        if (data) {
-          lovableKey = data.lovable_api_key || undefined;
-          geminiKey = data.gemini_api_key || undefined;
-          openaiKey = data.openai_api_key || undefined;
-        }
-      } catch (err) {
-        console.warn("Failed to fetch admin settings from database:", err);
+      if (data) {
+        lovableKey = data.lovable_api_key || undefined;
+        geminiKey = data.gemini_api_key || undefined;
+        openaiKey = data.openai_api_key || undefined;
       }
-    } else {
-      console.warn("SUPABASE_SERVICE_ROLE_KEY is missing. Skipping database admin settings check.");
+    } catch (err) {
+      console.warn("Failed to fetch admin settings from database:", err);
     }
+  } else {
+    console.warn("SUPABASE_SERVICE_ROLE_KEY is missing. Skipping database admin settings check.");
   }
+
+  // 2. Fall back to environment variables if no database keys are configured
+  lovableKey = lovableKey || process.env.LOVABLE_API_KEY || undefined;
+  geminiKey = geminiKey || process.env.GEMINI_API_KEY || undefined;
+  openaiKey = openaiKey || process.env.OPENAI_API_KEY || undefined;
 
   if (lovableKey) {
     const provider = createOpenAICompatible({
