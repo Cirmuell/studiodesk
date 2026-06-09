@@ -26,48 +26,12 @@ export default defineConfig({
           navigateFallbackDenylist: [/^\/api\//, /^\/~oauth/, /^\/auth/],
           runtimeCaching: [
             {
-              urlPattern: ({ request, url }: { request: Request; url: URL }) =>
-                request.mode === "navigate" &&
-                (url.pathname.startsWith("/projects/") || url.pathname.startsWith("/documents/")),
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "recent-detail-pages",
-                networkTimeoutSeconds: 4,
-                expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 14 },
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-            {
               urlPattern: ({ request }: { request: Request }) => request.mode === "navigate",
               handler: "NetworkFirst",
               options: {
                 cacheName: "html-shell",
                 networkTimeoutSeconds: 4,
                 expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              },
-            },
-            {
-              urlPattern: /\/api\/documents\/[^/]+\/pdf$/,
-              handler: "NetworkFirst",
-              method: "GET",
-              options: {
-                cacheName: "document-pdfs",
-                networkTimeoutSeconds: 8,
-                expiration: { maxEntries: 25, maxAgeSeconds: 60 * 60 * 24 * 30 },
-                cacheableResponse: { statuses: [0, 200] },
-                rangeRequests: true,
-              },
-            },
-            {
-              urlPattern: /\/api\/public\/portal\/[^/]+\/pdf$/,
-              handler: "NetworkFirst",
-              method: "GET",
-              options: {
-                cacheName: "portal-pdfs",
-                networkTimeoutSeconds: 8,
-                expiration: { maxEntries: 25, maxAgeSeconds: 60 * 60 * 24 * 30 },
-                cacheableResponse: { statuses: [0, 200] },
-                rangeRequests: true,
               },
             },
             {
