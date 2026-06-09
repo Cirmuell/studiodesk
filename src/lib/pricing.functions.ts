@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
 
@@ -20,6 +20,38 @@ const PricingSchema = z.object({
     }),
   ),
 });
+
+type Pricing = z.infer<typeof PricingSchema>;
+
+const SCHEMA_HINT = `{
+  "recommended_total": number,
+  "range_low": number,
+  "range_high": number,
+  "confidence": "low" | "medium" | "high",
+  "rationale": string,
+  "line_items": [
+    { "label": string, "quantity": number, "unit": string, "unit_rate": number, "amount": number }
+  ]
+}`;
+
+function extractJson(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced ? fenced[1] : text;
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1) return candidate.trim();
+  return candidate.slice(start, end + 1);
+}
+
+function clampPricing(p: Pricing): Pricing {
+  const total = Math.max(0, p.recommended_total);
+  let low = Math.max(0, p.range_low);
+  let high = Math.max(0, p.range_high);
+  if (low > high) [low, high] = [high, low];
+  const clampedLow = Math.min(low, total);
+  const clampedHigh = Math.max(high, total);
+  return { ...p, recommended_total: total, range_low: clampedLow, range_high: clampedHigh };
+}
 
 export const listPricingRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -44,14 +76,13 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    // Pull business context
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country, gemini_api_key, openai_api_key, lovable_api_key")
+      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country")
       .eq("id", context.userId)
       .maybeSingle();
 
-    const { provider, model } = getAiProvider(profile);
+    const { provider, model } = await getAiProvider();
 
     const { data: rateCards } = await context.supabase
       .from("rate_cards")
@@ -61,12 +92,12 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     const currency = profile?.currency || "NGN";
     const country = profile?.country || "NG";
 
-
-
     const systemPrompt = `You are a pricing analyst for independent creatives in Nigeria.
 Quote in ${currency}. Reflect Nigerian market rates (Lagos/Abuja creative industry benchmarks).
 Use the studio's own day rate band when available. Be realistic — not aspirational. Round to clean numbers.
-Confidence is "high" when scope is concrete with similar past line items; "low" when scope is vague.`;
+Confidence is "high" when scope is concrete with similar past line items; "low" when scope is vague.
+Respond with ONLY a single JSON object — no prose, no markdown fences — matching this exact shape:
+${SCHEMA_HINT}`;
 
     const userPrompt = `STUDIO CONTEXT
 - Business: ${profile?.business_name ?? "Independent creative"}
@@ -83,24 +114,50 @@ PROJECT
 - Estimated hours: ${data.hours ?? "unspecified"}
 - Client tier: ${data.client_tier}
 
-Produce a pricing recommendation with line items, a range, confidence, and a short rationale (<= 3 sentences). Amounts are in ${currency}.`;
+Produce a pricing recommendation with line items, a range, confidence, and a short rationale (<= 3 sentences). Amounts are in ${currency}. Return ONLY the JSON object.`;
 
-    let result;
-    try {
-      result = await generateObject({
+    async function callModel(priorText?: string): Promise<string> {
+      const res = await generateText({
         model: provider(model),
-        schema: PricingSchema,
         system: systemPrompt,
-        prompt: userPrompt,
+        prompt: priorText
+          ? `${userPrompt}\n\nYour previous response was not valid JSON matching the schema:\n${priorText}\n\nReturn ONLY a corrected JSON object.`
+          : userPrompt,
       });
+      return res.text;
+    }
+
+    function tryParse(text: string) {
+      try {
+        return PricingSchema.safeParse(JSON.parse(extractJson(text)));
+      } catch (e) {
+        return { success: false as const, error: e as Error };
+      }
+    }
+
+    let parsed: Pricing;
+    try {
+      let text = await callModel();
+      let result = tryParse(text);
+      if (!result.success) {
+        text = await callModel(text);
+        result = tryParse(text);
+        if (!result.success) {
+          console.error("Pricing schema parse failed. Raw:", text.slice(0, 500));
+          throw new Error("AI returned an unparseable pricing response. Please retry.");
+        }
+      }
+      parsed = result.data;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error("Pricing AI error:", msg);
       if (msg.includes("429")) throw new Error("AI rate limit reached — please wait a moment and retry.");
       if (msg.includes("402")) throw new Error("AI credits exhausted — top up to keep generating analyses.");
+      if (msg.startsWith("AI returned")) throw err;
       throw new Error(`AI pricing failed: ${msg}`);
     }
 
-    const out = result.object;
+    const out = clampPricing(parsed);
 
     const { data: row, error } = await context.supabase
       .from("pricing_runs")
