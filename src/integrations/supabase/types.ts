@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          gemini_api_key: string | null
+          id: string
+          lovable_api_key: string | null
+          openai_api_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          gemini_api_key?: string | null
+          id?: string
+          lovable_api_key?: string | null
+          openai_api_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          gemini_api_key?: string | null
+          id?: string
+          lovable_api_key?: string | null
+          openai_api_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           company: string | null
@@ -246,14 +270,12 @@ export type Database = {
           day_rate_min: number | null
           email: string | null
           id: string
+          is_admin: boolean
           logo_url: string | null
-          signature_url: string | null
-          gemini_api_key: string | null
-          openai_api_key: string | null
-          lovable_api_key: string | null
           owner_name: string | null
           phone: string | null
           services: string | null
+          signature_url: string | null
           tagline: string | null
           updated_at: string
           value_prop: string | null
@@ -269,14 +291,12 @@ export type Database = {
           day_rate_min?: number | null
           email?: string | null
           id: string
+          is_admin?: boolean
           logo_url?: string | null
-          signature_url?: string | null
-          gemini_api_key?: string | null
-          openai_api_key?: string | null
-          lovable_api_key?: string | null
           owner_name?: string | null
           phone?: string | null
           services?: string | null
+          signature_url?: string | null
           tagline?: string | null
           updated_at?: string
           value_prop?: string | null
@@ -292,14 +312,12 @@ export type Database = {
           day_rate_min?: number | null
           email?: string | null
           id?: string
+          is_admin?: boolean
           logo_url?: string | null
-          signature_url?: string | null
-          gemini_api_key?: string | null
-          openai_api_key?: string | null
-          lovable_api_key?: string | null
           owner_name?: string | null
           phone?: string | null
           services?: string | null
+          signature_url?: string | null
           tagline?: string | null
           updated_at?: string
           value_prop?: string | null
