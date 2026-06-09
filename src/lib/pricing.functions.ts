@@ -52,6 +52,7 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const { provider, model } = await getAiProvider();
+    console.info(`[AI PRICING] Pricing requested. Resolved provider model: ${model}`);
 
     const { data: rateCards } = await context.supabase
       .from("rate_cards")
