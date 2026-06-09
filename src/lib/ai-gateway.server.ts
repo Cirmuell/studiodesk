@@ -51,10 +51,7 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
     const provider = createOpenAICompatible({
       name: "lovable",
       baseURL: "https://ai.gateway.lovable.dev/v1",
-      headers: {
-        "Lovable-API-Key": lovableKey,
-        "X-Lovable-AIG-SDK": "vercel-ai-sdk",
-      },
+      headers: { "Lovable-API-Key": lovableKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     });
     return {
       provider,
