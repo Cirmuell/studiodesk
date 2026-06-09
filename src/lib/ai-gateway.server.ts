@@ -1,8 +1,10 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/integrations/supabase/types";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export async function getAiProvider() {
+export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
   let lovableKey = undefined;
   let geminiKey = undefined;
   let openaiKey = undefined;
@@ -10,9 +12,11 @@ export async function getAiProvider() {
   console.info("[AI GATEWAY] Resolving provider credentials...");
 
   // 1. Try to load custom keys from the database settings first (highest priority)
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const client = process.env.SUPABASE_SERVICE_ROLE_KEY ? supabaseAdmin : supabaseClient;
+
+  if (client) {
     try {
-      const { data } = await supabaseAdmin
+      const { data } = await client
         .from("admin_settings")
         .select("*")
         .eq("id", "default")
@@ -28,7 +32,9 @@ export async function getAiProvider() {
       console.warn("[AI GATEWAY] Failed to fetch admin settings from database:", err);
     }
   } else {
-    console.warn("[AI GATEWAY] SUPABASE_SERVICE_ROLE_KEY is missing. Skipping database admin settings check.");
+    console.warn(
+      "[AI GATEWAY] SUPABASE_SERVICE_ROLE_KEY is missing and no user Supabase client context was provided. Skipping database admin settings check."
+    );
   }
 
   // 2. Fall back to environment variables if no database keys are configured
@@ -57,10 +63,8 @@ export async function getAiProvider() {
   }
 
   if (geminiKey) {
-    console.info("[AI GATEWAY] Selected provider: gemini");
-    const provider = createOpenAICompatible({
-      name: "gemini",
-      baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+    console.info("[AI GATEWAY] Selected provider: gemini (native)");
+    const provider = createGoogleGenerativeAI({
       apiKey: geminiKey,
     });
     return {
@@ -87,3 +91,4 @@ export async function getAiProvider() {
     "AI gateway is not configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, or LOVABLE_API_KEY in your environment variables, or configure them in the Admin Dashboard."
   );
 }
+
