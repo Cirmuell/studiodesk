@@ -82,7 +82,8 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
       .eq("id", context.userId)
       .maybeSingle();
 
-    const { provider, model } = await getAiProvider();
+    const { provider, model } = await getAiProvider(context.supabase);
+    console.info(`[AI PRICING] Pricing requested. Resolved provider model: ${model}`);
 
     const { data: rateCards } = await context.supabase
       .from("rate_cards")
@@ -166,9 +167,9 @@ Produce a pricing recommendation with line items, a range, confidence, and a sho
         project_id: data.project_id ?? null,
         scope: data.scope,
         hours: data.hours ?? null,
-        recommended_total: out.recommended_total,
-        range_low: out.range_low,
-        range_high: out.range_high,
+        recommended_total: rec,
+        range_low: low,
+        range_high: high,
         currency,
         confidence: out.confidence,
         rationale: out.rationale,
