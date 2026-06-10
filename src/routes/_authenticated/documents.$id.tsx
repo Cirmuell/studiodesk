@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Download, Save, Sparkles, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { SharePanel } from "@/components/SharePanel";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/documents/$id")({
   head: () => ({ meta: [{ title: "Document — Studio" }] }),
