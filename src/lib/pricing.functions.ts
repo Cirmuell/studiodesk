@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
+import { enforceUsageLimits } from "./security.server";
 
 const PricingSchema = z.object({
   recommended_total: z.number(),
@@ -47,9 +48,12 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     // Pull business context
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country")
+      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country, email")
       .eq("id", context.userId)
       .maybeSingle();
+
+    // Enforce billing limits and security gates
+    await enforceUsageLimits(context.userId, profile?.email ?? undefined);
 
     const { provider, model } = await getAiProvider(context.supabase);
     console.info(`[AI PRICING] Pricing requested. Resolved provider model: ${model}`);

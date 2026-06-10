@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
+import { enforceUsageLimits } from "./security.server";
 
 const LineItemSchema = z.object({
   label: z.string(),
@@ -106,6 +107,9 @@ export const draftDocument = createServerFn({ method: "POST" })
         ? context.supabase.from("clients").select("*").eq("id", data.client_id).maybeSingle()
         : Promise.resolve({ data: null }),
     ]);
+
+    // Enforce billing and safety gates
+    await enforceUsageLimits(context.userId, profile?.email ?? undefined);
     const project = projectRes.data;
     const client = clientRes.data;
     const currency = profile?.currency || "NGN";

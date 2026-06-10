@@ -5,8 +5,10 @@ import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { listRateCards, createRateCard, deleteRateCard } from "@/lib/rate-cards.functions";
+import { getBillingInfo, subscribeToPlan } from "@/lib/subscription.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, CreditCard, LogOut, Plus, Receipt, Sparkles, Trash2, Upload, Shield } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -25,10 +27,16 @@ function SettingsPage() {
   const fetchRates = useServerFn(listRateCards);
   const addRate = useServerFn(createRateCard);
   const delRate = useServerFn(deleteRateCard);
+  const fetchBilling = useServerFn(getBillingInfo);
+  const upgradePlan = useServerFn(subscribeToPlan);
   const qc = useQueryClient();
 
   const { data: profile } = useSuspenseQuery({ queryKey: ["profile"], queryFn: () => fetchProfile() });
   const { data: rates } = useSuspenseQuery({ queryKey: ["rate_cards"], queryFn: () => fetchRates() });
+  const { data: billing } = useSuspenseQuery({ queryKey: ["billing"], queryFn: () => fetchBilling() });
+
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"basic" | "premium">("basic");
 
   const [form, setForm] = useState({
     owner_name: profile?.owner_name ?? "",
@@ -134,6 +142,16 @@ function SettingsPage() {
       qc.invalidateQueries({ queryKey: ["profile"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const upgradeMut = useMutation({
+    mutationFn: (plan: "basic" | "premium") => upgradePlan({ data: { plan } }),
+    onSuccess: (res) => {
+      toast.success(`Upgraded to ${res.plan} plan successfully!`);
+      qc.invalidateQueries({ queryKey: ["billing"] });
+      setCheckoutOpen(false);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to subscribe"),
   });
 
   const addRateMut = useMutation({
@@ -258,6 +276,75 @@ function SettingsPage() {
         </div>
       </Group>
 
+      <Group title="Subscription & Billing">
+        <div className="card-soft p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold capitalize">{billing.plan} Tier</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {billing.plan === "trial" ? (
+                  `Usage: ${billing.trial_generations_used} of ${billing.trial_generations_limit} free AI runs used`
+                ) : (
+                  `Status: ${billing.subscription_status} · Renews ${billing.subscription_ends_at ? new Date(billing.subscription_ends_at).toLocaleDateString() : "—"}`
+                )}
+              </p>
+            </div>
+            <span className={cn(
+              "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full",
+              billing.plan === "trial" ? "bg-muted text-muted-foreground" : "bg-success/15 text-success"
+            )}>
+              {billing.plan === "trial" ? "Free Trial" : "Active"}
+            </span>
+          </div>
+
+          {billing.plan === "trial" && (
+            <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+              <div 
+                className="bg-primary h-full transition-all duration-300"
+                style={{ width: `${Math.min(100, (billing.trial_generations_used / billing.trial_generations_limit) * 100)}%` }}
+              />
+            </div>
+          )}
+
+          {billing.plan === "trial" ? (
+            <div className="pt-2">
+              <button 
+                type="button"
+                onClick={() => setCheckoutOpen(true)}
+                className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
+              >
+                <CreditCard className="size-4" /> Upgrade Plan
+              </button>
+            </div>
+          ) : (
+            <div className="pt-1 flex gap-2">
+              <button 
+                type="button"
+                onClick={() => {
+                  setSelectedPlan("basic");
+                  setCheckoutOpen(true);
+                }} 
+                className={cn("flex-1 h-9 rounded-lg border border-border text-xs font-medium", billing.plan === "basic" && "opacity-50 cursor-not-allowed")}
+                disabled={billing.plan === "basic"}
+              >
+                Switch to Basic
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setSelectedPlan("premium");
+                  setCheckoutOpen(true);
+                }} 
+                className={cn("flex-1 h-9 rounded-lg border border-border text-xs font-medium", billing.plan === "premium" && "opacity-50 cursor-not-allowed")}
+                disabled={billing.plan === "premium"}
+              >
+                Switch to Premium
+              </button>
+            </div>
+          )}
+        </div>
+      </Group>
+
       <Group title="Context for AI pricing">
         <div className="card-soft p-4 space-y-3">
           <Textarea label="Services you offer" value={form.services} onChange={(v) => setForm({ ...form, services: v })} placeholder="e.g. Brand identity, packaging design, editorial photography" />
@@ -328,6 +415,72 @@ function SettingsPage() {
       <p className="text-[11px] text-muted-foreground/70 text-center mt-8 flex items-center justify-center gap-1.5">
         <Receipt className="size-3" /> Studio v1.0 · Built for Nigerian creatives
       </p>
+
+      {checkoutOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs grid place-items-center p-4">
+          <div className="card-soft bg-background w-full max-w-sm p-6 space-y-4 shadow-xl border border-border animate-in fade-in zoom-in-95 duration-200">
+            <div className="text-center">
+              <h3 className="font-display text-xl">Upgrade Your Plan</h3>
+              <p className="text-xs text-muted-foreground mt-1">Select a plan to unlock full features</p>
+            </div>
+
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => setSelectedPlan("basic")}
+                className={cn(
+                  "w-full text-left p-3.5 rounded-xl border transition-all flex items-start justify-between",
+                  selectedPlan === "basic" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"
+                )}
+              >
+                <div>
+                  <p className="text-sm font-semibold">Basic Studio</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">30 runs/month · Standard speed</p>
+                </div>
+                <p className="text-sm font-bold">₦15,000<span className="text-[10px] font-normal text-muted-foreground">/mo</span></p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedPlan("premium")}
+                className={cn(
+                  "w-full text-left p-3.5 rounded-xl border transition-all flex items-start justify-between",
+                  selectedPlan === "premium" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"
+                )}
+              >
+                <div>
+                  <p className="text-sm font-semibold">Premium Studio</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Unlimited runs · Priority AI · portal logo</p>
+                </div>
+                <p className="text-sm font-bold">₦35,000<span className="text-[10px] font-normal text-muted-foreground">/mo</span></p>
+              </button>
+            </div>
+
+            <div className="bg-muted/60 p-3 rounded-lg text-[10px] text-muted-foreground flex items-start gap-1.5 leading-normal">
+              <Sparkles className="size-3.5 text-primary shrink-0 mt-0.5" />
+              This is a secure billing checkout simulation. Swapping this with a real Stripe or Paystack link is ready out of the box in subscription.functions.ts.
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCheckoutOpen(false)}
+                className="flex-1 h-11 rounded-full border border-border text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={upgradeMut.isPending}
+                onClick={() => upgradeMut.mutate(selectedPlan)}
+                className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm disabled:opacity-60"
+              >
+                {upgradeMut.isPending ? "Connecting..." : "Simulate Payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
