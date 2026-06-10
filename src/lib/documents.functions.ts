@@ -98,7 +98,7 @@ export const draftDocument = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const [{ data: profile }, projectRes, clientRes] = await Promise.all([
+    const [{ data: profile }, projectRes, clientRes, pricingRunRes] = await Promise.all([
       context.supabase.from("profiles").select("*").eq("id", context.userId).maybeSingle(),
       data.project_id
         ? context.supabase.from("projects").select("*").eq("id", data.project_id).maybeSingle()
@@ -106,12 +106,22 @@ export const draftDocument = createServerFn({ method: "POST" })
       data.client_id
         ? context.supabase.from("clients").select("*").eq("id", data.client_id).maybeSingle()
         : Promise.resolve({ data: null }),
+      data.project_id
+        ? context.supabase
+            .from("pricing_runs")
+            .select("*")
+            .eq("project_id", data.project_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
 
     // Enforce billing and safety gates
     await enforceUsageLimits(context.userId, profile?.email ?? undefined);
     const project = projectRes.data;
     const client = clientRes.data;
+    const pricingRun = pricingRunRes.data;
     const currency = profile?.currency || "NGN";
 
     const { provider, model } = await getAiProvider(context.supabase);
@@ -125,18 +135,32 @@ export const draftDocument = createServerFn({ method: "POST" })
   "payment_instructions": string
 }`;
 
-    const sys = `You draft ${data.type}s for independent creatives in Nigeria. Use clear, friendly business English. Amounts in ${currency}. Include realistic line items derived from the project scope.
+    const sys = `You draft ${data.type}s for independent creatives in Nigeria. Use clear, friendly business English. Amounts in ${currency}.
+${pricingRun ? "IMPORTANT: You MUST use the exact Recommended Total and the detailed line items (labels, rates, quantities, amounts) from the provided PRICING ANALYSIS. Do not invent fake prices or change the totals." : "Include realistic line items derived from the project scope."}
+${profile?.bank_details ? "IMPORTANT: You MUST copy the provided STUDIO BANK DETAILS exactly into the 'payment_instructions' field. Do not invent fake bank accounts or details." : ""}
 
 IMPORTANT: Return ONLY a valid JSON object matching this schema. No markdown, no code fences, no extra prose.
 Schema:
 ${schemaShape}`;
 
+    const pricingContext = pricingRun
+      ? `\nPRICING ANALYSIS (YOU MUST USE THIS FOR THE BUDGET AND LINE ITEMS):
+- Recommended Total Budget: ${pricingRun.recommended_total} ${currency}
+- Price Range: ${pricingRun.range_low} - ${pricingRun.range_high} ${currency}
+- Line Items to Include: ${JSON.stringify(pricingRun.line_items)}`
+      : "";
+
+    const paymentContext = profile?.bank_details
+      ? `\nSTUDIO BANK DETAILS / PAYMENT INSTRUCTIONS:
+${profile.bank_details}`
+      : "";
+
     const prompt = `STUDIO: ${profile?.business_name ?? "Independent studio"} (${profile?.owner_name ?? ""})
 CLIENT: ${client?.name ?? "Unknown"} ${client?.company ? "— " + client.company : ""}
 PROJECT: ${project?.title ?? "Untitled"}
 SCOPE: ${project?.scope ?? "Not specified"}
-BUDGET: ${project?.budget ?? "open"} ${currency}
-NOTES: ${data.notes ?? "(none)"}
+BUDGET: ${pricingRun ? pricingRun.recommended_total : (project?.budget ?? "open")} ${currency}
+NOTES: ${data.notes ?? "(none)"}${pricingContext}${paymentContext}
 
 Generate a complete ${data.type} draft as raw JSON.`;
 

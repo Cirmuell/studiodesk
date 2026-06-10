@@ -32,11 +32,12 @@ export const updateProfile = createServerFn({ method: "POST" })
       bank_details: z.string().max(1000).optional().nullable(),
       logo_url: z.string().max(1000).optional().nullable(),
       signature_url: z.string().max(1000).optional().nullable(),
+      brand_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+      brand_font: z.enum(["Helvetica", "TimesRoman", "Courier"]).optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
-      .from("profiles")
+    const { error } = await (context.supabase.from("profiles") as any)
       .update(data)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);

@@ -37,6 +37,8 @@ export interface PdfInput {
     bank_details?: string | null;
     logo_url?: string | null;
     signature_url?: string | null;
+    brand_color?: string | null;
+    brand_font?: string | null;
   } | null;
   client: {
     name?: string | null;
@@ -48,11 +50,34 @@ export interface PdfInput {
 
 export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  
+  // Dynamic standard font loading
+  const fontChoice = input.profile?.brand_font || "Helvetica";
+  let standardFont = StandardFonts.Helvetica;
+  let boldFont = StandardFonts.HelveticaBold;
+  if (fontChoice === "TimesRoman") {
+    standardFont = StandardFonts.TimesRoman;
+    boldFont = StandardFonts.TimesRomanBold;
+  } else if (fontChoice === "Courier") {
+    standardFont = StandardFonts.Courier;
+    boldFont = StandardFonts.CourierBold;
+  }
+
+  const font = await doc.embedFont(standardFont);
+  const bold = await doc.embedFont(boldFont);
   const ink = rgb(0.13, 0.13, 0.15);
   const muted = rgb(0.45, 0.45, 0.48);
-  const accent = rgb(0.85, 0.45, 0.34); // coral
+  
+  // Dynamic brand color parser
+  const parseColor = (hex?: string | null) => {
+    if (!hex) return rgb(0.55, 0.36, 0.96); // default brand purple
+    const clean = hex.replace("#", "");
+    const r = parseInt(clean.substring(0, 2), 16) / 255;
+    const g = parseInt(clean.substring(2, 4), 16) / 255;
+    const b = parseInt(clean.substring(4, 6), 16) / 255;
+    return rgb(isNaN(r) ? 0.55 : r, isNaN(g) ? 0.36 : g, isNaN(b) ? 0.96 : b);
+  };
+  const accent = parseColor(input.profile?.brand_color);
 
   let page = doc.addPage([595, 842]); // A4
   const margin = 48;

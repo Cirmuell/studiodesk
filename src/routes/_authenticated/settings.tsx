@@ -52,6 +52,8 @@ function SettingsPage() {
     currency: profile?.currency ?? "NGN",
     logo_url: profile?.logo_url ?? "",
     signature_url: profile?.signature_url ?? "",
+    brand_color: (profile as any)?.brand_color ?? "#8B5CF6",
+    brand_font: ((profile as any)?.brand_font as "Helvetica" | "TimesRoman" | "Courier") ?? "Helvetica",
   });
 
   useEffect(() => {
@@ -70,6 +72,8 @@ function SettingsPage() {
         currency: profile.currency ?? "NGN",
         logo_url: profile.logo_url ?? "",
         signature_url: profile.signature_url ?? "",
+        brand_color: (profile as any).brand_color ?? "#8B5CF6",
+        brand_font: ((profile as any).brand_font as "Helvetica" | "TimesRoman" | "Courier") ?? "Helvetica",
       });
     }
   }, [profile]);
@@ -135,6 +139,8 @@ function SettingsPage() {
           currency: form.currency,
           logo_url: form.logo_url || null,
           signature_url: form.signature_url || null,
+          brand_color: form.brand_color,
+          brand_font: form.brand_font,
         },
       }),
     onSuccess: () => {
@@ -271,6 +277,44 @@ function SettingsPage() {
                   className="hidden"
                 />
               </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/60">
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
+                Brand Color
+              </span>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="color" 
+                  value={form.brand_color} 
+                  onChange={(e) => setForm({ ...form, brand_color: e.target.value })}
+                  className="size-9 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                />
+                <input 
+                  type="text" 
+                  value={form.brand_color} 
+                  onChange={(e) => setForm({ ...form, brand_color: e.target.value })}
+                  className="flex-1 h-9 px-2.5 rounded-lg bg-muted border border-border text-xs font-mono uppercase mt-0"
+                  placeholder="#8B5CF6"
+                />
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
+                PDF Font Style
+              </span>
+              <select 
+                value={form.brand_font} 
+                onChange={(e) => setForm({ ...form, brand_font: e.target.value as "Helvetica" | "TimesRoman" | "Courier" })}
+                className="w-full h-9 px-2 rounded-lg bg-muted border border-border text-xs font-medium mt-0"
+              >
+                <option value="Helvetica">Helvetica (Sans)</option>
+                <option value="TimesRoman">Times Roman (Serif)</option>
+                <option value="Courier">Courier (Mono)</option>
+              </select>
             </div>
           </div>
         </div>
