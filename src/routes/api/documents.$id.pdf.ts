@@ -5,11 +5,19 @@ export const Route = createFileRoute("/api/documents/$id/pdf")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const authHeader = request.headers.get("authorization");
-        if (!authHeader?.startsWith("Bearer ")) {
+        const urlObj = new URL(request.url);
+        let token = urlObj.searchParams.get("token");
+
+        if (!token) {
+          const authHeader = request.headers.get("authorization");
+          if (authHeader?.startsWith("Bearer ")) {
+            token = authHeader.slice(7);
+          }
+        }
+
+        if (!token) {
           return new Response("Unauthorized", { status: 401 });
         }
-        const token = authHeader.slice(7);
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         if (!supabaseUrl || !supabaseKey) {

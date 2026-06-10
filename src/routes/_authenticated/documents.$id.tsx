@@ -85,20 +85,13 @@ function DocPage() {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("Not authenticated");
-      const res = await fetch(`/api/documents/${id}/pdf`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error(`PDF failed: ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${doc.type}-${doc.number ?? id}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("PDF downloaded");
+      
+      toast.info("Downloading PDF...");
+      window.location.href = `/api/documents/${id}/pdf?token=${token}`;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "PDF failed");
     } finally {
-      setDownloading(false);
+      setTimeout(() => setDownloading(false), 1000);
     }
   }
 
