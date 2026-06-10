@@ -63,6 +63,8 @@ function DocPage() {
       }),
     onSuccess: () => {
       toast.success("Saved");
+      setDirty(false);
+      setSavedOnce(true);
       qc.invalidateQueries({ queryKey: ["document", id] });
       qc.invalidateQueries({ queryKey: ["documents"] });
     },
