@@ -30,16 +30,21 @@ function DocPage() {
   const [content, setContent] = useState<DocContent>(initialContent);
   const [title, setTitle] = useState(doc.title ?? "");
   const [downloading, setDownloading] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(doc.status !== "draft");
 
   useEffect(() => {
     setContent((doc.content as DocContent) ?? initialContent);
     setTitle(doc.title ?? "");
+    setDirty(false);
+    setSavedOnce(doc.status !== "draft");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.id]);
 
   const subtotal = (content.line_items ?? []).reduce((s, li) => s + Number(li.amount || 0), 0);
   const tax = Math.round(subtotal * 0.075);
   const total = subtotal + tax;
+  const step: 1 | 2 | 3 = downloading ? 3 : savedOnce && !dirty ? 3 : dirty || !savedOnce ? 2 : 2;
 
   const saveMut = useMutation({
     mutationFn: (markReady: boolean) =>
