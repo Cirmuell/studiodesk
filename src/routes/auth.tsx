@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -20,6 +20,7 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [business, setBusiness] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -32,7 +33,7 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -41,6 +42,14 @@ function AuthPage() {
           },
         });
         if (error) throw error;
+
+        // If email confirmation is enabled, session will be null and we need confirmation
+        if (data && !data.session && data.user) {
+          setVerificationEmail(email);
+          setLoading(false);
+          return;
+        }
+
         toast.success("Account created — welcome!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -64,6 +73,33 @@ function AuthPage() {
     }
     if (result.redirected) return;
     navigate({ to: "/" });
+  }
+
+  if (verificationEmail) {
+    return (
+      <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
+        <div className="flex-1 flex flex-col justify-center text-center">
+          <div className="size-16 rounded-full bg-primary/10 text-primary grid place-items-center mx-auto mb-6">
+            <Mail className="size-8" />
+          </div>
+          <h1 className="font-display text-3xl leading-tight">Verify your email</h1>
+          <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+            We have sent a verification link to <strong className="text-foreground">{verificationEmail}</strong>.
+            Please click the link in the email to activate your account and access your creative studio.
+          </p>
+          <button
+            onClick={() => {
+              setVerificationEmail("");
+              setMode("signin");
+              setEmail(verificationEmail);
+            }}
+            className="mt-8 w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)]"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
