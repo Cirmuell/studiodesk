@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
@@ -41,6 +41,7 @@ function DocumentsPage() {
   const fetchProjects = useServerFn(listProjects);
   const draft = useServerFn(draftDocument);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: docs } = useSuspenseQuery({ queryKey: ["documents"], queryFn: () => fetchDocs() });
   const { data: projects } = useSuspenseQuery({ queryKey: ["projects"], queryFn: () => fetchProjects() });
@@ -51,10 +52,11 @@ function DocumentsPage() {
 
   const mut = useMutation({
     mutationFn: (input: { type: DocType; project_id?: string; client_id?: string }) => draft({ data: input }),
-    onSuccess: () => {
-      toast.success("AI draft created — review & edit");
+    onSuccess: (row: { id: string }) => {
+      toast.success("AI draft ready — review, edit & download");
       qc.invalidateQueries({ queryKey: ["documents"] });
       setOpen(false);
+      if (row?.id) navigate({ to: "/documents/$id", params: { id: row.id } });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
