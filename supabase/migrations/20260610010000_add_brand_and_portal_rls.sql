@@ -31,7 +31,7 @@ CREATE POLICY "Allow public read of shared documents"
   USING (
     EXISTS (
       SELECT 1 FROM public.document_shares s
-      WHERE s.document_id = id
+      WHERE s.document_id = documents.id
         AND s.revoked_at IS NULL
         AND (s.expires_at IS NULL OR s.expires_at > now())
     )
@@ -45,7 +45,7 @@ CREATE POLICY "Allow public read of profiles for shared documents"
   USING (
     EXISTS (
       SELECT 1 FROM public.document_shares s
-      WHERE s.user_id = id
+      WHERE s.user_id = profiles.id
         AND s.revoked_at IS NULL
         AND (s.expires_at IS NULL OR s.expires_at > now())
     )
@@ -60,7 +60,7 @@ CREATE POLICY "Allow public read of clients for shared documents"
     EXISTS (
       SELECT 1 FROM public.document_shares s
       JOIN public.documents d ON d.id = s.document_id
-      WHERE d.client_id = id
+      WHERE d.client_id = clients.id
         AND s.revoked_at IS NULL
         AND (s.expires_at IS NULL OR s.expires_at > now())
     )
