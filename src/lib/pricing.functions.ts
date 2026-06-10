@@ -48,7 +48,7 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     // Pull business context
     const { data: profile } = await context.supabase
       .from("profiles")
-      .select("business_name, services, value_prop, day_rate_min, day_rate_max, currency, country, email")
+      .select("business_name, services, value_prop, currency, country, email")
       .eq("id", context.userId)
       .maybeSingle();
 
@@ -58,37 +58,28 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
     const { provider, model } = await getAiProvider(context.supabase);
     console.info(`[AI PRICING] Pricing requested. Resolved provider model: ${model}`);
 
-    const { data: rateCards } = await context.supabase
-      .from("rate_cards")
-      .select("name, unit, rate, currency")
-      .limit(20);
-
     const currency = profile?.currency || "NGN";
     const country = profile?.country || "NG";
 
-
-
-    const systemPrompt = `You are a pricing analyst for independent creatives in Nigeria.
-Quote in ${currency}. Reflect Nigerian market rates (Lagos/Abuja creative industry benchmarks).
-Use the studio's own day rate band when available. Be realistic — not aspirational. Round to clean numbers.
-Confidence is "high" when scope is concrete with similar past line items; "low" when scope is vague.`;
+    const systemPrompt = `You are an expert creative pricing consultant and analyst for independent professionals and creative studios.
+Your goal is to help creatives price their work fairly, accurately, and profitably, preventing them from undercharging.
+Reflect current professional industry standards, market value, project complexity, and the client's corporate tier.
+Do NOT base the estimation on low-tier or cheap rates. Use healthy, sustainable industry benchmarks for creative work in the specified country/locality.
+Quote all amounts in ${currency}. Round to clean, professional numbers.`;
 
     const userPrompt = `STUDIO CONTEXT
 - Business: ${profile?.business_name ?? "Independent creative"}
 - Services: ${profile?.services ?? "Not specified"}
 - Value proposition: ${profile?.value_prop ?? "Not specified"}
-- Day rate band: ${profile?.day_rate_min ?? "?"} – ${profile?.day_rate_max ?? "?"} ${currency}/day
-- Market: ${country}
-
-RATE CARD
-${(rateCards ?? []).map((r) => `- ${r.name}: ${r.rate} ${r.currency}/${r.unit}`).join("\n") || "- (none provided)"}
+- Locality/Country: ${country} (use this country's current professional creative industry standard benchmarks for pricing)
 
 PROJECT
 - Scope: ${data.scope}
 - Estimated hours: ${data.hours ?? "unspecified"}
-- Client tier: ${data.client_tier}
+- Client tier: ${data.client_tier} (standard, preferred, or enterprise)
 
-Produce a pricing recommendation with line items, a range, confidence, and a short rationale (<= 3 sentences). Amounts are in ${currency}.`;
+Analyze the project scope and client tier. Recommend a fair, professional, and sustainable market-rate price in ${currency} that avoids undercharging.
+Produce a pricing recommendation with line items (realistic deliverables and task estimations), a recommended total, low-to-high pricing range, confidence, and a clear, short rationale explaining the pricing logic based on standard market value (<= 3 sentences).`;
 
     const schemaShapeDescription = `{
   "recommended_total": number,
