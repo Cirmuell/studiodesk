@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Download, Save, Sparkles, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { SharePanel } from "@/components/SharePanel";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/documents/$id")({
   head: () => ({ meta: [{ title: "Document — Studio" }] }),
@@ -30,16 +31,26 @@ function DocPage() {
   const [content, setContent] = useState<DocContent>(initialContent);
   const [title, setTitle] = useState(doc.title ?? "");
   const [downloading, setDownloading] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [savedOnce, setSavedOnce] = useState(doc.status !== "draft");
 
   useEffect(() => {
     setContent((doc.content as DocContent) ?? initialContent);
     setTitle(doc.title ?? "");
+    setDirty(false);
+    setSavedOnce(doc.status !== "draft");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.id]);
 
   const subtotal = (content.line_items ?? []).reduce((s, li) => s + Number(li.amount || 0), 0);
   const tax = Math.round(subtotal * 0.075);
   const total = subtotal + tax;
+  const step: 1 | 2 | 3 = savedOnce && !dirty ? 3 : 2;
+  const updateContent = (next: DocContent | ((c: DocContent) => DocContent)) => {
+    setDirty(true);
+    setContent((c) => (typeof next === "function" ? (next as (c: DocContent) => DocContent)(c) : next));
+  };
+  const updateTitle = (v: string) => { setDirty(true); setTitle(v); };
 
   const saveMut = useMutation({
     mutationFn: (markReady: boolean) =>
@@ -58,6 +69,8 @@ function DocPage() {
       }),
     onSuccess: () => {
       toast.success("Saved");
+      setDirty(false);
+      setSavedOnce(true);
       qc.invalidateQueries({ queryKey: ["document", id] });
       qc.invalidateQueries({ queryKey: ["documents"] });
     },
@@ -90,7 +103,7 @@ function DocPage() {
   }
 
   function updateLine(i: number, patch: Partial<{ label: string; quantity: number; unit_rate: number; amount: number; unit: string }>) {
-    setContent((c) => {
+    updateContent((c) => {
       const items = [...(c.line_items ?? [])];
       const cur = { ...items[i], ...patch };
       cur.amount = Number(cur.quantity) * Number(cur.unit_rate);
@@ -100,14 +113,14 @@ function DocPage() {
   }
 
   function addLine() {
-    setContent((c) => ({
+    updateContent((c) => ({
       ...c,
       line_items: [...(c.line_items ?? []), { label: "New item", quantity: 1, unit: "each", unit_rate: 0, amount: 0 }],
     }));
   }
 
   function removeLine(i: number) {
-    setContent((c) => ({ ...c, line_items: (c.line_items ?? []).filter((_, idx) => idx !== i) }));
+    updateContent((c) => ({ ...c, line_items: (c.line_items ?? []).filter((_, idx) => idx !== i) }));
   }
 
   return (
@@ -115,7 +128,7 @@ function DocPage() {
       title={doc.type.toUpperCase()}
       subtitle={doc.number ?? "draft"}
       action={
-        <button onClick={handleDownload} disabled={downloading} className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-60" aria-label="Download PDF">
+        <button onClick={handleDownload} disabled={downloading || dirty || !savedOnce} className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40" aria-label="Download PDF" title={dirty || !savedOnce ? "Save first" : "Download PDF"}>
           <Download className="size-[18px]" />
         </button>
       }
@@ -124,16 +137,18 @@ function DocPage() {
         <ArrowLeft className="size-3.5" /> All documents
       </Link>
 
+      <StepIndicator step={step} dirty={dirty} />
+
       <SharePanel documentId={id} />
 
 
       <div className="card-soft p-4 mb-4">
         <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Title</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-transparent text-lg font-display mt-1 focus:outline-none" />
+        <input value={title} onChange={(e) => updateTitle(e.target.value)} className="w-full bg-transparent text-lg font-display mt-1 focus:outline-none" />
         <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-3 block">Intro</label>
         <textarea
           value={content.intro ?? ""}
-          onChange={(e) => setContent({ ...content, intro: e.target.value })}
+          onChange={(e) => updateContent({ ...content, intro: e.target.value })}
           rows={3}
           className="w-full bg-muted/50 mt-1 p-2 rounded-lg text-sm border border-border"
         />
@@ -146,7 +161,7 @@ function DocPage() {
             onChange={(e) => {
               const sections = [...(content.sections ?? [])];
               sections[i] = { ...sections[i], heading: e.target.value };
-              setContent({ ...content, sections });
+              updateContent({ ...content, sections });
             }}
             className="w-full text-sm font-semibold bg-transparent focus:outline-none"
           />
@@ -155,7 +170,7 @@ function DocPage() {
             onChange={(e) => {
               const sections = [...(content.sections ?? [])];
               sections[i] = { ...sections[i], body: e.target.value };
-              setContent({ ...content, sections });
+              updateContent({ ...content, sections });
             }}
             rows={3}
             className="w-full bg-muted/50 p-2 rounded-lg text-sm border border-border"
@@ -199,17 +214,32 @@ function DocPage() {
 
       <div className="card-soft p-4 mb-4">
         <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Terms</label>
-        <textarea value={content.terms ?? ""} onChange={(e) => setContent({ ...content, terms: e.target.value })} rows={3} className="w-full bg-muted/50 mt-1 p-2 rounded-lg text-sm border border-border" />
+        <textarea value={content.terms ?? ""} onChange={(e) => updateContent({ ...content, terms: e.target.value })} rows={3} className="w-full bg-muted/50 mt-1 p-2 rounded-lg text-sm border border-border" />
         <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-3 block">Payment instructions</label>
-        <textarea value={content.payment_instructions ?? ""} onChange={(e) => setContent({ ...content, payment_instructions: e.target.value })} rows={2} className="w-full bg-muted/50 mt-1 p-2 rounded-lg text-sm border border-border" />
+        <textarea value={content.payment_instructions ?? ""} onChange={(e) => updateContent({ ...content, payment_instructions: e.target.value })} rows={2} className="w-full bg-muted/50 mt-1 p-2 rounded-lg text-sm border border-border" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={() => saveMut.mutate(false)} disabled={saveMut.isPending} className="h-12 rounded-full border border-border text-sm font-medium flex items-center justify-center gap-2">
-          <Save className="size-4" /> Save draft
+      <div className="card-soft p-3 mb-3 flex items-center gap-2 text-xs">
+        <span className={cn("size-2 rounded-full", dirty ? "bg-warning" : savedOnce ? "bg-success" : "bg-muted-foreground")} />
+        <span className="text-muted-foreground">
+          {dirty ? "Unsaved changes — save before exporting." : savedOnce ? "Saved. Ready to export." : "New draft — save when you're happy with edits."}
+        </span>
+      </div>
+
+      <div className="space-y-2.5">
+        <button
+          onClick={() => saveMut.mutate(false)}
+          disabled={saveMut.isPending || (!dirty && savedOnce)}
+          className="w-full h-12 rounded-full border border-border text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          <Save className="size-4" /> {saveMut.isPending ? "Saving…" : dirty || !savedOnce ? "Step 1 · Save edits" : "Saved"}
         </button>
-        <button onClick={handleDownload} disabled={downloading || saveMut.isPending} className="h-12 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60 shadow-[var(--shadow-pop)]">
-          <Download className="size-4" /> {downloading ? "Preparing…" : "Save & download PDF"}
+        <button
+          onClick={handleDownload}
+          disabled={downloading || saveMut.isPending || dirty || !savedOnce}
+          className="w-full h-12 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 shadow-[var(--shadow-pop)]"
+        >
+          <Download className="size-4" /> {downloading ? "Preparing PDF…" : "Step 2 · Download PDF"}
         </button>
       </div>
 
@@ -217,6 +247,28 @@ function DocPage() {
         <Sparkles className="size-3" /> Drafted by AI · Always review before sending
       </p>
     </AppShell>
+  );
+}
+
+function StepIndicator({ step, dirty }: { step: 1 | 2 | 3; dirty: boolean }) {
+  const steps = [
+    { n: 1, label: "Draft" },
+    { n: 2, label: dirty ? "Editing" : "Edit" },
+    { n: 3, label: "Export" },
+  ];
+  return (
+    <div className="flex items-center gap-2 mb-4">
+      {steps.map((s, i) => (
+        <div key={s.n} className="flex items-center gap-2 flex-1">
+          <div className={cn(
+            "size-6 rounded-full grid place-items-center text-[10px] font-semibold shrink-0",
+            step >= s.n ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+          )}>{s.n}</div>
+          <span className={cn("text-[11px] font-medium", step >= s.n ? "text-foreground" : "text-muted-foreground")}>{s.label}</span>
+          {i < steps.length - 1 && <div className={cn("flex-1 h-px", step > s.n ? "bg-primary" : "bg-border")} />}
+        </div>
+      ))}
+    </div>
   );
 }
 
