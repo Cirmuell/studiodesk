@@ -102,7 +102,7 @@ function DocPage() {
   }
 
   function updateLine(i: number, patch: Partial<{ label: string; quantity: number; unit_rate: number; amount: number; unit: string }>) {
-    setContent((c) => {
+    updateContent((c) => {
       const items = [...(c.line_items ?? [])];
       const cur = { ...items[i], ...patch };
       cur.amount = Number(cur.quantity) * Number(cur.unit_rate);
@@ -112,14 +112,14 @@ function DocPage() {
   }
 
   function addLine() {
-    setContent((c) => ({
+    updateContent((c) => ({
       ...c,
       line_items: [...(c.line_items ?? []), { label: "New item", quantity: 1, unit: "each", unit_rate: 0, amount: 0 }],
     }));
   }
 
   function removeLine(i: number) {
-    setContent((c) => ({ ...c, line_items: (c.line_items ?? []).filter((_, idx) => idx !== i) }));
+    updateContent((c) => ({ ...c, line_items: (c.line_items ?? []).filter((_, idx) => idx !== i) }));
   }
 
   return (
@@ -127,7 +127,7 @@ function DocPage() {
       title={doc.type.toUpperCase()}
       subtitle={doc.number ?? "draft"}
       action={
-        <button onClick={handleDownload} disabled={downloading} className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-60" aria-label="Download PDF">
+        <button onClick={handleDownload} disabled={downloading || dirty || !savedOnce} className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40" aria-label="Download PDF" title={dirty || !savedOnce ? "Save first" : "Download PDF"}>
           <Download className="size-[18px]" />
         </button>
       }
