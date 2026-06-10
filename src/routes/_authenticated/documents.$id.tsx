@@ -44,7 +44,12 @@ function DocPage() {
   const subtotal = (content.line_items ?? []).reduce((s, li) => s + Number(li.amount || 0), 0);
   const tax = Math.round(subtotal * 0.075);
   const total = subtotal + tax;
-  const step: 1 | 2 | 3 = downloading ? 3 : savedOnce && !dirty ? 3 : dirty || !savedOnce ? 2 : 2;
+  const step: 1 | 2 | 3 = savedOnce && !dirty ? 3 : 2;
+  const updateContent = (next: DocContent | ((c: DocContent) => DocContent)) => {
+    setDirty(true);
+    setContent((c) => (typeof next === "function" ? (next as (c: DocContent) => DocContent)(c) : next));
+  };
+  const updateTitle = (v: string) => { setDirty(true); setTitle(v); };
 
   const saveMut = useMutation({
     mutationFn: (markReady: boolean) =>
