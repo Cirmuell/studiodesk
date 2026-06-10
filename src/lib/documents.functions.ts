@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
 
@@ -22,6 +22,19 @@ const DocContentSchema = z.object({
 });
 
 export type DocContent = z.infer<typeof DocContentSchema>;
+
+function extractJson(text: string): string {
+  let t = text.trim();
+  if (t.startsWith("```")) {
+    t = t.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+  }
+  const first = t.indexOf("{");
+  const last = t.lastIndexOf("}");
+  if (first !== -1 && last !== -1 && last > first) {
+    t = t.slice(first, last + 1);
+  }
+  return t;
+}
 
 export const listDocuments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -99,7 +112,21 @@ export const draftDocument = createServerFn({ method: "POST" })
 
     const { provider, model } = await getAiProvider(context.supabase);
 
-    const sys = `You draft ${data.type}s for independent creatives in Nigeria. Use clear, friendly business English. Amounts in ${currency}. Include realistic line items derived from the project scope.`;
+    const schemaShape = `{
+  "title": string,
+  "intro": string,
+  "sections": Array<{ "heading": string, "body": string }>,
+  "line_items": Array<{ "label": string, "quantity": number, "unit": string, "unit_rate": number, "amount": number }>,
+  "terms": string,
+  "payment_instructions": string
+}`;
+
+    const sys = `You draft ${data.type}s for independent creatives in Nigeria. Use clear, friendly business English. Amounts in ${currency}. Include realistic line items derived from the project scope.
+
+IMPORTANT: Return ONLY a valid JSON object matching this schema. No markdown, no code fences, no extra prose.
+Schema:
+${schemaShape}`;
+
     const prompt = `STUDIO: ${profile?.business_name ?? "Independent studio"} (${profile?.owner_name ?? ""})
 CLIENT: ${client?.name ?? "Unknown"} ${client?.company ? "— " + client.company : ""}
 PROJECT: ${project?.title ?? "Untitled"}
@@ -107,23 +134,43 @@ SCOPE: ${project?.scope ?? "Not specified"}
 BUDGET: ${project?.budget ?? "open"} ${currency}
 NOTES: ${data.notes ?? "(none)"}
 
-Generate a complete ${data.type} draft.`;
+Generate a complete ${data.type} draft as raw JSON.`;
 
-    let result;
-    try {
-      result = await generateObject({
-        model: provider(model),
-        schema: DocContentSchema,
-        system: sys,
-        prompt,
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("429")) throw new Error("AI rate limit reached — please wait and retry.");
-      if (msg.includes("402")) throw new Error("AI credits exhausted — top up to keep drafting.");
-      throw new Error(`AI draft failed: ${msg}`);
+    async function callModel(extra = "") {
+      try {
+        const res = await generateText({
+          model: provider(model),
+          system: sys,
+          prompt: prompt + extra,
+        });
+        return res.text;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("429")) throw new Error("AI rate limit reached — please wait and retry.");
+        if (msg.includes("402")) throw new Error("AI credits exhausted — top up to keep drafting.");
+        throw new Error(`AI draft failed: ${msg}`);
+      }
     }
-    const content = result.object;
+
+    let text = await callModel();
+    let parsed = DocContentSchema.safeParse(
+      (() => {
+        try { return JSON.parse(extractJson(text)); } catch { return null; }
+      })(),
+    );
+    if (!parsed.success) {
+      text = await callModel(`\n\nYour previous response was invalid. Return ONLY raw JSON matching the schema. Previous output:\n${text.slice(0, 500)}`);
+      try {
+        parsed = DocContentSchema.safeParse(JSON.parse(extractJson(text)));
+      } catch (e) {
+        throw new Error(`AI draft failed to return valid JSON: ${(e as Error).message}`);
+      }
+      if (!parsed.success) {
+        throw new Error(`AI draft response did not match schema: ${parsed.error.message}`);
+      }
+    }
+
+    const content = parsed.data;
     const subtotal = content.line_items.reduce((s, li) => s + Number(li.amount || 0), 0);
     const tax = Math.round(subtotal * 0.075); // 7.5% Nigerian VAT
     const total = subtotal + tax;
