@@ -1,6 +1,12 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { formatCurrency } from "./format";
 
+function formatPdfCurrency(amount: number | null | undefined, currency = "NGN"): string {
+  const formatted = formatCurrency(amount, currency);
+  // Replace Naira symbol ₦ (U+20A6) with "NGN " because standard WinAnsi PDF fonts cannot encode it.
+  return formatted.replace(/\u20A6/g, "NGN ");
+}
+
 type LineItem = { label: string; quantity: number; unit: string; unit_rate: number; amount: number };
 type DocContent = {
   title?: string;
@@ -220,8 +226,8 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
       ensure(lines.length * 12 + 4);
       page.drawText(lines[0] ?? "", { x: cols.desc, y, size: 10, font, color: ink });
       page.drawText(String(li.quantity), { x: cols.qty, y, size: 10, font, color: ink });
-      page.drawText(formatCurrency(li.unit_rate, input.currency), { x: cols.rate, y, size: 10, font, color: ink });
-      const amtStr = formatCurrency(li.amount, input.currency);
+      page.drawText(formatPdfCurrency(li.unit_rate, input.currency), { x: cols.rate, y, size: 10, font, color: ink });
+      const amtStr = formatPdfCurrency(li.amount, input.currency);
       page.drawText(amtStr, {
         x: 595 - margin - font.widthOfTextAtSize(amtStr, 10),
         y, size: 10, font, color: ink,
@@ -247,7 +253,7 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
       ensure(14);
       const f = isTotal ? bold : font;
       const s = isTotal ? 12 : 10;
-      const txt = formatCurrency(value, input.currency);
+      const txt = formatPdfCurrency(value, input.currency);
       page.drawText(label, { x: 410, y, size: s, font: f, color: ink });
       page.drawText(txt, {
         x: 595 - margin - f.widthOfTextAtSize(txt, s),

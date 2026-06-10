@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
@@ -16,10 +16,18 @@ export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({ meta: [{ title: "Documents — Studio" }] }),
   component: () => (
     <Suspense fallback={<AppShell title="Documents">{null}</AppShell>}>
-      <DocumentsPage />
+      <DocumentsLayout />
     </Suspense>
   ),
 });
+
+function DocumentsLayout() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <DocumentsPage />;
+}
 
 const typeMeta: Record<DocType, { label: string; icon: typeof FileText; tone: string }> = {
   proposal: { label: "Proposals", icon: ScrollText, tone: "bg-primary/10 text-primary" },

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
@@ -17,10 +17,18 @@ export const Route = createFileRoute("/_authenticated/projects")({
   head: () => ({ meta: [{ title: "Projects — Studio" }] }),
   component: () => (
     <Suspense fallback={<AppShell title="Projects">{null}</AppShell>}>
-      <ProjectsPage />
+      <ProjectsLayout />
     </Suspense>
   ),
 });
+
+function ProjectsLayout() {
+  const childMatches = useChildMatches();
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <ProjectsPage />;
+}
 
 const filters: { key: Status | "all"; label: string }[] = [
   { key: "all", label: "All" },
