@@ -37,6 +37,7 @@ export const updateProfile = createServerFn({ method: "POST" })
       brand_color_secondary: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
       brand_color_accent: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
       brand_font: z.enum(["Helvetica", "TimesRoman", "Courier"]).optional(),
+      onboarded: z.boolean().optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {

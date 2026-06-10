@@ -300,6 +300,7 @@ export type Database = {
           last_generation_at: string | null
           signup_ip: string | null
           restricted: boolean
+          onboarded: boolean
         }
         Insert: {
           address?: string | null
@@ -339,6 +340,7 @@ export type Database = {
           last_generation_at?: string | null
           signup_ip?: string | null
           restricted?: boolean
+          onboarded?: boolean
         }
         Update: {
           address?: string | null
@@ -378,6 +380,7 @@ export type Database = {
           last_generation_at?: string | null
           signup_ip?: string | null
           restricted?: boolean
+          onboarded?: boolean
         }
         Relationships: []
       }
