@@ -53,6 +53,9 @@ function SettingsPage() {
     logo_url: profile?.logo_url ?? "",
     signature_url: profile?.signature_url ?? "",
     brand_color: (profile as any)?.brand_color ?? "#8B5CF6",
+    brand_color_primary: (profile as any)?.brand_color_primary ?? (profile as any)?.brand_color ?? "#8B5CF6",
+    brand_color_secondary: (profile as any)?.brand_color_secondary ?? "#10B981",
+    brand_color_accent: (profile as any)?.brand_color_accent ?? "#F59E0B",
     brand_font: ((profile as any)?.brand_font as "Helvetica" | "TimesRoman" | "Courier") ?? "Helvetica",
   });
 
@@ -73,6 +76,9 @@ function SettingsPage() {
         logo_url: profile.logo_url ?? "",
         signature_url: profile.signature_url ?? "",
         brand_color: (profile as any).brand_color ?? "#8B5CF6",
+        brand_color_primary: (profile as any).brand_color_primary ?? (profile as any).brand_color ?? "#8B5CF6",
+        brand_color_secondary: (profile as any).brand_color_secondary ?? "#10B981",
+        brand_color_accent: (profile as any).brand_color_accent ?? "#F59E0B",
         brand_font: ((profile as any).brand_font as "Helvetica" | "TimesRoman" | "Courier") ?? "Helvetica",
       });
     }
@@ -139,7 +145,10 @@ function SettingsPage() {
           currency: form.currency,
           logo_url: form.logo_url || null,
           signature_url: form.signature_url || null,
-          brand_color: form.brand_color,
+          brand_color: form.brand_color_primary,
+          brand_color_primary: form.brand_color_primary,
+          brand_color_secondary: form.brand_color_secondary,
+          brand_color_accent: form.brand_color_accent,
           brand_font: form.brand_font,
         },
       }),
@@ -280,23 +289,23 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/60">
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border/60">
             <div>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
-                Brand Color
+                Primary Color
               </span>
               <div className="flex items-center gap-2">
                 <input 
                   type="color" 
-                  value={form.brand_color} 
-                  onChange={(e) => setForm({ ...form, brand_color: e.target.value })}
-                  className="size-9 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                  value={form.brand_color_primary} 
+                  onChange={(e) => setForm({ ...form, brand_color_primary: e.target.value })}
+                  className="size-8 rounded-lg cursor-pointer bg-transparent border-0 p-0"
                 />
                 <input 
                   type="text" 
-                  value={form.brand_color} 
-                  onChange={(e) => setForm({ ...form, brand_color: e.target.value })}
-                  className="flex-1 h-9 px-2.5 rounded-lg bg-muted border border-border text-xs font-mono uppercase mt-0"
+                  value={form.brand_color_primary} 
+                  onChange={(e) => setForm({ ...form, brand_color_primary: e.target.value })}
+                  className="flex-1 h-8 px-1.5 rounded-lg bg-muted border border-border text-[10px] font-mono uppercase mt-0"
                   placeholder="#8B5CF6"
                 />
               </div>
@@ -304,18 +313,60 @@ function SettingsPage() {
 
             <div>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
-                PDF Font Style
+                Secondary Color
               </span>
-              <select 
-                value={form.brand_font} 
-                onChange={(e) => setForm({ ...form, brand_font: e.target.value as "Helvetica" | "TimesRoman" | "Courier" })}
-                className="w-full h-9 px-2 rounded-lg bg-muted border border-border text-xs font-medium mt-0"
-              >
-                <option value="Helvetica">Helvetica (Sans)</option>
-                <option value="TimesRoman">Times Roman (Serif)</option>
-                <option value="Courier">Courier (Mono)</option>
-              </select>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="color" 
+                  value={form.brand_color_secondary} 
+                  onChange={(e) => setForm({ ...form, brand_color_secondary: e.target.value })}
+                  className="size-8 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                />
+                <input 
+                  type="text" 
+                  value={form.brand_color_secondary} 
+                  onChange={(e) => setForm({ ...form, brand_color_secondary: e.target.value })}
+                  className="flex-1 h-8 px-1.5 rounded-lg bg-muted border border-border text-[10px] font-mono uppercase mt-0"
+                  placeholder="#10B981"
+                />
+              </div>
             </div>
+
+            <div>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
+                Accent Color
+              </span>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="color" 
+                  value={form.brand_color_accent} 
+                  onChange={(e) => setForm({ ...form, brand_color_accent: e.target.value })}
+                  className="size-8 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                />
+                <input 
+                  type="text" 
+                  value={form.brand_color_accent} 
+                  onChange={(e) => setForm({ ...form, brand_color_accent: e.target.value })}
+                  className="flex-1 h-8 px-1.5 rounded-lg bg-muted border border-border text-[10px] font-mono uppercase mt-0"
+                  placeholder="#F59E0B"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
+              PDF Font Style
+            </span>
+            <select 
+              value={form.brand_font} 
+              onChange={(e) => setForm({ ...form, brand_font: e.target.value as "Helvetica" | "TimesRoman" | "Courier" })}
+              className="w-full h-9 px-2 rounded-lg bg-muted border border-border text-xs font-medium mt-0"
+            >
+              <option value="Helvetica">Helvetica (Sans)</option>
+              <option value="TimesRoman">Times Roman (Serif)</option>
+              <option value="Courier">Courier (Mono)</option>
+            </select>
           </div>
         </div>
       </Group>

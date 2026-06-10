@@ -4,10 +4,10 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ClientAvatar } from "@/components/ClientBadge";
-import { listProjects, createProject } from "@/lib/projects.functions";
+import { listProjects, createProject, deleteProject } from "@/lib/projects.functions";
 import { listClients } from "@/lib/clients.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -48,6 +48,7 @@ function ProjectsPage() {
   const fetchProjects = useServerFn(listProjects);
   const fetchClients = useServerFn(listClients);
   const addProject = useServerFn(createProject);
+  const deleteProj = useServerFn(deleteProject);
   const qc = useQueryClient();
   const { data: projects } = useSuspenseQuery({ queryKey: ["projects"], queryFn: () => fetchProjects() });
   const { data: clients } = useSuspenseQuery({ queryKey: ["clients"], queryFn: () => fetchClients() });
@@ -64,6 +65,15 @@ function ProjectsPage() {
       setOpen(false);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const deleteProjMut = useMutation({
+    mutationFn: (id: string) => deleteProj({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Project deleted");
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete project"),
   });
 
   return (
@@ -116,7 +126,22 @@ function ProjectsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-display text-base leading-tight truncate">{p.title}</p>
-                    <span className={cn("text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold", statusStyle[p.status as Status])}>{p.status}</span>
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <span className={cn("text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold", statusStyle[p.status as Status])}>{p.status}</span>
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (window.confirm("Are you sure you want to delete this project?")) {
+                            await deleteProjMut.mutateAsync(p.id);
+                          }
+                        }}
+                        className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/5 active:scale-95 transition"
+                        title="Delete project"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{p.client?.company ?? p.client?.name ?? "No client"}</p>
                   {p.scope && <p className="text-xs text-muted-foreground/80 mt-2 line-clamp-2">{p.scope}</p>}
@@ -134,6 +159,71 @@ function ProjectsPage() {
   );
 }
 
+const PROJECT_TYPES = {
+  custom: { label: "Custom Project", deliverables: [] },
+  branding: {
+    label: "Brand Identity & Logo Design",
+    deliverables: [
+      "Brand Strategy & Positioning",
+      "Logo Design (Primary, Secondary, Submark)",
+      "Color Palette & Typography Guidelines",
+      "Business Cards & Stationery Design",
+      "Brand Style Guide PDF",
+    ]
+  },
+  web: {
+    label: "Website Design & Development",
+    deliverables: [
+      "Wireframing & UI/UX Design (Figma)",
+      "Responsive Layouts (Desktop/Mobile)",
+      "Content Management System (CMS) integration",
+      "E-commerce setup",
+      "SEO & Speed Optimization",
+      "Launch Support & Documentation",
+    ]
+  },
+  app: {
+    label: "Mobile App Design / UX",
+    deliverables: [
+      "User Research & Persona Creation",
+      "App Architecture & User Flows",
+      "Interactive Figma Prototype",
+      "Design System & Component Library",
+      "Developer Handoff & Assets Export",
+    ]
+  },
+  photo: {
+    label: "Product Photography & Styling",
+    deliverables: [
+      "Moodboard & Creative Direction",
+      "Props & Set Styling",
+      "High-Res Product Shots",
+      "Professional Retouching",
+      "Web & Print Optimized Deliverables",
+    ]
+  },
+  social: {
+    label: "Social Media Management & Content",
+    deliverables: [
+      "Content Strategy & Monthly Grid Planning",
+      "Custom Graphic Templates",
+      "Copywriting & Hashtag Research",
+      "Reel / Short Video Production",
+      "Analytics & Performance Review",
+    ]
+  },
+  video: {
+    label: "Videography & Video Editing",
+    deliverables: [
+      "Scriptwriting & Storyboarding",
+      "On-Site Filming & Lighting Setup",
+      "Professional Editing & Sound Design",
+      "Color Grading & B-roll footage",
+      "Final exports in multiple aspect ratios",
+    ]
+  }
+};
+
 function NewProjectForm({
   clients,
   onSubmit,
@@ -149,30 +239,88 @@ function NewProjectForm({
   const [clientId, setClientId] = useState("");
   const [budget, setBudget] = useState("");
   const [scope, setScope] = useState("");
+  const [projectType, setProjectType] = useState<keyof typeof PROJECT_TYPES>("custom");
+  const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
+
+  const handleTypeChange = (type: keyof typeof PROJECT_TYPES) => {
+    setProjectType(type);
+    setSelectedDeliverables(PROJECT_TYPES[type].deliverables);
+  };
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         if (!title.trim()) return;
+
+        let compiledScope = scope.trim();
+        if (selectedDeliverables.length > 0) {
+          const deliverablesList = selectedDeliverables.map(d => `• ${d}`).join("\n");
+          const typeLabel = PROJECT_TYPES[projectType].label;
+          compiledScope = `Project Type: ${typeLabel}\n\nDeliverables:\n${deliverablesList}${compiledScope ? `\n\nAdditional Scope Notes:\n${compiledScope}` : ""}`;
+        }
+
         onSubmit({
           title,
           client_id: clientId || undefined,
           budget: budget ? Number(budget) : undefined,
-          scope: scope || undefined,
+          scope: compiledScope || undefined,
         });
       }}
       className="card-soft p-4 mb-4 space-y-3"
     >
       <input className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" placeholder="Project title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-      <select className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" value={clientId} onChange={(e) => setClientId(e.target.value)}>
-        <option value="">No client</option>
-        {clients.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}{c.company ? ` · ${c.company}` : ""}</option>
-        ))}
-      </select>
-      <input className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" type="number" placeholder="Budget (NGN)" value={budget} onChange={(e) => setBudget(e.target.value)} />
-      <textarea className="w-full px-3 py-2.5 rounded-xl bg-muted border border-border text-sm" rows={3} placeholder="Scope summary" value={scope} onChange={(e) => setScope(e.target.value)} />
+      
+      <div className="grid grid-cols-2 gap-2">
+        <select className="h-11 px-3 rounded-xl bg-muted border border-border text-sm" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+          <option value="">No client</option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}{c.company ? ` · ${c.company}` : ""}</option>
+          ))}
+        </select>
+        <select className="h-11 px-3 rounded-xl bg-muted border border-border text-sm" value={projectType} onChange={(e) => handleTypeChange(e.target.value as keyof typeof PROJECT_TYPES)}>
+          {Object.keys(PROJECT_TYPES).map((k) => (
+            <option key={k} value={k}>{(PROJECT_TYPES as any)[k].label}</option>
+          ))}
+        </select>
+      </div>
+
+      {PROJECT_TYPES[projectType].deliverables.length > 0 && (
+        <div className="space-y-1.5 pt-1">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">Suggested Deliverables (Tap to toggle)</span>
+          <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+            {PROJECT_TYPES[projectType].deliverables.map((item) => {
+              const active = selectedDeliverables.includes(item);
+              return (
+                <button
+                  type="button"
+                  key={item}
+                  onClick={() => {
+                    if (active) {
+                      setSelectedDeliverables(selectedDeliverables.filter(x => x !== item));
+                    } else {
+                      setSelectedDeliverables([...selectedDeliverables, item]);
+                    }
+                  }}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-lg border text-left text-[11px] leading-snug transition flex items-center gap-1.5",
+                    active ? "bg-primary/10 border-primary text-primary" : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <span className={cn("size-3 rounded-sm border flex items-center justify-center text-[9px] shrink-0 font-bold", active ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/60")}>
+                    {active && "✓"}
+                  </span>
+                  <span className="truncate">{item}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <input className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" type="number" placeholder="Budget (NGN) - Optional" value={budget} onChange={(e) => setBudget(e.target.value)} />
+      <textarea className="w-full px-3 py-2.5 rounded-xl bg-muted border border-border text-sm" rows={3} placeholder="Additional scope / project description notes…" value={scope} onChange={(e) => setScope(e.target.value)} />
+      
       <div className="flex gap-2">
         <button type="button" onClick={onCancel} className="flex-1 h-11 rounded-full border border-border text-sm">Cancel</button>
         <button disabled={loading} type="submit" className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60">{loading ? "Saving…" : "Create"}</button>

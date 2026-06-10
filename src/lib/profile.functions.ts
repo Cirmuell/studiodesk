@@ -33,6 +33,9 @@ export const updateProfile = createServerFn({ method: "POST" })
       logo_url: z.string().max(1000).optional().nullable(),
       signature_url: z.string().max(1000).optional().nullable(),
       brand_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+      brand_color_primary: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+      brand_color_secondary: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+      brand_color_accent: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
       brand_font: z.enum(["Helvetica", "TimesRoman", "Courier"]).optional(),
     }).parse(d),
   )

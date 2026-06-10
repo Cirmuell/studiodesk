@@ -3,10 +3,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { listDocuments, draftDocument } from "@/lib/documents.functions";
+import { listDocuments, draftDocument, deleteDocument } from "@/lib/documents.functions";
 import { listProjects } from "@/lib/projects.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
-import { FileText, Plus, Receipt, ScrollText, FileCheck2, Sparkles } from "lucide-react";
+import { FileText, Plus, Receipt, ScrollText, FileCheck2, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -48,6 +48,7 @@ function DocumentsPage() {
   const fetchDocs = useServerFn(listDocuments);
   const fetchProjects = useServerFn(listProjects);
   const draft = useServerFn(draftDocument);
+  const deleteDoc = useServerFn(deleteDocument);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -67,6 +68,15 @@ function DocumentsPage() {
       if (row?.id) navigate({ to: "/documents/$id", params: { id: row.id } });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const deleteDocMut = useMutation({
+    mutationFn: (id: string) => deleteDoc({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Document deleted");
+      qc.invalidateQueries({ queryKey: ["documents"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete document"),
   });
 
   return (
@@ -140,20 +150,35 @@ function DocumentsPage() {
                     {d.client?.company ?? d.client?.name ?? d.title ?? "—"} · {timeAgo(d.updated_at)}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">{formatCurrency(d.total, d.currency)}</p>
-                  <span
-                    className={cn(
-                      "text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full",
-                      d.status === "ready" || d.status === "sent" || d.status === "paid"
-                        ? "bg-success/15 text-success"
-                        : d.status === "draft"
-                          ? "bg-muted text-muted-foreground"
-                          : "bg-warning/20 text-warning-foreground",
-                    )}
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-sm font-semibold">{formatCurrency(d.total, d.currency)}</p>
+                    <span
+                      className={cn(
+                        "text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full",
+                        d.status === "ready" || d.status === "sent" || d.status === "paid"
+                          ? "bg-success/15 text-success"
+                          : d.status === "draft"
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-warning/20 text-warning-foreground",
+                      )}
+                    >
+                      {d.status}
+                    </span>
+                  </div>
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (window.confirm("Are you sure you want to delete this document?")) {
+                        await deleteDocMut.mutateAsync(d.id);
+                      }
+                    }}
+                    className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/5 active:scale-95 transition"
+                    title="Delete document"
                   >
-                    {d.status}
-                  </span>
+                    <Trash2 className="size-4" />
+                  </button>
                 </div>
               </Link>
             );

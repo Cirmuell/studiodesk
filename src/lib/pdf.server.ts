@@ -69,15 +69,18 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   const muted = rgb(0.45, 0.45, 0.48);
   
   // Dynamic brand color parser
-  const parseColor = (hex?: string | null) => {
-    if (!hex) return rgb(0.55, 0.36, 0.96); // default brand purple
+  const parseColor = (hex?: string | null, fallback = rgb(0.55, 0.36, 0.96)) => {
+    if (!hex) return fallback;
     const clean = hex.replace("#", "");
     const r = parseInt(clean.substring(0, 2), 16) / 255;
     const g = parseInt(clean.substring(2, 4), 16) / 255;
     const b = parseInt(clean.substring(4, 6), 16) / 255;
-    return rgb(isNaN(r) ? 0.55 : r, isNaN(g) ? 0.36 : g, isNaN(b) ? 0.96 : b);
+    return rgb(isNaN(r) ? fallback.red : r, isNaN(g) ? fallback.green : g, isNaN(b) ? fallback.blue : b);
   };
-  const accent = parseColor(input.profile?.brand_color);
+  
+  const primary = parseColor((input.profile as any)?.brand_color_primary || input.profile?.brand_color, rgb(0.55, 0.36, 0.96));
+  const secondary = parseColor((input.profile as any)?.brand_color_secondary, rgb(0.1, 0.73, 0.51));
+  const accent = parseColor((input.profile as any)?.brand_color_accent, rgb(0.96, 0.62, 0.04));
 
   let page = doc.addPage([595, 842]); // A4
   const margin = 48;
@@ -221,7 +224,7 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   // Sections
   for (const s of input.content.sections ?? []) {
     ensure(20);
-    page.drawText(s.heading, { x: margin, y, size: 11, font: bold, color: ink });
+    page.drawText(s.heading, { x: margin, y, size: 11, font: bold, color: secondary });
     y -= 14;
     for (const ln of wrap(s.body, 500, font, 10)) {
       ensure(13);
@@ -239,10 +242,10 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
     page.drawLine({ start: { x: margin, y }, end: { x: 595 - margin, y }, thickness: 0.5, color: muted });
     y -= 14;
     const cols = { desc: margin, qty: 360, rate: 410, amt: 500 };
-    page.drawText("DESCRIPTION", { x: cols.desc, y, size: 8, font: bold, color: muted });
-    page.drawText("QTY", { x: cols.qty, y, size: 8, font: bold, color: muted });
-    page.drawText("RATE", { x: cols.rate, y, size: 8, font: bold, color: muted });
-    page.drawText("AMOUNT", { x: cols.amt, y, size: 8, font: bold, color: muted });
+    page.drawText("DESCRIPTION", { x: cols.desc, y, size: 8, font: bold, color: secondary });
+    page.drawText("QTY", { x: cols.qty, y, size: 8, font: bold, color: secondary });
+    page.drawText("RATE", { x: cols.rate, y, size: 8, font: bold, color: secondary });
+    page.drawText("AMOUNT", { x: cols.amt, y, size: 8, font: bold, color: secondary });
     y -= 12;
     page.drawLine({ start: { x: margin, y }, end: { x: 595 - margin, y }, thickness: 0.5, color: muted });
     y -= 12;
@@ -282,7 +285,7 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
       page.drawText(label, { x: 410, y, size: s, font: f, color: ink });
       page.drawText(txt, {
         x: 595 - margin - f.widthOfTextAtSize(txt, s),
-        y, size: s, font: f, color: isTotal ? accent : ink,
+        y, size: s, font: f, color: isTotal ? primary : ink,
       });
       y -= 14;
     }

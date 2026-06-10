@@ -42,6 +42,7 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
       gemini_api_key: z.string().max(500).optional().nullable(),
       openai_api_key: z.string().max(500).optional().nullable(),
       lovable_api_key: z.string().max(500).optional().nullable(),
+      preferred_model: z.string().max(100).optional().nullable(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {

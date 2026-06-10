@@ -8,6 +8,7 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
   let lovableKey = undefined;
   let geminiKey = undefined;
   let openaiKey = undefined;
+  let preferredModel = undefined;
 
   console.info("[AI GATEWAY] Resolving provider credentials...");
 
@@ -26,7 +27,8 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
         lovableKey = data.lovable_api_key || undefined;
         geminiKey = data.gemini_api_key || undefined;
         openaiKey = data.openai_api_key || undefined;
-        console.info("[AI GATEWAY] Successfully fetched credentials from admin_settings table.");
+        preferredModel = (data as any).preferred_model || undefined;
+        console.info("[AI GATEWAY] Successfully fetched credentials and preferred model from admin_settings table.");
       }
     } catch (err) {
       console.warn("[AI GATEWAY] Failed to fetch admin settings from database:", err);
@@ -58,7 +60,7 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
     });
     return {
       provider,
-      model: "google/gemini-3-flash-preview",
+      model: preferredModel || "google/gemini-3-flash-preview",
     };
   }
 
@@ -69,7 +71,7 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
     });
     return {
       provider,
-      model: "gemini-2.5-flash",
+      model: preferredModel || "gemini-2.5-flash",
     };
   }
 
@@ -82,7 +84,7 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
     });
     return {
       provider,
-      model: "gpt-4o-mini",
+      model: preferredModel || "gpt-4o-mini",
     };
   }
 

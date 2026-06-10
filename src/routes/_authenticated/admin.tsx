@@ -27,6 +27,7 @@ function AdminPage() {
     gemini_api_key: "",
     openai_api_key: "",
     lovable_api_key: "",
+    preferred_model: "",
   });
 
   useEffect(() => {
@@ -35,6 +36,7 @@ function AdminPage() {
         gemini_api_key: settings.gemini_api_key ?? "",
         openai_api_key: settings.openai_api_key ?? "",
         lovable_api_key: settings.lovable_api_key ?? "",
+        preferred_model: (settings as any).preferred_model ?? "",
       });
     }
   }, [settings]);
@@ -140,6 +142,22 @@ function AdminPage() {
               placeholder="Optional Lovable gateway key"
               className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1 focus:ring-1 focus:ring-primary focus:outline-none"
             />
+          </label>
+
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+              <Sparkles className="size-3" /> Preferred AI Model Override
+            </span>
+            <input
+              type="text"
+              value={form.preferred_model}
+              onChange={(e) => setForm({ ...form, preferred_model: e.target.value })}
+              placeholder="e.g. gemini-2.5-flash, gpt-4o-mini, google/gemini-3-flash-preview (leave blank for auto)"
+              className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1 focus:ring-1 focus:ring-primary focus:outline-none"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Leave blank to auto-detect model per provider. Override custom strings if needed.
+            </p>
           </label>
 
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 pt-1">

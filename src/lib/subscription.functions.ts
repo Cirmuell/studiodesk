@@ -17,7 +17,7 @@ export const getBillingInfo = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<BillingInfo> => {
     try {
-      const { data: profile, error } = await supabaseAdmin
+      const { data: profile, error } = await context.supabase
         .from("profiles")
         .select("plan, trial_generations_used, trial_generations_limit, subscription_status, subscription_ends_at, restricted")
         .eq("id", context.userId)
@@ -111,7 +111,7 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
       const endsAt = new Date();
       endsAt.setMonth(endsAt.getMonth() + 1); // 1-month duration
 
-      const { error } = await supabaseAdmin
+      const { error } = await context.supabase
         .from("profiles")
         .update({
           plan: data.plan,

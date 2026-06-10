@@ -118,7 +118,7 @@ export const draftDocument = createServerFn({ method: "POST" })
     ]);
 
     // Enforce billing and safety gates
-    await enforceUsageLimits(context.userId, profile?.email ?? undefined);
+    await enforceUsageLimits(context.userId, profile?.email ?? undefined, context.supabase);
     const project = projectRes.data;
     const client = clientRes.data;
     const pricingRun = pricingRunRes.data;
@@ -231,4 +231,16 @@ Generate a complete ${data.type} draft as raw JSON.`;
       .single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+export const deleteDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("documents")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

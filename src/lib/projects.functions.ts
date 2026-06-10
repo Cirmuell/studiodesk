@@ -28,9 +28,23 @@ export const createProject = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    let title = data.title;
+    if (data.client_id) {
+      const { data: client } = await context.supabase
+        .from("clients")
+        .select("name, company")
+        .eq("id", data.client_id)
+        .maybeSingle();
+      if (client) {
+        const suffix = client.company || client.name;
+        if (suffix && !title.toLowerCase().endsWith(suffix.toLowerCase())) {
+          title = `${title} — ${suffix}`;
+        }
+      }
+    }
     const { data: row, error } = await context.supabase
       .from("projects")
-      .insert({ ...data, user_id: context.userId })
+      .insert({ ...data, title, user_id: context.userId })
       .select("*, client:clients(id, name, company, tier)")
       .single();
     if (error) throw new Error(error.message);
@@ -52,7 +66,28 @@ export const updateProject = createServerFn({ method: "POST" })
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("projects").update(data.patch).eq("id", data.id);
+    const patch = { ...data.patch };
+    if (patch.title) {
+      const { data: proj } = await context.supabase
+        .from("projects")
+        .select("client_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (proj?.client_id) {
+        const { data: client } = await context.supabase
+          .from("clients")
+          .select("name, company")
+          .eq("id", proj.client_id)
+          .maybeSingle();
+        if (client) {
+          const suffix = client.company || client.name;
+          if (suffix && !patch.title.toLowerCase().endsWith(suffix.toLowerCase())) {
+            patch.title = `${patch.title} — ${suffix}`;
+          }
+        }
+      }
+    }
+    const { error } = await context.supabase.from("projects").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -86,4 +121,16 @@ export const getProject = createServerFn({ method: "GET" })
       pricing_runs: pricing_runs ?? [],
       documents: documents ?? [],
     };
+  });
+
+export const deleteProject = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("projects")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

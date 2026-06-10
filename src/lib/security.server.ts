@@ -1,5 +1,7 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/integrations/supabase/types";
 
 // Common temporary/disposable email domains to prevent trial abuse
 const DISPOSABLE_DOMAINS = new Set([
@@ -8,7 +10,7 @@ const DISPOSABLE_DOMAINS = new Set([
   "temp-mail.org", "fakeinbox.com", "burnermail.io", "getnada.com", "tempmailaddress.com"
 ]);
 
-export async function enforceUsageLimits(userId: string, userEmail?: string) {
+export async function enforceUsageLimits(userId: string, userEmail: string | undefined, supabaseClient: SupabaseClient<Database>) {
   // 1. Bad Actor Detection: Block temporary email addresses
   if (userEmail) {
     const domain = userEmail.split("@")[1]?.toLowerCase();
@@ -33,7 +35,7 @@ export async function enforceUsageLimits(userId: string, userEmail?: string) {
 
   // Fetch user profile with subscription tracking
   try {
-    const query = supabaseAdmin.from("profiles") as any;
+    const query = supabaseClient.from("profiles") as any;
     const { data: profile, error } = await query
       .select("plan, trial_generations_used, trial_generations_limit, last_generation_at, restricted, signup_ip")
       .eq("id", userId)
@@ -72,21 +74,28 @@ export async function enforceUsageLimits(userId: string, userEmail?: string) {
   // 2. Multi-account prevention: Check if this IP is registered to multiple trial accounts
   if (plan === "trial" && clientIp && clientIp !== "127.0.0.1") {
     if (!signup_ip) {
-      await (supabaseAdmin.from("profiles") as any).update({ signup_ip: clientIp }).eq("id", userId);
+      await (supabaseClient.from("profiles") as any).update({ signup_ip: clientIp }).eq("id", userId);
       signup_ip = clientIp;
     }
 
-    const ipQuery = supabaseAdmin.from("profiles") as any;
-    const { count, error: countErr } = await ipQuery
-      .select("id", { count: "exact", head: true })
-      .eq("signup_ip", signup_ip)
-      .eq("plan", "trial")
-      .neq("id", userId);
+    try {
+      const ipQuery = supabaseAdmin.from("profiles") as any;
+      const { count, error: countErr } = await ipQuery
+        .select("id", { count: "exact", head: true })
+        .eq("signup_ip", signup_ip)
+        .eq("plan", "trial")
+        .neq("id", userId);
 
-    // If 3 or more trial accounts share the same IP, restrict the account automatically
-    if (!countErr && count && count >= 2) {
-      await (supabaseAdmin.from("profiles") as any).update({ restricted: true }).eq("id", userId);
-      throw new Error("Access denied: Multiple registrations detected from this network location.");
+      // If 3 or more trial accounts share the same IP, restrict the account automatically
+      if (!countErr && count && count >= 2) {
+        await (supabaseClient.from("profiles") as any).update({ restricted: true }).eq("id", userId);
+        throw new Error("Access denied: Multiple registrations detected from this network location.");
+      }
+    } catch (ipErr: any) {
+      if (ipErr.message?.includes("Access denied")) {
+        throw ipErr;
+      }
+      console.warn("[Subscription Security] Skipping IP multi-account prevention check (likely due to missing service role key):", ipErr.message);
     }
   }
 
@@ -114,7 +123,7 @@ export async function enforceUsageLimits(userId: string, userEmail?: string) {
     updates.trial_generations_used = trial_generations_used + 1;
   }
 
-  await (supabaseAdmin.from("profiles") as any)
+  await (supabaseClient.from("profiles") as any)
     .update(updates)
     .eq("id", userId);
 }

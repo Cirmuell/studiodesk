@@ -4,9 +4,9 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listProjects } from "@/lib/projects.functions";
-import { listPricingRuns, runPricingAnalysis } from "@/lib/pricing.functions";
+import { listPricingRuns, runPricingAnalysis, deletePricingRun } from "@/lib/pricing.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
-import { ArrowRight, Check, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, Check, Sparkles, Wand2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -23,6 +23,7 @@ function PricingPage() {
   const fetchProjects = useServerFn(listProjects);
   const fetchRuns = useServerFn(listPricingRuns);
   const runAnalysis = useServerFn(runPricingAnalysis);
+  const deleteRun = useServerFn(deletePricingRun);
   const qc = useQueryClient();
 
   const { data: projects } = useSuspenseQuery({ queryKey: ["projects"], queryFn: () => fetchProjects() });
@@ -35,18 +36,29 @@ function PricingPage() {
   const [tier, setTier] = useState<"standard" | "preferred" | "enterprise">(
     (selected?.client?.tier as "standard" | "preferred" | "enterprise") ?? "standard",
   );
+  const [selectedRun, setSelectedRun] = useState<any>(null);
 
   const mut = useMutation({
     mutationFn: () =>
       runAnalysis({ data: { project_id: projectId || undefined, scope, hours, client_tier: tier } }),
     onSuccess: () => {
       toast.success("Pricing recommendation ready");
+      setSelectedRun(null);
       qc.invalidateQueries({ queryKey: ["pricing_runs"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const latest = mut.data ?? runs[0];
+  const deleteRunMut = useMutation({
+    mutationFn: (id: string) => deleteRun({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Analysis deleted");
+      qc.invalidateQueries({ queryKey: ["pricing_runs"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete analysis"),
+  });
+
+  const latest = selectedRun ?? mut.data ?? runs[0];
 
   return (
     <AppShell title="Pricing Studio" subtitle="AI grounded in your context">
@@ -144,19 +156,54 @@ function PricingPage() {
       ) : (
         <div className="space-y-2.5">
           {runs.map((r) => (
-            <Link to="/pricing" key={r.id} className="card-soft p-4 flex items-center gap-3">
-              <div className={cn("size-10 rounded-xl grid place-items-center", r.confidence === "high" ? "bg-success/15 text-success" : "bg-warning/20 text-warning-foreground")}>
+            <div
+              key={r.id}
+              onClick={() => {
+                setSelectedRun(r);
+                setProjectId(r.project_id ?? "");
+                setScope(r.scope ?? "");
+                setHours(r.hours ? Number(r.hours) : 40);
+                const proj = projects.find((p) => p.id === r.project_id);
+                if (proj?.client?.tier) {
+                  setTier(proj.client.tier as any);
+                }
+                toast.info("Loaded analysis parameters into form");
+              }}
+              className={cn(
+                "card-soft p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition active:scale-[0.99]",
+                latest?.id === r.id && "ring-1 ring-primary/30 bg-primary/5"
+              )}
+            >
+              <div className={cn("size-10 rounded-xl grid place-items-center shrink-0", r.confidence === "high" ? "bg-success/15 text-success" : "bg-warning/20 text-warning-foreground")}>
                 <Check className="size-[18px]" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{r.project?.title ?? "Custom scope"}</p>
                 <p className="text-xs text-muted-foreground">{timeAgo(r.created_at)} · {r.confidence} confidence</p>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold">{formatCurrency(r.recommended_total, r.currency)}</p>
-                <ArrowRight className="size-3.5 text-muted-foreground inline-block mt-0.5" />
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <p className="text-sm font-semibold">{formatCurrency(r.recommended_total, r.currency)}</p>
+                  <ArrowRight className="size-3.5 text-muted-foreground inline-block mt-0.5" />
+                </div>
+                <button
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.confirm("Are you sure you want to delete this pricing analysis?")) {
+                      if (latest?.id === r.id) {
+                        setSelectedRun(null);
+                      }
+                      await deleteRunMut.mutateAsync(r.id);
+                    }
+                  }}
+                  className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/5 active:scale-95 transition"
+                  title="Delete pricing analysis"
+                >
+                  <Trash2 className="size-4" />
+                </button>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

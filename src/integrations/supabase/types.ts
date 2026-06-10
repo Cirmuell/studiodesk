@@ -20,6 +20,7 @@ export type Database = {
           id: string
           lovable_api_key: string | null
           openai_api_key: string | null
+          preferred_model: string | null
           updated_at: string
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           id?: string
           lovable_api_key?: string | null
           openai_api_key?: string | null
+          preferred_model?: string | null
           updated_at?: string
         }
         Update: {
@@ -34,6 +36,7 @@ export type Database = {
           id?: string
           lovable_api_key?: string | null
           openai_api_key?: string | null
+          preferred_model?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -282,6 +285,21 @@ export type Database = {
           tagline: string | null
           updated_at: string
           value_prop: string | null
+          brand_color: string | null
+          brand_color_primary: string
+          brand_color_secondary: string
+          brand_color_accent: string
+          brand_font: string
+          plan: string
+          trial_generations_used: number
+          trial_generations_limit: number
+          subscription_status: string
+          subscription_ends_at: string | null
+          payment_customer_id: string | null
+          payment_subscription_id: string | null
+          last_generation_at: string | null
+          signup_ip: string | null
+          restricted: boolean
         }
         Insert: {
           address?: string | null
@@ -306,6 +324,21 @@ export type Database = {
           tagline?: string | null
           updated_at?: string
           value_prop?: string | null
+          brand_color?: string | null
+          brand_color_primary?: string
+          brand_color_secondary?: string
+          brand_color_accent?: string
+          brand_font?: string
+          plan?: string
+          trial_generations_used?: number
+          trial_generations_limit?: number
+          subscription_status?: string
+          subscription_ends_at?: string | null
+          payment_customer_id?: string | null
+          payment_subscription_id?: string | null
+          last_generation_at?: string | null
+          signup_ip?: string | null
+          restricted?: boolean
         }
         Update: {
           address?: string | null
@@ -330,6 +363,21 @@ export type Database = {
           tagline?: string | null
           updated_at?: string
           value_prop?: string | null
+          brand_color?: string | null
+          brand_color_primary?: string
+          brand_color_secondary?: string
+          brand_color_accent?: string
+          brand_font?: string
+          plan?: string
+          trial_generations_used?: number
+          trial_generations_limit?: number
+          subscription_status?: string
+          subscription_ends_at?: string | null
+          payment_customer_id?: string | null
+          payment_subscription_id?: string | null
+          last_generation_at?: string | null
+          signup_ip?: string | null
+          restricted?: boolean
         }
         Relationships: []
       }

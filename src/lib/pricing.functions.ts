@@ -53,7 +53,7 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
       .maybeSingle();
 
     // Enforce billing limits and security gates
-    await enforceUsageLimits(context.userId, profile?.email ?? undefined);
+    await enforceUsageLimits(context.userId, profile?.email ?? undefined, context.supabase);
 
     const { provider, model } = await getAiProvider(context.supabase);
     console.info(`[AI PRICING] Pricing requested. Resolved provider model: ${model}`);
@@ -177,4 +177,16 @@ Produce a pricing recommendation with line items (realistic deliverables and tas
       .single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+export const deletePricingRun = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("pricing_runs")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
