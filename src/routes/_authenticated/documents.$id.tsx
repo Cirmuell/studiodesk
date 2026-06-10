@@ -136,16 +136,18 @@ function DocPage() {
         <ArrowLeft className="size-3.5" /> All documents
       </Link>
 
+      <StepIndicator step={step} dirty={dirty} />
+
       <SharePanel documentId={id} />
 
 
       <div className="card-soft p-4 mb-4">
         <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Title</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-transparent text-lg font-display mt-1 focus:outline-none" />
+        <input value={title} onChange={(e) => updateTitle(e.target.value)} className="w-full bg-transparent text-lg font-display mt-1 focus:outline-none" />
         <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mt-3 block">Intro</label>
         <textarea
           value={content.intro ?? ""}
-          onChange={(e) => setContent({ ...content, intro: e.target.value })}
+          onChange={(e) => updateContent({ ...content, intro: e.target.value })}
           rows={3}
           className="w-full bg-muted/50 mt-1 p-2 rounded-lg text-sm border border-border"
         />
