@@ -3,7 +3,7 @@ import { supabase } from "../supabase/client";
 
 // In production / self-hosted environments (like Vercel), route OAuth through Lovable's configured sandbox broker
 const isLovableSandbox = typeof window !== "undefined" && window.location.hostname.includes("lovable.app");
-const lovableSandboxUrl = "https://341da375-7dbe-4bf2-bb9d-479d3bd71b75.lovable.app";
+const lovableSandboxUrl = import.meta.env.VITE_LOVABLE_SANDBOX_URL || "https://id-preview-cedae4b8--341da375-7dbe-4bf2-bb9d-479d3bd71b75.lovable.app";
 
 const oauthBrokerUrl = !isLovableSandbox
   ? `${lovableSandboxUrl}/~oauth/initiate`
