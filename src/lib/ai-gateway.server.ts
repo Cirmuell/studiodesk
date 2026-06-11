@@ -24,14 +24,16 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
       preferredModel = settings.preferred_model || undefined;
     }
 
-    const { data: secrets } = await supabaseAdmin
+    const { data: secretsRaw } = await supabaseAdmin
       .from("secrets" as any)
       .select("name, value");
 
+    const secrets = ((secretsRaw ?? []) as unknown) as { name: string; value: string }[];
+
     if (secrets) {
-      lovableKey = secrets.find((s: any) => s.name === "lovable_api_key")?.value || undefined;
-      geminiKey = secrets.find((s: any) => s.name === "gemini_api_key")?.value || undefined;
-      openaiKey = secrets.find((s: any) => s.name === "openai_api_key")?.value || undefined;
+      lovableKey = secrets.find((s) => s.name === "lovable_api_key")?.value || undefined;
+      geminiKey = secrets.find((s) => s.name === "gemini_api_key")?.value || undefined;
+      openaiKey = secrets.find((s) => s.name === "openai_api_key")?.value || undefined;
       console.info("[AI GATEWAY] Successfully fetched credentials and preferred model from secrets table.");
     }
   } catch (err) {

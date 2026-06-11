@@ -33,7 +33,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     // Fetch credentials from secrets table
-    const { data: secrets, error: secretsError } = await supabaseAdmin
+    const { data: secretsRaw, error: secretsError } = await supabaseAdmin
       .from("secrets" as any)
       .select("name, value");
 
@@ -41,8 +41,10 @@ export const getAdminSettings = createServerFn({ method: "GET" })
       console.warn("[Admin settings] Failed to fetch secrets from table:", secretsError);
     }
 
+    const secrets = ((secretsRaw ?? []) as unknown) as { name: string; value: string }[];
+
     const findSecret = (name: string) => {
-      const secret = secrets?.find((s: any) => s.name === name);
+      const secret = secrets.find((s) => s.name === name);
       return secret?.value ? "••••••••" : "";
     };
 
@@ -79,13 +81,13 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
     const secretsToUpdate: { name: string; value: string | null }[] = [];
     
     if (data.gemini_api_key !== "••••••••") {
-      secretsToUpdate.push({ name: "gemini_api_key", value: data.gemini_api_key });
+      secretsToUpdate.push({ name: "gemini_api_key", value: data.gemini_api_key ?? null });
     }
     if (data.openai_api_key !== "••••••••") {
-      secretsToUpdate.push({ name: "openai_api_key", value: data.openai_api_key });
+      secretsToUpdate.push({ name: "openai_api_key", value: data.openai_api_key ?? null });
     }
     if (data.lovable_api_key !== "••••••••") {
-      secretsToUpdate.push({ name: "lovable_api_key", value: data.lovable_api_key });
+      secretsToUpdate.push({ name: "lovable_api_key", value: data.lovable_api_key ?? null });
     }
 
     for (const secret of secretsToUpdate) {
