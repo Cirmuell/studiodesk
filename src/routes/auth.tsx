@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { Sparkles, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -63,18 +62,6 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
-    setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-    if (result.error) {
-      toast.error(result.error.message || "Google sign-in failed");
-      setLoading(false);
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/" });
-  }
-
   if (verificationEmail) {
     return (
       <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
@@ -84,8 +71,9 @@ function AuthPage() {
           </div>
           <h1 className="font-display text-3xl leading-tight">Verify your email</h1>
           <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
-            We have sent a verification link to <strong className="text-foreground">{verificationEmail}</strong>.
-            Please click the link in the email to activate your account and access your creative studio.
+            We have sent a verification link to{" "}
+            <strong className="text-foreground">{verificationEmail}</strong>. Please click the link
+            in the email to activate your account and access your creative studio.
           </p>
           <button
             onClick={() => {
@@ -160,20 +148,6 @@ function AuthPage() {
             {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
           </button>
         </form>
-
-        <div className="flex items-center gap-3 my-5">
-          <div className="h-px bg-border flex-1" />
-          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">or</span>
-          <div className="h-px bg-border flex-1" />
-        </div>
-
-        <button
-          onClick={handleGoogle}
-          disabled={loading}
-          className="w-full h-12 rounded-full border border-border bg-surface text-sm font-medium disabled:opacity-60"
-        >
-          Continue with Google
-        </button>
 
         <button
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}

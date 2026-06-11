@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { formatCurrency } from "./format";
+import { getSignedBrandAssetUrl } from "./profile.functions";
 
 function formatPdfCurrency(amount: number | null | undefined, currency = "NGN"): string {
   const formatted = formatCurrency(amount, currency);
@@ -113,7 +114,8 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   let logoHeightOffset = 0;
   if (input.profile?.logo_url) {
     try {
-      const response = await fetch(input.profile.logo_url);
+      const logoUrl = await getSignedBrandAssetUrl(input.profile.logo_url);
+      const response = await fetch(logoUrl || input.profile.logo_url);
       const imageBytes = await response.arrayBuffer();
       let img;
       try {
@@ -321,7 +323,8 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   // Signature
   if (input.profile?.signature_url) {
     try {
-      const response = await fetch(input.profile.signature_url);
+      const sigUrl = await getSignedBrandAssetUrl(input.profile.signature_url);
+      const response = await fetch(sigUrl || input.profile.signature_url);
       const imageBytes = await response.arrayBuffer();
       let img;
       try {

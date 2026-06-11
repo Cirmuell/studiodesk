@@ -13,30 +13,29 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
   console.info("[AI GATEWAY] Resolving provider credentials...");
 
   // 1. Try to load custom keys from the database settings first (highest priority)
-  const client = process.env.SUPABASE_SERVICE_ROLE_KEY ? supabaseAdmin : supabaseClient;
+  try {
+    const { data: settings } = await supabaseAdmin
+      .from("admin_settings")
+      .select("preferred_model")
+      .eq("id", "default")
+      .maybeSingle();
 
-  if (client) {
-    try {
-      const { data } = await client
-        .from("admin_settings")
-        .select("*")
-        .eq("id", "default")
-        .maybeSingle();
-
-      if (data) {
-        lovableKey = data.lovable_api_key || undefined;
-        geminiKey = data.gemini_api_key || undefined;
-        openaiKey = data.openai_api_key || undefined;
-        preferredModel = (data as any).preferred_model || undefined;
-        console.info("[AI GATEWAY] Successfully fetched credentials and preferred model from admin_settings table.");
-      }
-    } catch (err) {
-      console.warn("[AI GATEWAY] Failed to fetch admin settings from database:", err);
+    if (settings) {
+      preferredModel = settings.preferred_model || undefined;
     }
-  } else {
-    console.warn(
-      "[AI GATEWAY] SUPABASE_SERVICE_ROLE_KEY is missing and no user Supabase client context was provided. Skipping database admin settings check."
-    );
+
+    const { data: secrets } = await supabaseAdmin
+      .from("secrets" as any)
+      .select("name, value");
+
+    if (secrets) {
+      lovableKey = secrets.find((s: any) => s.name === "lovable_api_key")?.value || undefined;
+      geminiKey = secrets.find((s: any) => s.name === "gemini_api_key")?.value || undefined;
+      openaiKey = secrets.find((s: any) => s.name === "openai_api_key")?.value || undefined;
+      console.info("[AI GATEWAY] Successfully fetched credentials and preferred model from secrets table.");
+    }
+  } catch (err) {
+    console.warn("[AI GATEWAY] Failed to fetch admin settings or secrets from database:", err);
   }
 
   // 2. Fall back to environment variables if no database keys are configured
