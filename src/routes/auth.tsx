@@ -37,7 +37,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: "https://studiodesk-rouge.vercel.app",
             data: { full_name: name, business_name: business },
           },
         });
