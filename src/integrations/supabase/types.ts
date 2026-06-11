@@ -265,6 +265,11 @@ export type Database = {
         Row: {
           address: string | null
           bank_details: string | null
+          brand_color: string
+          brand_color_accent: string
+          brand_color_primary: string
+          brand_color_secondary: string
+          brand_font: string
           business_name: string | null
           country: string
           created_at: string
@@ -275,36 +280,36 @@ export type Database = {
           gemini_api_key: string | null
           id: string
           is_admin: boolean
+          last_generation_at: string | null
           logo_url: string | null
           lovable_api_key: string | null
+          onboarded: boolean
           openai_api_key: string | null
           owner_name: string | null
-          phone: string | null
-          services: string | null
-          signature_url: string | null
-          tagline: string | null
-          updated_at: string
-          value_prop: string | null
-          brand_color: string | null
-          brand_color_primary: string
-          brand_color_secondary: string
-          brand_color_accent: string
-          brand_font: string
-          plan: string
-          trial_generations_used: number
-          trial_generations_limit: number
-          subscription_status: string
-          subscription_ends_at: string | null
           payment_customer_id: string | null
           payment_subscription_id: string | null
-          last_generation_at: string | null
-          signup_ip: string | null
+          phone: string | null
+          plan: string
           restricted: boolean
-          onboarded: boolean
+          services: string | null
+          signature_url: string | null
+          signup_ip: string | null
+          subscription_ends_at: string | null
+          subscription_status: string
+          tagline: string | null
+          trial_generations_limit: number
+          trial_generations_used: number
+          updated_at: string
+          value_prop: string | null
         }
         Insert: {
           address?: string | null
           bank_details?: string | null
+          brand_color?: string
+          brand_color_accent?: string
+          brand_color_primary?: string
+          brand_color_secondary?: string
+          brand_font?: string
           business_name?: string | null
           country?: string
           created_at?: string
@@ -315,36 +320,36 @@ export type Database = {
           gemini_api_key?: string | null
           id: string
           is_admin?: boolean
+          last_generation_at?: string | null
           logo_url?: string | null
           lovable_api_key?: string | null
+          onboarded?: boolean
           openai_api_key?: string | null
           owner_name?: string | null
-          phone?: string | null
-          services?: string | null
-          signature_url?: string | null
-          tagline?: string | null
-          updated_at?: string
-          value_prop?: string | null
-          brand_color?: string | null
-          brand_color_primary?: string
-          brand_color_secondary?: string
-          brand_color_accent?: string
-          brand_font?: string
-          plan?: string
-          trial_generations_used?: number
-          trial_generations_limit?: number
-          subscription_status?: string
-          subscription_ends_at?: string | null
           payment_customer_id?: string | null
           payment_subscription_id?: string | null
-          last_generation_at?: string | null
-          signup_ip?: string | null
+          phone?: string | null
+          plan?: string
           restricted?: boolean
-          onboarded?: boolean
+          services?: string | null
+          signature_url?: string | null
+          signup_ip?: string | null
+          subscription_ends_at?: string | null
+          subscription_status?: string
+          tagline?: string | null
+          trial_generations_limit?: number
+          trial_generations_used?: number
+          updated_at?: string
+          value_prop?: string | null
         }
         Update: {
           address?: string | null
           bank_details?: string | null
+          brand_color?: string
+          brand_color_accent?: string
+          brand_color_primary?: string
+          brand_color_secondary?: string
+          brand_font?: string
           business_name?: string | null
           country?: string
           created_at?: string
@@ -355,32 +360,27 @@ export type Database = {
           gemini_api_key?: string | null
           id?: string
           is_admin?: boolean
+          last_generation_at?: string | null
           logo_url?: string | null
           lovable_api_key?: string | null
+          onboarded?: boolean
           openai_api_key?: string | null
           owner_name?: string | null
-          phone?: string | null
-          services?: string | null
-          signature_url?: string | null
-          tagline?: string | null
-          updated_at?: string
-          value_prop?: string | null
-          brand_color?: string | null
-          brand_color_primary?: string
-          brand_color_secondary?: string
-          brand_color_accent?: string
-          brand_font?: string
-          plan?: string
-          trial_generations_used?: number
-          trial_generations_limit?: number
-          subscription_status?: string
-          subscription_ends_at?: string | null
           payment_customer_id?: string | null
           payment_subscription_id?: string | null
-          last_generation_at?: string | null
-          signup_ip?: string | null
+          phone?: string | null
+          plan?: string
           restricted?: boolean
-          onboarded?: boolean
+          services?: string | null
+          signature_url?: string | null
+          signup_ip?: string | null
+          subscription_ends_at?: string | null
+          subscription_status?: string
+          tagline?: string | null
+          trial_generations_limit?: number
+          trial_generations_used?: number
+          updated_at?: string
+          value_prop?: string | null
         }
         Relationships: []
       }
