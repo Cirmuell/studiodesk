@@ -28,7 +28,7 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
       .from("secrets" as any)
       .select("name, value");
 
-    const secrets = (secretsRaw ?? []) as { name: string; value: string }[];
+    const secrets = ((secretsRaw ?? []) as unknown) as { name: string; value: string }[];
 
     if (secrets) {
       lovableKey = secrets.find((s) => s.name === "lovable_api_key")?.value || undefined;

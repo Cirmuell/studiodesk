@@ -41,7 +41,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
       console.warn("[Admin settings] Failed to fetch secrets from table:", secretsError);
     }
 
-    const secrets = (secretsRaw ?? []) as { name: string; value: string }[];
+    const secrets = ((secretsRaw ?? []) as unknown) as { name: string; value: string }[];
 
     const findSecret = (name: string) => {
       const secret = secrets.find((s) => s.name === name);
