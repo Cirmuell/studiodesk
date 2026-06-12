@@ -6,7 +6,7 @@ import { Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import logoImg from "@/assets/studiodesk-logo.png";
-import { checkEmailExists } from "@/lib/profile.functions";
+import { checkEmailExists, checkBusinessNameExists } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -17,10 +17,12 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const checkEmail = useServerFn(checkEmailExists);
+  const checkBusiness = useServerFn(checkBusinessNameExists);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [business, setBusiness] = useState("");
   const [loading, setLoading] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -40,11 +42,22 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { exists } = await checkEmail({ data: { email } });
-        if (exists) {
+        const { exists: emailExists } = await checkEmail({ data: { email } });
+        if (emailExists) {
           toast.error("multiple registration not allowed");
           setLoading(false);
           return;
+        }
+
+        if (business.trim()) {
+          const { exists: businessExists } = await checkBusiness({
+            data: { business_name: business },
+          });
+          if (businessExists) {
+            toast.error("Studio / Business name already registered");
+            setLoading(false);
+            return;
+          }
         }
 
         const { data, error } = await supabase.auth.signUp({
@@ -52,7 +65,7 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: "https://studiodesk-rouge.vercel.app",
-            data: { full_name: name },
+            data: { full_name: name, business_name: business },
           },
         });
         if (error) throw error;
@@ -128,14 +141,24 @@ function AuthPage() {
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-3">
           {mode === "signup" && (
-            <input
-              type="text"
-              placeholder="Your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
+            <>
+              <input
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <input
+                type="text"
+                placeholder="Studio / Business name"
+                value={business}
+                onChange={(e) => setBusiness(e.target.value)}
+                required
+                className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </>
           )}
           <input
             type="email"

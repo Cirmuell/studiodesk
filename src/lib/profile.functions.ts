@@ -135,3 +135,16 @@ export const checkEmailExists = createServerFn({ method: "POST" })
 
     return { exists: !!profile };
   });
+
+export const checkBusinessNameExists = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ business_name: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .ilike("business_name", data.business_name.trim())
+      .maybeSingle();
+
+    return { exists: !!profile };
+  });
