@@ -125,20 +125,6 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-  // Bounce Supabase auth callbacks that land on lovable.app over to the
-  // Vercel production deployment, preserving the token hash so the session
-  // is established there.
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    const hash = window.location.hash;
-    if (
-      host.endsWith("lovable.app") &&
-      hash.includes("access_token=") &&
-      hash.includes("type=")
-    ) {
-      window.location.replace(`https://studiodesk-rouge.vercel.app/auth${hash}`);
-    }
-  }
 
   useEffect(() => {
     void import("../pwa/register").then(({ registerPwa }) => registerPwa());

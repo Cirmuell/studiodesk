@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Mail, Eye, EyeOff } from "lucide-react";
+import { Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import logoAsset from "@/assets/studiodesk-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -17,7 +18,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [business, setBusiness] = useState("");
   const [loading, setLoading] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -42,7 +42,7 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: "https://studiodesk-rouge.vercel.app",
-            data: { full_name: name, business_name: business },
+            data: { full_name: name },
           },
         });
         if (error) throw error;
