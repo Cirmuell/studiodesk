@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import logoAsset from "@/assets/studiodesk-logo.png.asset.json";
+import logoImg from "@/assets/studiodesk-logo.png";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -100,7 +100,7 @@ function AuthPage() {
       <div className="flex-1 flex flex-col justify-center">
         <div className="flex justify-center mb-6">
           <img
-            src={logoAsset.url}
+            src={logoImg}
             alt="StudioDesk"
             className="size-16 rounded-2xl shadow-[var(--shadow-pop)]"
           />
