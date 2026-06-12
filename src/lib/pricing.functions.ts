@@ -37,12 +37,14 @@ export const listPricingRuns = createServerFn({ method: "GET" })
 export const runPricingAnalysis = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      project_id: z.string().uuid().optional().nullable(),
-      scope: z.string().min(10).max(4000),
-      hours: z.number().min(1).max(2000).optional(),
-      client_tier: z.enum(["standard", "preferred", "enterprise"]).default("standard"),
-    }).parse(d),
+    z
+      .object({
+        project_id: z.string().uuid().optional().nullable(),
+        scope: z.string().min(10).max(4000),
+        hours: z.number().min(1).max(2000).optional(),
+        client_tier: z.enum(["standard", "preferred", "enterprise"]).default("standard"),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     // Pull business context
@@ -54,6 +56,26 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
 
     // Enforce billing limits and security gates
     await enforceUsageLimits(context.userId, profile?.email ?? undefined, context.supabase);
+
+    // Caching check: Avoid calling AI if an identical request was made in the last 5 minutes
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: cachedRun } = await context.supabase
+      .from("pricing_runs")
+      .select("*")
+      .eq("user_id", context.userId)
+      .eq("scope", data.scope)
+      .eq("client_tier", data.client_tier)
+      .eq("hours", data.hours ?? null)
+      .gt("created_at", fiveMinutesAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (cachedRun) {
+      console.info("[AI PRICING] Cache Hit! Returning matching pricing run from database.");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return cachedRun as any;
+    }
 
     const { provider, model } = await getAiProvider(context.supabase);
     console.info(`[AI PRICING] Pricing requested. Resolved provider model: ${model}`);
@@ -108,14 +130,19 @@ Produce a pricing recommendation with line items (realistic deliverables and tas
       resultText = res.text.trim();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("429")) throw new Error("AI rate limit reached — please wait a moment and retry.");
-      if (msg.includes("402")) throw new Error("AI credits exhausted — top up to keep generating analyses.");
+      if (msg.includes("429"))
+        throw new Error("AI rate limit reached — please wait a moment and retry.");
+      if (msg.includes("402"))
+        throw new Error("AI credits exhausted — top up to keep generating analyses.");
       throw new Error(`AI pricing failed to fetch response: ${msg}`);
     }
 
     // Clean markdown code blocks if the model ignored the instructions and wrapped it anyway
     if (resultText.startsWith("```")) {
-      resultText = resultText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+      resultText = resultText
+        .replace(/^```json\s*/i, "")
+        .replace(/```$/, "")
+        .trim();
     }
 
     let out;
@@ -126,22 +153,27 @@ Produce a pricing recommendation with line items (realistic deliverables and tas
         throw new Error(validation.error.message);
       }
       out = validation.data;
-    } catch (parseError: any) {
-      console.warn("Initial JSON parse failed. Retrying with error details.", parseError);
+    } catch (parseError) {
+      const err = parseError instanceof Error ? parseError : new Error(String(parseError));
+      console.warn("Initial JSON parse failed. Retrying with error details.", err);
       try {
         const res = await generateText({
           model: provider(model),
           system: systemPromptWithFormat,
-          prompt: `${userPrompt}\n\nYour previous response failed validation with error: ${parseError.message}.\nYour previous response was:\n${resultText}\n\nPlease output the corrected raw JSON matching the schema precisely.`,
+          prompt: `${userPrompt}\n\nYour previous response failed validation with error: ${err.message}.\nYour previous response was:\n${resultText}\n\nPlease output the corrected raw JSON matching the schema precisely.`,
         });
         let retryText = res.text.trim();
         if (retryText.startsWith("```")) {
-          retryText = retryText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+          retryText = retryText
+            .replace(/^```json\s*/i, "")
+            .replace(/```$/, "")
+            .trim();
         }
         const parsed = JSON.parse(retryText);
         out = PricingSchema.parse(parsed);
-      } catch (retryError: any) {
-        throw new Error(`AI pricing failed to output valid JSON schema: ${retryError.message}`);
+      } catch (retryError) {
+        const err = retryError instanceof Error ? retryError : new Error(String(retryError));
+        throw new Error(`AI pricing failed to output valid JSON schema: ${err.message}`);
       }
     }
 
@@ -172,7 +204,9 @@ Produce a pricing recommendation with line items (realistic deliverables and tas
         confidence: out.confidence,
         rationale: out.rationale,
         line_items: out.line_items,
-      })
+        client_tier: data.client_tier,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -183,10 +217,7 @@ export const deletePricingRun = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
-      .from("pricing_runs")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("pricing_runs").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

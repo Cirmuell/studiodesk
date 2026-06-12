@@ -11,6 +11,31 @@ function randomToken(bytes = 24): string {
   return s;
 }
 
+class MemoryCache<T> {
+  private cache = new Map<string, { value: T; expiresAt: number }>();
+  constructor(private ttlMs: number) {}
+  get(key: string): T | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+  set(key: string, value: T): void {
+    this.cache.set(key, { value, expiresAt: Date.now() + this.ttlMs });
+  }
+}
+
+type SharedDocResult =
+  | { status: "not_found" }
+  | { status: "revoked" }
+  | { status: "expired" }
+  | { status: "ok"; document: unknown; profile: unknown };
+
+const sharedDocCache = new MemoryCache<SharedDocResult>(60 * 1000); // 60-second TTL
+
 export const listSharesForDocument = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ document_id: z.string().uuid() }).parse(d))
@@ -27,10 +52,12 @@ export const listSharesForDocument = createServerFn({ method: "GET" })
 export const createShare = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      document_id: z.string().uuid(),
-      expires_in_days: z.number().int().min(1).max(365).optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        document_id: z.string().uuid(),
+        expires_in_days: z.number().int().min(1).max(365).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     // confirm ownership of the doc (RLS will also enforce)
@@ -75,6 +102,12 @@ export const revokeShare = createServerFn({ method: "POST" })
 export const getSharedDocument = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ token: z.string().min(8).max(128) }).parse(d))
   .handler(async ({ data }) => {
+    const cached = sharedDocCache.get(data.token);
+    if (cached) {
+      console.info(`[CACHE HIT] getSharedDocument found cached entry for token: ${data.token}`);
+      return cached;
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: share, error } = await supabaseAdmin
@@ -85,12 +118,15 @@ export const getSharedDocument = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!share) return { status: "not_found" as const };
     if (share.revoked_at) return { status: "revoked" as const };
-    if (share.expires_at && new Date(share.expires_at) < new Date()) return { status: "expired" as const };
+    if (share.expires_at && new Date(share.expires_at) < new Date())
+      return { status: "expired" as const };
 
     const [{ data: doc }, { data: profile }] = await Promise.all([
       supabaseAdmin
         .from("documents")
-        .select("id, type, number, title, content, subtotal, tax, total, currency, issued_date, due_date, status, client:clients(id, name, company, email, phone)")
+        .select(
+          "id, type, number, title, content, subtotal, tax, total, currency, issued_date, due_date, status, client:clients(id, name, company, email, phone)",
+        )
         .eq("id", share.document_id)
         .maybeSingle(),
       supabaseAdmin
@@ -104,8 +140,13 @@ export const getSharedDocument = createServerFn({ method: "GET" })
     // Best-effort: bump view metrics
     await supabaseAdmin
       .from("document_shares")
-      .update({ view_count: ((share as { view_count?: number }).view_count ?? 0) + 1, last_viewed_at: new Date().toISOString() })
+      .update({
+        view_count: ((share as { view_count?: number }).view_count ?? 0) + 1,
+        last_viewed_at: new Date().toISOString(),
+      })
       .eq("id", share.id);
 
-    return { status: "ok" as const, document: doc, profile };
+    const result = { status: "ok" as const, document: doc, profile };
+    sharedDocCache.set(data.token, result);
+    return result;
   });

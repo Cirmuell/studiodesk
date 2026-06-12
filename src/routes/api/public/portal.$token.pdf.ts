@@ -30,11 +30,7 @@ export const Route = createFileRoute("/api/public/portal/$token/pdf")({
             .select("*, client:clients(*)")
             .eq("id", share.document_id)
             .maybeSingle(),
-          supabaseAdmin
-            .from("profiles")
-            .select("*")
-            .eq("id", share.user_id)
-            .maybeSingle(),
+          supabaseAdmin.from("profiles").select("*").eq("id", share.user_id).maybeSingle(),
         ]);
 
         if (!docRow) return new Response("Not found", { status: 404 });
@@ -60,7 +56,7 @@ export const Route = createFileRoute("/api/public/portal/$token/pdf")({
           headers: {
             "Content-Type": "application/pdf",
             "Content-Disposition": `inline; filename="${filename}"`,
-            "Cache-Control": "no-store",
+            "Cache-Control": "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400",
           },
         });
       },
