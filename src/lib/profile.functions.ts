@@ -17,21 +17,23 @@ export function cleanBrandAssetUrl(url: string | null | undefined): string | nul
   return url;
 }
 
-export async function getSignedBrandAssetUrl(publicUrl: string | null | undefined): Promise<string | null> {
+export async function getSignedBrandAssetUrl(
+  publicUrl: string | null | undefined,
+): Promise<string | null> {
   if (!publicUrl) return null;
   if (publicUrl.includes("token=")) return publicUrl;
-  
+
   const marker = "/brand-assets/";
   const markerIndex = publicUrl.indexOf(marker);
   if (markerIndex === -1) return publicUrl;
-  
+
   const filePath = publicUrl.substring(markerIndex + marker.length).split("?")[0];
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.storage
       .from("brand-assets")
       .createSignedUrl(filePath, 86400); // 24 hours
-      
+
     if (error || !data?.signedUrl) {
       console.error("[Storage] Error generating signed URL:", error);
       return publicUrl;
@@ -67,28 +69,42 @@ export const getProfile = createServerFn({ method: "GET" })
 export const updateProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      owner_name: z.string().max(120).optional().nullable(),
-      business_name: z.string().max(200).optional().nullable(),
-      tagline: z.string().max(280).optional().nullable(),
-      phone: z.string().max(40).optional().nullable(),
-      address: z.string().max(500).optional().nullable(),
-      currency: z.string().length(3).optional(),
-      country: z.string().length(2).optional(),
-      services: z.string().max(2000).optional().nullable(),
-      value_prop: z.string().max(2000).optional().nullable(),
-      day_rate_min: z.number().nonnegative().optional().nullable(),
-      day_rate_max: z.number().nonnegative().optional().nullable(),
-      bank_details: z.string().max(1000).optional().nullable(),
-      logo_url: z.string().max(1000).optional().nullable(),
-      signature_url: z.string().max(1000).optional().nullable(),
-      brand_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      brand_color_primary: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      brand_color_secondary: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      brand_color_accent: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      brand_font: z.enum(["Helvetica", "TimesRoman", "Courier"]).optional(),
-      onboarded: z.boolean().optional(),
-    }).parse(d),
+    z
+      .object({
+        owner_name: z.string().max(120).optional().nullable(),
+        business_name: z.string().max(200).optional().nullable(),
+        tagline: z.string().max(280).optional().nullable(),
+        phone: z.string().max(40).optional().nullable(),
+        address: z.string().max(500).optional().nullable(),
+        currency: z.string().length(3).optional(),
+        country: z.string().length(2).optional(),
+        services: z.string().max(2000).optional().nullable(),
+        value_prop: z.string().max(2000).optional().nullable(),
+        day_rate_min: z.number().nonnegative().optional().nullable(),
+        day_rate_max: z.number().nonnegative().optional().nullable(),
+        bank_details: z.string().max(1000).optional().nullable(),
+        logo_url: z.string().max(1000).optional().nullable(),
+        signature_url: z.string().max(1000).optional().nullable(),
+        brand_color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        brand_color_primary: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        brand_color_secondary: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        brand_color_accent: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        brand_font: z.enum(["Helvetica", "TimesRoman", "Courier"]).optional(),
+        onboarded: z.boolean().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     const cleanedData = { ...data };
@@ -99,9 +115,23 @@ export const updateProfile = createServerFn({ method: "POST" })
       cleanedData.signature_url = cleanBrandAssetUrl(cleanedData.signature_url);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (context.supabase.from("profiles") as any)
       .update(cleanedData)
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const checkEmailExists = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", data.email.toLowerCase().trim())
+      .maybeSingle();
+
+    return { exists: !!profile };
   });

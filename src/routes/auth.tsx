@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import logoImg from "@/assets/studiodesk-logo.png";
+import { checkEmailExists } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -14,6 +16,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const checkEmail = useServerFn(checkEmailExists);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,6 +40,13 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
+        const { exists } = await checkEmail({ data: { email } });
+        if (exists) {
+          toast.error("multiple registration not allowed");
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -113,7 +123,7 @@ function AuthPage() {
           {mode === "signup" ? "Start your creative studio." : "Welcome back."}
         </h1>
         <p className="text-muted-foreground mt-3 text-sm leading-relaxed text-center">
-          AI-grounded pricing, proposals, invoices and contracts — built for Nigerian creatives.
+          AI-grounded pricing, proposals, invoices and contracts — built for independent creatives.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-3">
