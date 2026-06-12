@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Mail, Eye, EyeOff } from "lucide-react";
+import { Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import logoAsset from "@/assets/studiodesk-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -17,7 +18,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [business, setBusiness] = useState("");
   const [loading, setLoading] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -42,7 +42,7 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: "https://studiodesk-rouge.vercel.app",
-            data: { full_name: name, business_name: business },
+            data: { full_name: name },
           },
         });
         if (error) throw error;
@@ -98,35 +98,30 @@ function AuthPage() {
   return (
     <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
       <div className="flex-1 flex flex-col justify-center">
-        <div className="size-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center mb-6">
-          <Sparkles className="size-6" />
+        <div className="flex justify-center mb-6">
+          <img
+            src={logoAsset.url}
+            alt="StudioDesk"
+            className="size-16 rounded-2xl shadow-[var(--shadow-pop)]"
+          />
         </div>
-        <h1 className="font-display text-4xl leading-tight">
+        <h1 className="font-display text-4xl leading-tight text-center">
           {mode === "signup" ? "Start your creative studio." : "Welcome back."}
         </h1>
-        <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+        <p className="text-muted-foreground mt-3 text-sm leading-relaxed text-center">
           AI-grounded pricing, proposals, invoices and contracts — built for Nigerian creatives.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-3">
           {mode === "signup" && (
-            <>
-              <input
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <input
-                type="text"
-                placeholder="Studio / business name"
-                value={business}
-                onChange={(e) => setBusiness(e.target.value)}
-                className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </>
+            <input
+              type="text"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
           )}
           <input
             type="email"
