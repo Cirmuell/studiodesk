@@ -80,6 +80,10 @@ function AuthPage() {
             <strong className="text-foreground">{verificationEmail}</strong>. Please click the link
             in the email to activate your account and access your creative studio.
           </p>
+          <p className="text-xs text-muted-foreground/85 mt-4 bg-surface/50 border border-border/60 rounded-2xl p-3 text-center">
+            💡 <strong>Tip:</strong> If you don't see the email, please check your{" "}
+            <strong>Spam</strong> or <strong>Junk</strong> folder.
+          </p>
           <button
             onClick={() => {
               setVerificationEmail("");
