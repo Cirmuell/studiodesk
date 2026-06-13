@@ -1,5 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+export const config = {
+  runtime: "edge",
+};
+
 export const Route = createFileRoute("/api/public/portal/$token/pdf")({
   server: {
     handlers: {

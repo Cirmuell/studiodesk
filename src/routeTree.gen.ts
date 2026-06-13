@@ -19,6 +19,7 @@ import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authenticated/documents'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as ApiPublicGeoRouteImport } from './routes/api/public/geo'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
 import { Route as ApiDocumentsIdPdfRouteImport } from './routes/api/documents.$id.pdf'
@@ -73,6 +74,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicGeoRoute = ApiPublicGeoRouteImport.update({
+  id: '/api/public/geo',
+  path: '/api/public/geo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/portal/$token': typeof PortalTokenRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
 }
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
 }
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
 }
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/portal/$token'
     | '/documents/$id'
     | '/projects/$id'
+    | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
   fileRoutesByTo: FileRoutesByTo
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/'
     | '/documents/$id'
     | '/projects/$id'
+    | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
   id:
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/documents/$id'
     | '/_authenticated/projects/$id'
+    | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
   fileRoutesById: FileRoutesById
@@ -195,6 +207,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   PortalTokenRoute: typeof PortalTokenRoute
+  ApiPublicGeoRoute: typeof ApiPublicGeoRoute
   ApiDocumentsIdPdfRoute: typeof ApiDocumentsIdPdfRoute
   ApiPublicPortalTokenPdfRoute: typeof ApiPublicPortalTokenPdfRoute
 }
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/geo': {
+      id: '/api/public/geo'
+      path: '/api/public/geo'
+      fullPath: '/api/public/geo'
+      preLoaderRoute: typeof ApiPublicGeoRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/projects/$id': {
       id: '/_authenticated/projects/$id'
@@ -356,6 +376,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   PortalTokenRoute: PortalTokenRoute,
+  ApiPublicGeoRoute: ApiPublicGeoRoute,
   ApiDocumentsIdPdfRoute: ApiDocumentsIdPdfRoute,
   ApiPublicPortalTokenPdfRoute: ApiPublicPortalTokenPdfRoute,
 }
