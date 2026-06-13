@@ -19,7 +19,9 @@ export const getBillingInfo = createServerFn({ method: "GET" })
     try {
       const { data: profile, error } = await context.supabase
         .from("profiles")
-        .select("plan, trial_generations_used, trial_generations_limit, subscription_status, subscription_ends_at, restricted")
+        .select(
+          "plan, trial_generations_used, trial_generations_limit, subscription_status, subscription_ends_at, restricted",
+        )
         .eq("id", context.userId)
         .maybeSingle();
 
@@ -62,10 +64,12 @@ export const getBillingInfo = createServerFn({ method: "GET" })
 export const subscribeToPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      plan: z.enum(["basic", "premium"]),
-      paymentMethod: z.string().default("card"),
-    }).parse(d),
+    z
+      .object({
+        plan: z.enum(["basic", "premium"]),
+        paymentMethod: z.string().default("card"),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     // -------------------------------------------------------------
@@ -111,7 +115,7 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
       const endsAt = new Date();
       endsAt.setMonth(endsAt.getMonth() + 1); // 1-month duration
 
-      const { error } = await context.supabase
+      const { error } = await supabaseAdmin
         .from("profiles")
         .update({
           plan: data.plan,
@@ -120,14 +124,16 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
           payment_customer_id: `cus_sim_${Math.random().toString(36).substring(7)}`,
           payment_subscription_id: `sub_sim_${Math.random().toString(36).substring(7)}`,
           restricted: false, // Reset restriction on payment
-        } as any)
+        })
         .eq("id", context.userId);
 
       if (error) throw error;
       return { status: "success", plan: data.plan };
     } catch (err: any) {
       if (err.message?.includes("does not exist")) {
-        throw new Error("Unable to upgrade: Database migration has not been applied yet. Run the SQL script in your Supabase SQL Editor first.");
+        throw new Error(
+          "Unable to upgrade: Database migration has not been applied yet. Run the SQL script in your Supabase SQL Editor first.",
+        );
       }
       throw new Error(`Failed to simulate subscription: ${err.message}`);
     }
