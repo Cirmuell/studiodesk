@@ -624,7 +624,7 @@ function SettingsPage() {
       </button>
 
       <p className="text-[11px] text-muted-foreground/70 text-center mt-8 flex items-center justify-center gap-1.5">
-        <Receipt className="size-3" /> Studio v1.0 · Built for Nigerian creatives
+        <Receipt className="size-3" /> Studio v1.0 · Built for independent creatives
       </p>
 
       {checkoutOpen && (
@@ -655,7 +655,7 @@ function SettingsPage() {
                   </p>
                 </div>
                 <p className="text-sm font-bold">
-                  ₦15,000<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
+                  $9<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
                 </p>
               </button>
 
@@ -672,11 +672,11 @@ function SettingsPage() {
                 <div>
                   <p className="text-sm font-semibold">Premium Studio</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Unlimited runs · Priority AI · portal logo
+                    100 runs/month · Priority AI · portal logo
                   </p>
                 </div>
                 <p className="text-sm font-bold">
-                  ₦35,000<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
+                  $19<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
                 </p>
               </button>
             </div>

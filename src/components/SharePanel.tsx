@@ -68,7 +68,9 @@ export function SharePanel({ documentId }: { documentId: string }) {
         <p className="text-sm font-semibold flex items-center gap-2">
           <Share2 className="size-4 text-primary" /> Client portal
         </p>
-        <button onClick={() => setOpen(false)} className="text-xs text-muted-foreground">Close</button>
+        <button onClick={() => setOpen(false)} className="text-xs text-muted-foreground">
+          Close
+        </button>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
@@ -107,12 +109,20 @@ export function SharePanel({ documentId }: { documentId: string }) {
                   <Link2 className="size-3.5 text-primary shrink-0" />
                   <span className="font-mono truncate flex-1">/portal/{s.token.slice(0, 12)}…</span>
                   {!dead && (
-                    <button onClick={() => copyLink(s.token)} className="size-7 grid place-items-center rounded-full bg-background border border-border" aria-label="Copy">
+                    <button
+                      onClick={() => copyLink(s.token)}
+                      className="size-7 grid place-items-center rounded-full bg-background border border-border"
+                      aria-label="Copy"
+                    >
                       <Copy className="size-3.5" />
                     </button>
                   )}
                   {!s.revoked_at && (
-                    <button onClick={() => revokeMut.mutate(s.id)} className="size-7 grid place-items-center rounded-full bg-background border border-border text-destructive" aria-label="Revoke">
+                    <button
+                      onClick={() => revokeMut.mutate(s.id)}
+                      className="size-7 grid place-items-center rounded-full bg-background border border-border text-destructive"
+                      aria-label="Revoke"
+                    >
                       <Trash2 className="size-3.5" />
                     </button>
                   )}
@@ -123,7 +133,8 @@ export function SharePanel({ documentId }: { documentId: string }) {
                     : s.expires_at
                       ? `Expires ${new Date(s.expires_at).toLocaleDateString()}`
                       : "No expiry"}
-                  {" · "}{s.view_count} view{s.view_count === 1 ? "" : "s"}
+                  {" · "}
+                  {s.view_count} view{s.view_count === 1 ? "" : "s"}
                 </p>
               </div>
             );

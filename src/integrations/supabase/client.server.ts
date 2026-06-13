@@ -2,13 +2,15 @@
 // Server-side Supabase client with service role key - bypasses RLS.
 // Use this for admin operations in server functions and server routes only.
 // For user-authenticated queries (with RLS), use the auth middleware instead.
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "./types";
 
 function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const SUPABASE_SERVICE_ROLE_KEY =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  const SUPABASE_PUBLISHABLE_KEY =
+    process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   if (!SUPABASE_URL) {
     const message = "Missing SUPABASE_URL environment variable. Connect Supabase in Lovable Cloud.";
@@ -17,9 +19,12 @@ function createSupabaseAdminClient() {
   }
 
   if (!SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn("[Supabase] SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to public Anon client (note: RLS policies will apply).");
+    console.warn(
+      "[Supabase] SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to public Anon client (note: RLS policies will apply).",
+    );
     if (!SUPABASE_PUBLISHABLE_KEY) {
-      const message = "Missing both SUPABASE_SERVICE_ROLE_KEY and SUPABASE_PUBLISHABLE_KEY environment variables.";
+      const message =
+        "Missing both SUPABASE_SERVICE_ROLE_KEY and SUPABASE_PUBLISHABLE_KEY environment variables.";
       console.error(`[Supabase] ${message}`);
       throw new Error(message);
     }
@@ -28,7 +33,7 @@ function createSupabaseAdminClient() {
         storage: undefined,
         persistSession: false,
         autoRefreshToken: false,
-      }
+      },
     });
   }
 
@@ -37,7 +42,7 @@ function createSupabaseAdminClient() {
       storage: undefined,
       persistSession: false,
       autoRefreshToken: false,
-    }
+    },
   });
 }
 

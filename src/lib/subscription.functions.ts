@@ -124,6 +124,7 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
           payment_customer_id: `cus_sim_${Math.random().toString(36).substring(7)}`,
           payment_subscription_id: `sub_sim_${Math.random().toString(36).substring(7)}`,
           restricted: false, // Reset restriction on payment
+          trial_generations_used: 0, // Reset usage counter on upgrade
         })
         .eq("id", context.userId);
 

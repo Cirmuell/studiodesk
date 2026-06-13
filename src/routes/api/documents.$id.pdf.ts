@@ -19,18 +19,15 @@ export const Route = createFileRoute("/api/documents/$id/pdf")({
           return new Response("Unauthorized", { status: 401 });
         }
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const supabaseKey =
+          process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         if (!supabaseUrl || !supabaseKey) {
           return new Response("Configuration error: Supabase credentials missing", { status: 500 });
         }
-        const supabase = createClient(
-          supabaseUrl,
-          supabaseKey,
-          {
-            global: { headers: { Authorization: `Bearer ${token}` } },
-            auth: { persistSession: false, autoRefreshToken: false },
-          },
-        );
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
 
         const { data: user, error: userErr } = await supabase.auth.getUser(token);
         if (userErr || !user.user) return new Response("Unauthorized", { status: 401 });

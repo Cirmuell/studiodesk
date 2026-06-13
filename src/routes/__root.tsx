@@ -82,15 +82,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "apple-mobile-web-app-title", content: "Studio" },
       { title: "StudioDesk — AI Creative Business Assistant" },
-      { name: "description", content: "AI-grounded pricing and business documents for independent creatives." },
+      {
+        name: "description",
+        content: "AI-grounded pricing and business documents for independent creatives.",
+      },
       { property: "og:title", content: "StudioDesk — AI Creative Business Assistant" },
-      { property: "og:description", content: "AI-grounded pricing and business documents for independent creatives." },
+      {
+        property: "og:description",
+        content: "AI-grounded pricing and business documents for independent creatives.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "StudioDesk — AI Creative Business Assistant" },
-      { name: "twitter:description", content: "AI-grounded pricing and business documents for independent creatives." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5207e65b-5a6e-4eeb-a375-893ae14fb410/id-preview-cedae4b8--341da375-7dbe-4bf2-bb9d-479d3bd71b75.lovable.app-1780893923073.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5207e65b-5a6e-4eeb-a375-893ae14fb410/id-preview-cedae4b8--341da375-7dbe-4bf2-bb9d-479d3bd71b75.lovable.app-1780893923073.png" },
+      {
+        name: "twitter:description",
+        content: "AI-grounded pricing and business documents for independent creatives.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5207e65b-5a6e-4eeb-a375-893ae14fb410/id-preview-cedae4b8--341da375-7dbe-4bf2-bb9d-479d3bd71b75.lovable.app-1780893923073.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5207e65b-5a6e-4eeb-a375-893ae14fb410/id-preview-cedae4b8--341da375-7dbe-4bf2-bb9d-479d3bd71b75.lovable.app-1780893923073.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -99,7 +116,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/icon-512.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -124,7 +144,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
 
   useEffect(() => {
     void import("../pwa/register").then(({ registerPwa }) => registerPwa());

@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature, x-paystack-signature",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, stripe-signature, x-paystack-signature",
 };
 
 serve(async (req) => {
@@ -40,13 +41,13 @@ serve(async (req) => {
     if (stripeSignature) {
       console.info("[Webhook] Received Stripe billing event");
       const eventType = payload.type;
-      
+
       if (eventType === "checkout.session.completed") {
         const session = payload.data.object;
         userId = session.client_reference_id || session.metadata?.userId;
         customerId = session.customer;
         subId = session.subscription;
-        
+
         // Resolve plan from metadata or line items
         const planName = session.metadata?.plan || "basic";
         plan = planName === "premium" ? "premium" : "basic";
@@ -56,7 +57,7 @@ serve(async (req) => {
         customerId = invoice.customer;
         subId = invoice.subscription;
       }
-    } 
+    }
     // 2. PAYSTACK WEBHOOK HANDLER
     else if (paystackSignature) {
       console.info("[Webhook] Received Paystack billing event");
@@ -81,10 +82,13 @@ serve(async (req) => {
 
     if (!userId) {
       console.warn("[Webhook] Event parsed successfully but no userId metadata found.");
-      return new Response(JSON.stringify({ status: "ignored", message: "Missing userId metadata" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({ status: "ignored", message: "Missing userId metadata" }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     // Update user profile inside public.profiles
@@ -100,6 +104,7 @@ serve(async (req) => {
         payment_customer_id: customerId || `cus_webhook_${Date.now()}`,
         payment_subscription_id: subId || `sub_webhook_${Date.now()}`,
         restricted: false, // Clear any suspension on payment
+        trial_generations_used: 0, // Reset usage counter on payment
       })
       .eq("id", userId);
 
@@ -112,10 +117,10 @@ serve(async (req) => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-
-  } catch (err: any) {
-    console.error("[Webhook Error]", err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("[Webhook Error]", errorMsg);
+    return new Response(JSON.stringify({ error: errorMsg }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

@@ -24,17 +24,17 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
       preferredModel = settings.preferred_model || undefined;
     }
 
-    const { data: secretsRaw } = await supabaseAdmin
-      .from("secrets" as any)
-      .select("name, value");
+    const { data: secretsRaw } = await supabaseAdmin.from("secrets" as any).select("name, value");
 
-    const secrets = ((secretsRaw ?? []) as unknown) as { name: string; value: string }[];
+    const secrets = (secretsRaw ?? []) as unknown as { name: string; value: string }[];
 
     if (secrets) {
       lovableKey = secrets.find((s) => s.name === "lovable_api_key")?.value || undefined;
       geminiKey = secrets.find((s) => s.name === "gemini_api_key")?.value || undefined;
       openaiKey = secrets.find((s) => s.name === "openai_api_key")?.value || undefined;
-      console.info("[AI GATEWAY] Successfully fetched credentials and preferred model from secrets table.");
+      console.info(
+        "[AI GATEWAY] Successfully fetched credentials and preferred model from secrets table.",
+      );
     }
   } catch (err) {
     console.warn("[AI GATEWAY] Failed to fetch admin settings or secrets from database:", err);
@@ -42,7 +42,9 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
 
   // 2. Fall back to environment variables if no database keys are configured
   if (!lovableKey && !geminiKey && !openaiKey) {
-    console.info("[AI GATEWAY] No database credentials configured. Falling back to environment variables.");
+    console.info(
+      "[AI GATEWAY] No database credentials configured. Falling back to environment variables.",
+    );
   }
 
   lovableKey = lovableKey || process.env.LOVABLE_API_KEY || undefined;
@@ -91,7 +93,6 @@ export async function getAiProvider(supabaseClient?: SupabaseClient<Database>) {
 
   console.error("[AI GATEWAY] No credentials found in database or environment variables.");
   throw new Error(
-    "AI gateway is not configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, or LOVABLE_API_KEY in your environment variables, or configure them in the Admin Dashboard."
+    "AI gateway is not configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, or LOVABLE_API_KEY in your environment variables, or configure them in the Admin Dashboard.",
   );
 }
-

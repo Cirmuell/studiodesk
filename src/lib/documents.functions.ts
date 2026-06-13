@@ -27,7 +27,10 @@ export type DocContent = z.infer<typeof DocContentSchema>;
 function extractJson(text: string): string {
   let t = text.trim();
   if (t.startsWith("```")) {
-    t = t.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+    t = t
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```$/, "")
+      .trim();
   }
   const first = t.indexOf("{");
   const last = t.lastIndexOf("}");
@@ -64,19 +67,21 @@ export const getDocument = createServerFn({ method: "GET" })
 export const updateDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      patch: z.object({
-        title: z.string().optional(),
-        content: z.unknown().optional(),
-        status: z.enum(["draft", "ready", "sent", "paid", "failed"]).optional(),
-        subtotal: z.number().optional(),
-        tax: z.number().optional(),
-        total: z.number().optional(),
-        number: z.string().optional(),
-        due_date: z.string().optional().nullable(),
-      }),
-    }).parse(d),
+    z
+      .object({
+        id: z.string().uuid(),
+        patch: z.object({
+          title: z.string().optional(),
+          content: z.unknown().optional(),
+          status: z.enum(["draft", "ready", "sent", "paid", "failed"]).optional(),
+          subtotal: z.number().optional(),
+          tax: z.number().optional(),
+          total: z.number().optional(),
+          number: z.string().optional(),
+          due_date: z.string().optional().nullable(),
+        }),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     const { error } = await context.supabase
@@ -90,12 +95,14 @@ export const updateDocument = createServerFn({ method: "POST" })
 export const draftDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      type: z.enum(["proposal", "invoice", "contract", "receipt"]),
-      project_id: z.string().uuid().optional().nullable(),
-      client_id: z.string().uuid().optional().nullable(),
-      notes: z.string().max(2000).optional(),
-    }).parse(d),
+    z
+      .object({
+        type: z.enum(["proposal", "invoice", "contract", "receipt"]),
+        project_id: z.string().uuid().optional().nullable(),
+        client_id: z.string().uuid().optional().nullable(),
+        notes: z.string().max(2000).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     const [{ data: profile }, projectRes, clientRes, pricingRunRes] = await Promise.all([
@@ -135,7 +142,7 @@ export const draftDocument = createServerFn({ method: "POST" })
   "payment_instructions": string
 }`;
 
-    const sys = `You draft ${data.type}s for independent creatives in Nigeria. Use clear, friendly business English. Amounts in ${currency}.
+    const sys = `You draft ${data.type}s for independent creatives. Use clear, friendly business English. Amounts in ${currency}.
 ${pricingRun ? "IMPORTANT: You MUST use the exact Recommended Total and the detailed line items (labels, rates, quantities, amounts) from the provided PRICING ANALYSIS. Do not invent fake prices or change the totals." : "Include realistic line items derived from the project scope."}
 ${profile?.bank_details ? "IMPORTANT: You MUST copy the provided STUDIO BANK DETAILS exactly into the 'payment_instructions' field. Do not invent fake bank accounts or details." : ""}
 
@@ -183,11 +190,17 @@ Generate a complete ${data.type} draft as raw JSON.`;
     let text = await callModel();
     let parsed = DocContentSchema.safeParse(
       (() => {
-        try { return JSON.parse(extractJson(text)); } catch { return null; }
+        try {
+          return JSON.parse(extractJson(text));
+        } catch {
+          return null;
+        }
       })(),
     );
     if (!parsed.success) {
-      text = await callModel(`\n\nYour previous response was invalid. Return ONLY raw JSON matching the schema. Previous output:\n${text.slice(0, 500)}`);
+      text = await callModel(
+        `\n\nYour previous response was invalid. Return ONLY raw JSON matching the schema. Previous output:\n${text.slice(0, 500)}`,
+      );
       try {
         parsed = DocContentSchema.safeParse(JSON.parse(extractJson(text)));
       } catch (e) {
@@ -200,7 +213,19 @@ Generate a complete ${data.type} draft as raw JSON.`;
 
     const content = parsed.data;
     const subtotal = content.line_items.reduce((s, li) => s + Number(li.amount || 0), 0);
-    const tax = Math.round(subtotal * 0.075); // 7.5% Nigerian VAT
+
+    // Country-specific tax rate mapping (NG: 7.5%, GH/ZA: 15%, KE: 16%, GB: 20%, CA: 5%, others: 0%)
+    const country = profile?.country?.toUpperCase() || "";
+    const TAX_RATES: Record<string, number> = {
+      NG: 0.075,
+      GH: 0.15,
+      ZA: 0.15,
+      KE: 0.16,
+      GB: 0.2,
+      CA: 0.05,
+    };
+    const taxRate = TAX_RATES[country] ?? 0;
+    const tax = Math.round(subtotal * taxRate);
     const total = subtotal + tax;
 
     const prefix = { proposal: "PRO", invoice: "INV", contract: "CON", receipt: "REC" }[data.type];
@@ -237,10 +262,7 @@ export const deleteDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
-      .from("documents")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("documents").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

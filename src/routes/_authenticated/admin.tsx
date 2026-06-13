@@ -17,7 +17,11 @@ function AdminPage() {
   const save = useServerFn(updateAdminSettings);
   const qc = useQueryClient();
 
-  const { data: settings, error, isLoading } = useQuery({
+  const {
+    data: settings,
+    error,
+    isLoading,
+  } = useQuery({
     queryKey: ["admin_settings"],
     queryFn: () => fetchAdminSettings(),
     retry: false,
@@ -70,7 +74,10 @@ function AdminPage() {
           <div className="space-y-1">
             <p className="font-display text-lg font-medium">Admin Access Required</p>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              Your account does not have administrator permissions. If you are the SaaS owner, please toggle <code className="bg-muted px-1.5 py-0.5 rounded text-[11px]">is_admin = true</code> in the profiles table in Supabase.
+              Your account does not have administrator permissions. If you are the SaaS owner,
+              please toggle{" "}
+              <code className="bg-muted px-1.5 py-0.5 rounded text-[11px]">is_admin = true</code> in
+              the profiles table in Supabase.
             </p>
             <div className="text-[11px] text-destructive bg-destructive/5 border border-destructive/10 px-3 py-2 rounded-lg max-w-xs mx-auto mt-2 font-mono text-left overflow-x-auto">
               Error: {error instanceof Error ? error.message : String(error)}
@@ -95,7 +102,8 @@ function AdminPage() {
           <div>
             <p className="font-semibold text-foreground">Secure Vault</p>
             <p className="text-muted-foreground mt-0.5">
-              These API keys are used server-side to power the AI operations. They are stored securely in a locked database table and are never sent to normal client browsers.
+              These API keys are used server-side to power the AI operations. They are stored
+              securely in a locked database table and are never sent to normal client browsers.
             </p>
           </div>
         </div>
@@ -162,7 +170,8 @@ function AdminPage() {
 
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 pt-1">
             <Sparkles className="size-3 text-primary mt-0.5 shrink-0" />
-            Configuring these keys allows your users to generate pricing models and drafts. Leave a key empty to fallback to system environment variables.
+            Configuring these keys allows your users to generate pricing models and drafts. Leave a
+            key empty to fallback to system environment variables.
           </p>
         </div>
 

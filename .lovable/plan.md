@@ -1,6 +1,7 @@
 # Fix: Email confirmation links landing on lovable.app instead of Vercel
 
 ## Why this happens
+
 Your backend only trusts its own published URL (`studiodesk.lovable.app`) as a redirect target. When the confirmation link's `emailRedirectTo` points at `studiodesk-rouge.vercel.app` (not on the trusted list), the auth system silently falls back to the default site URL — so users land on lovable.app with the session tokens in the URL hash, and the app there errors out.
 
 The redirect allow-list isn't directly editable on Lovable Cloud, so instead of fighting it, we add a tiny "bounce" step on the lovable.app side.
@@ -18,6 +19,7 @@ The redirect allow-list isn't directly editable on Lovable Cloud, so instead of 
 3. **Keep `emailRedirectTo` pointing at the Vercel URL** (already done) — once you redeploy this code to Vercel, even links that fall back to lovable.app will hop straight over to Vercel with the session intact.
 
 ## Technical notes
+
 - Files touched: `src/routes/index.tsx` (or `__root.tsx`) for the hash detection + bounce, and `src/routes/auth.tsx` for the confirmed-session handling.
 - No backend/database changes required.
 - You'll need to redeploy to Vercel after these changes for the flow to work end-to-end.

@@ -8,7 +8,13 @@ function formatPdfCurrency(amount: number | null | undefined, currency = "NGN"):
   return formatted.replace(/\u20A6/g, "NGN ");
 }
 
-type LineItem = { label: string; quantity: number; unit: string; unit_rate: number; amount: number };
+type LineItem = {
+  label: string;
+  quantity: number;
+  unit: string;
+  unit_rate: number;
+  amount: number;
+};
 type DocContent = {
   title?: string;
   intro?: string;
@@ -51,7 +57,7 @@ export interface PdfInput {
 
 export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  
+
   // Dynamic standard font loading
   const fontChoice = input.profile?.brand_font || "Helvetica";
   let standardFont = StandardFonts.Helvetica;
@@ -68,7 +74,7 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   const bold = await doc.embedFont(boldFont);
   const ink = rgb(0.13, 0.13, 0.15);
   const muted = rgb(0.45, 0.45, 0.48);
-  
+
   // Dynamic brand color parser
   const parseColor = (hex?: string | null, fallback = rgb(0.55, 0.36, 0.96)) => {
     if (!hex) return fallback;
@@ -76,10 +82,17 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
     const r = parseInt(clean.substring(0, 2), 16) / 255;
     const g = parseInt(clean.substring(2, 4), 16) / 255;
     const b = parseInt(clean.substring(4, 6), 16) / 255;
-    return rgb(isNaN(r) ? fallback.red : r, isNaN(g) ? fallback.green : g, isNaN(b) ? fallback.blue : b);
+    return rgb(
+      isNaN(r) ? fallback.red : r,
+      isNaN(g) ? fallback.green : g,
+      isNaN(b) ? fallback.blue : b,
+    );
   };
-  
-  const primary = parseColor((input.profile as any)?.brand_color_primary || input.profile?.brand_color, rgb(0.55, 0.36, 0.96));
+
+  const primary = parseColor(
+    (input.profile as any)?.brand_color_primary || input.profile?.brand_color,
+    rgb(0.55, 0.36, 0.96),
+  );
   const secondary = parseColor((input.profile as any)?.brand_color_secondary, rgb(0.1, 0.73, 0.51));
   const accent = parseColor((input.profile as any)?.brand_color_accent, rgb(0.96, 0.62, 0.04));
 
@@ -139,18 +152,29 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
 
   page.drawText(input.type.toUpperCase(), {
     x: 595 - margin - bold.widthOfTextAtSize(input.type.toUpperCase(), 14),
-    y, size: 14, font: bold, color: accent,
+    y,
+    size: 14,
+    font: bold,
+    color: accent,
   });
 
   if (hasLogo) {
     y -= logoHeightOffset;
     page.drawText((input.profile?.business_name || "").toUpperCase(), {
-      x: margin, y, size: 11, font: bold, color: ink,
+      x: margin,
+      y,
+      size: 11,
+      font: bold,
+      color: ink,
     });
     y -= 14;
   } else {
     page.drawText((input.profile?.business_name || "Studio").toUpperCase(), {
-      x: margin, y, size: 16, font: bold, color: ink,
+      x: margin,
+      y,
+      size: 16,
+      font: bold,
+      color: ink,
     });
     y -= 18;
   }
@@ -159,7 +183,13 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   }
   if (input.number) {
     const t = `#${input.number}`;
-    page.drawText(t, { x: 595 - margin - font.widthOfTextAtSize(t, 10), y, size: 10, font, color: muted });
+    page.drawText(t, {
+      x: 595 - margin - font.widthOfTextAtSize(t, 10),
+      y,
+      size: 10,
+      font,
+      color: muted,
+    });
   }
   y -= 14;
   if (input.profile?.phone) {
@@ -173,14 +203,25 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
     }
   }
   y -= 8;
-  page.drawLine({ start: { x: margin, y }, end: { x: 595 - margin, y }, thickness: 0.5, color: muted });
+  page.drawLine({
+    start: { x: margin, y },
+    end: { x: 595 - margin, y },
+    thickness: 0.5,
+    color: muted,
+  });
   y -= 20;
 
   // Bill to + meta
   const colY = y;
   page.drawText("BILL TO", { x: margin, y: colY, size: 8, font: bold, color: muted });
   y = colY - 14;
-  page.drawText(input.client?.name || input.client?.company || "—", { x: margin, y, size: 11, font: bold, color: ink });
+  page.drawText(input.client?.name || input.client?.company || "—", {
+    x: margin,
+    y,
+    size: 11,
+    font: bold,
+    color: ink,
+  });
   y -= 13;
   if (input.client?.company && input.client?.name) {
     page.drawText(input.client.company, { x: margin, y, size: 9, font, color: muted });
@@ -209,7 +250,13 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   // Title
   if (input.title || input.content.title) {
     ensure(28);
-    page.drawText(input.title || input.content.title || "", { x: margin, y, size: 16, font: bold, color: ink });
+    page.drawText(input.title || input.content.title || "", {
+      x: margin,
+      y,
+      size: 16,
+      font: bold,
+      color: ink,
+    });
     y -= 22;
   }
 
@@ -241,7 +288,12 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
   if (items.length) {
     ensure(30);
     y -= 4;
-    page.drawLine({ start: { x: margin, y }, end: { x: 595 - margin, y }, thickness: 0.5, color: muted });
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: 595 - margin, y },
+      thickness: 0.5,
+      color: muted,
+    });
     y -= 14;
     const cols = { desc: margin, qty: 360, rate: 410, amt: 500 };
     page.drawText("DESCRIPTION", { x: cols.desc, y, size: 8, font: bold, color: secondary });
@@ -249,18 +301,32 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
     page.drawText("RATE", { x: cols.rate, y, size: 8, font: bold, color: secondary });
     page.drawText("AMOUNT", { x: cols.amt, y, size: 8, font: bold, color: secondary });
     y -= 12;
-    page.drawLine({ start: { x: margin, y }, end: { x: 595 - margin, y }, thickness: 0.5, color: muted });
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: 595 - margin, y },
+      thickness: 0.5,
+      color: muted,
+    });
     y -= 12;
     for (const li of items) {
       const lines = wrap(li.label, 300, font, 10);
       ensure(lines.length * 12 + 4);
       page.drawText(lines[0] ?? "", { x: cols.desc, y, size: 10, font, color: ink });
       page.drawText(String(li.quantity), { x: cols.qty, y, size: 10, font, color: ink });
-      page.drawText(formatPdfCurrency(li.unit_rate, input.currency), { x: cols.rate, y, size: 10, font, color: ink });
+      page.drawText(formatPdfCurrency(li.unit_rate, input.currency), {
+        x: cols.rate,
+        y,
+        size: 10,
+        font,
+        color: ink,
+      });
       const amtStr = formatPdfCurrency(li.amount, input.currency);
       page.drawText(amtStr, {
         x: 595 - margin - font.widthOfTextAtSize(amtStr, 10),
-        y, size: 10, font, color: ink,
+        y,
+        size: 10,
+        font,
+        color: ink,
       });
       y -= 12;
       for (let i = 1; i < lines.length; i++) {
@@ -270,7 +336,12 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
       y -= 2;
     }
     y -= 4;
-    page.drawLine({ start: { x: margin, y }, end: { x: 595 - margin, y }, thickness: 0.5, color: muted });
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: 595 - margin, y },
+      thickness: 0.5,
+      color: muted,
+    });
     y -= 16;
 
     // Totals
@@ -287,7 +358,10 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
       page.drawText(label, { x: 410, y, size: s, font: f, color: ink });
       page.drawText(txt, {
         x: 595 - margin - f.widthOfTextAtSize(txt, s),
-        y, size: s, font: f, color: isTotal ? primary : ink,
+        y,
+        size: s,
+        font: f,
+        color: isTotal ? primary : ink,
       });
       y -= 14;
     }
@@ -336,7 +410,7 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
       ensure(dims.height + 30);
       y -= 18;
       page.drawText("SIGNATURE", { x: margin, y, size: 8, font: bold, color: muted });
-      y -= (dims.height + 6);
+      y -= dims.height + 6;
       page.drawImage(img, {
         x: margin,
         y,

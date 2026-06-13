@@ -187,7 +187,7 @@ function PricingPage() {
         {mut.isPending ? "Analysing…" : "Run pricing analysis"}
       </button>
       <p className="text-[11px] text-muted-foreground text-center mt-3 px-6">
-        AI estimate grounded in your studio profile and the Nigerian market. Review before sending.
+        AI estimate grounded in your studio profile and market rates. Review before sending.
       </p>
 
       <h2 className="font-display text-lg mt-8 mb-3">Recent analyses</h2>

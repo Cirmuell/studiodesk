@@ -16,14 +16,16 @@ export const listClients = createServerFn({ method: "GET" })
 export const createClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      name: z.string().min(1).max(120),
-      company: z.string().max(200).optional().nullable(),
-      email: z.string().email().optional().nullable().or(z.literal("")),
-      phone: z.string().max(40).optional().nullable(),
-      tier: z.enum(["standard", "preferred", "enterprise"]).default("standard"),
-      notes: z.string().max(2000).optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        name: z.string().min(1).max(120),
+        company: z.string().max(200).optional().nullable(),
+        email: z.string().email().optional().nullable().or(z.literal("")),
+        phone: z.string().max(40).optional().nullable(),
+        tier: z.enum(["standard", "preferred", "enterprise"]).default("standard"),
+        notes: z.string().max(2000).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     const { data: row, error } = await context.supabase

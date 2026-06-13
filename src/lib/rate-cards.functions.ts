@@ -16,13 +16,15 @@ export const listRateCards = createServerFn({ method: "GET" })
 export const createRateCard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      name: z.string().min(1).max(160),
-      unit: z.string().max(40).default("hour"),
-      rate: z.number().nonnegative(),
-      currency: z.string().length(3).default("NGN"),
-      notes: z.string().max(1000).optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        name: z.string().min(1).max(160),
+        unit: z.string().max(40).default("hour"),
+        rate: z.number().nonnegative(),
+        currency: z.string().length(3).default("NGN"),
+        notes: z.string().max(1000).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     const { data: row, error } = await context.supabase

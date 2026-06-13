@@ -10,7 +10,21 @@ import { listDocuments } from "@/lib/documents.functions";
 import { listPricingRuns } from "@/lib/pricing.functions";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowUpRight, Calculator, FileText, LogOut, Sparkles, TrendingUp, Check, ArrowRight, ArrowLeft, Building2, Palette, CreditCard, Shield } from "lucide-react";
+import {
+  ArrowUpRight,
+  Calculator,
+  FileText,
+  LogOut,
+  Sparkles,
+  TrendingUp,
+  Check,
+  ArrowRight,
+  ArrowLeft,
+  Building2,
+  Palette,
+  CreditCard,
+  Shield,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -18,7 +32,10 @@ export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Studio — Your creative business at a glance" },
-      { name: "description", content: "AI pricing, proposals and invoices for Nigerian creatives." },
+      {
+        name: "description",
+        content: "AI pricing, proposals and invoices for independent creatives.",
+      },
     ],
   }),
   component: Dashboard,
@@ -69,10 +86,18 @@ function DashboardInner() {
 
   return (
     <AppShell
-      subtitle={new Date().toLocaleDateString("en-NG", { weekday: "long", month: "short", day: "numeric" })}
+      subtitle={new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      })}
       title={`Hello, ${profile?.owner_name?.split(" ")[0] ?? "there"}`}
       action={
-        <button onClick={signOut} aria-label="Sign out" className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground">
+        <button
+          onClick={signOut}
+          aria-label="Sign out"
+          className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground"
+        >
           <LogOut className="size-[18px]" />
         </button>
       }
@@ -82,8 +107,12 @@ function DashboardInner() {
         <div className="absolute -bottom-12 -left-8 size-32 rounded-full bg-accent/40 blur-2xl" />
         <div className="relative">
           <p className="text-xs uppercase tracking-[0.2em] opacity-70">Invoiced</p>
-          <p className="font-display text-4xl mt-1">{formatCurrency(invoicedThisMonth, currency)}</p>
-          <p className="text-sm opacity-80 mt-0.5">Across {docs.filter((d) => d.type === "invoice").length} invoices</p>
+          <p className="font-display text-4xl mt-1">
+            {formatCurrency(invoicedThisMonth, currency)}
+          </p>
+          <p className="text-sm opacity-80 mt-0.5">
+            Across {docs.filter((d) => d.type === "invoice").length} invoices
+          </p>
           <div className="flex items-center gap-1.5 mt-3 text-xs">
             <TrendingUp className="size-3.5 text-primary" />
             <span className="text-primary font-medium">{projects.length}</span>
@@ -93,7 +122,10 @@ function DashboardInner() {
       </section>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <Link to="/pricing" className="card-soft p-4 flex flex-col gap-2 active:scale-[0.98] transition">
+        <Link
+          to="/pricing"
+          className="card-soft p-4 flex flex-col gap-2 active:scale-[0.98] transition"
+        >
           <div className="size-9 rounded-full bg-primary/10 grid place-items-center text-primary">
             <Calculator className="size-[18px]" />
           </div>
@@ -102,7 +134,10 @@ function DashboardInner() {
             <p className="text-xs text-muted-foreground">AI-grounded estimates</p>
           </div>
         </Link>
-        <Link to="/documents" className="card-soft p-4 flex flex-col gap-2 active:scale-[0.98] transition">
+        <Link
+          to="/documents"
+          className="card-soft p-4 flex flex-col gap-2 active:scale-[0.98] transition"
+        >
           <div className="size-9 rounded-full bg-secondary grid place-items-center text-secondary-foreground">
             <FileText className="size-[18px]" />
           </div>
@@ -117,14 +152,21 @@ function DashboardInner() {
         <section className="card-soft p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="size-4 text-primary" />
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-medium">Latest pricing insight</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-medium">
+              Latest pricing insight
+            </p>
           </div>
-          <p className="font-display text-lg leading-snug">{lastRun.project?.title ?? "Custom scope"}</p>
+          <p className="font-display text-lg leading-snug">
+            {lastRun.project?.title ?? "Custom scope"}
+          </p>
           <div className="flex items-end justify-between mt-2">
             <div>
-              <p className="text-2xl font-display">{formatCurrency(lastRun.recommended_total, lastRun.currency)}</p>
+              <p className="text-2xl font-display">
+                {formatCurrency(lastRun.recommended_total, lastRun.currency)}
+              </p>
               <p className="text-xs text-muted-foreground">
-                Range {formatCurrency(lastRun.range_low, lastRun.currency)}–{formatCurrency(lastRun.range_high, lastRun.currency)}
+                Range {formatCurrency(lastRun.range_low, lastRun.currency)}–
+                {formatCurrency(lastRun.range_high, lastRun.currency)}
               </p>
             </div>
             <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-success/15 text-success font-semibold">
@@ -140,12 +182,18 @@ function DashboardInner() {
       ) : (
         <div className="space-y-2.5 mb-6">
           {activeProjects.map((p) => (
-            <Link key={p.id} to="/projects/$id" params={{ id: p.id }} className="card-soft p-3.5 flex items-center gap-3 active:scale-[0.99] transition">
+            <Link
+              key={p.id}
+              to="/projects/$id"
+              params={{ id: p.id }}
+              className="card-soft p-3.5 flex items-center gap-3 active:scale-[0.99] transition"
+            >
               <ClientAvatar name={p.client?.name ?? p.title} />
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm truncate">{p.title}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {p.client?.company ?? p.client?.name ?? "No client"} · {formatCurrency(p.budget ?? 0, p.currency)}
+                  {p.client?.company ?? p.client?.name ?? "No client"} ·{" "}
+                  {formatCurrency(p.budget ?? 0, p.currency)}
                 </p>
               </div>
               <ArrowUpRight className="size-4 text-muted-foreground" />
@@ -160,12 +208,19 @@ function DashboardInner() {
       ) : (
         <div className="space-y-2.5">
           {recentDocs.map((d) => (
-            <Link to="/documents/$id" params={{ id: d.id }} key={d.id} className="card-soft p-3.5 flex items-center gap-3 active:scale-[0.99] transition">
+            <Link
+              to="/documents/$id"
+              params={{ id: d.id }}
+              key={d.id}
+              className="card-soft p-3.5 flex items-center gap-3 active:scale-[0.99] transition"
+            >
               <div className="size-10 rounded-xl bg-muted grid place-items-center text-muted-foreground">
                 <FileText className="size-[18px]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate capitalize">{d.type} · {d.number ?? "draft"}</p>
+                <p className="text-sm font-medium truncate capitalize">
+                  {d.type} · {d.number ?? "draft"}
+                </p>
                 <p className="text-xs text-muted-foreground truncate">
                   {d.client?.company ?? d.client?.name ?? "—"} · {timeAgo(d.updated_at)}
                 </p>
@@ -186,13 +241,19 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
   return (
     <div className="flex items-center justify-between mb-2.5 px-1">
       <h2 className="font-display text-lg">{title}</h2>
-      <Link to={href as never} className="text-xs text-primary font-medium">See all</Link>
+      <Link to={href as never} className="text-xs text-primary font-medium">
+        See all
+      </Link>
     </div>
   );
 }
 
 function EmptyHint({ text }: { text: string }) {
-  return <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center mb-6">{text}</p>;
+  return (
+    <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center mb-6">
+      {text}
+    </p>
+  );
 }
 
 function OnboardingWizard({ profile }: { profile: any }) {
@@ -203,13 +264,46 @@ function OnboardingWizard({ profile }: { profile: any }) {
   const [ownerName, setOwnerName] = useState(profile?.owner_name ?? "");
   const [businessName, setBusinessName] = useState(profile?.business_name ?? "");
   const [currency, setCurrency] = useState(profile?.currency ?? "NGN");
+  const [country, setCountry] = useState(profile?.country ?? "NG");
 
   const [services, setServices] = useState(profile?.services ?? "");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [dayRateMin, setDayRateMin] = useState(profile?.day_rate_min ?? 50000);
   const [dayRateMax, setDayRateMax] = useState(profile?.day_rate_max ?? 150000);
 
-  const [primaryColor, setPrimaryColor] = useState(profile?.brand_color_primary ?? profile?.brand_color ?? "#8B5CF6");
+  // Automatically detect user geolocation IP and default their currency & country
+  useEffect(() => {
+    if (!profile?.currency || !profile?.country) {
+      fetch("/api/public/geo")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.currency && !profile?.currency) {
+            setCurrency(data.currency);
+          }
+          if (data.country && !profile?.country) {
+            setCountry(data.country);
+          }
+        })
+        .catch((err) => console.warn("Failed to fetch geo info:", err));
+    }
+  }, [profile]);
+
+  // Adjust day rates based on active currency if profile limits are not set
+  useEffect(() => {
+    if (!profile?.day_rate_min) {
+      if (currency === "NGN") {
+        setDayRateMin(50000);
+        setDayRateMax(150000);
+      } else {
+        setDayRateMin(500);
+        setDayRateMax(1500);
+      }
+    }
+  }, [currency, profile]);
+
+  const [primaryColor, setPrimaryColor] = useState(
+    profile?.brand_color_primary ?? profile?.brand_color ?? "#8B5CF6",
+  );
   const [secondaryColor, setSecondaryColor] = useState(profile?.brand_color_secondary ?? "#10B981");
   const [accentColor, setAccentColor] = useState(profile?.brand_color_accent ?? "#F59E0B");
   const [brandFont, setBrandFont] = useState(profile?.brand_font ?? "Helvetica");
@@ -229,6 +323,7 @@ function OnboardingWizard({ profile }: { profile: any }) {
           owner_name: ownerName || null,
           business_name: businessName || null,
           currency,
+          country,
           services: services || null,
           day_rate_min: Number(dayRateMin),
           day_rate_max: Number(dayRateMax),
@@ -259,10 +354,10 @@ function OnboardingWizard({ profile }: { profile: any }) {
   ];
 
   const currencyOptions = [
-    { code: "NGN", label: "Nigerian Naira (NGN)", flag: "🇳🇬" },
     { code: "USD", label: "US Dollar (USD)", flag: "🇺🇸" },
-    { code: "GBP", label: "British Pound (GBP)", flag: "🇬🇧" },
     { code: "EUR", label: "Euro (EUR)", flag: "🇪🇺" },
+    { code: "GBP", label: "British Pound (GBP)", flag: "🇬🇧" },
+    { code: "NGN", label: "Nigerian Naira (NGN)", flag: "🇳🇬" },
   ];
 
   const handleNext = () => {
@@ -284,13 +379,14 @@ function OnboardingWizard({ profile }: { profile: any }) {
   return (
     <div className="min-h-dvh bg-gradient-to-tr from-muted/50 via-background to-primary/5 flex flex-col justify-center py-12 px-6">
       <div className="max-w-xl w-full mx-auto space-y-6">
-        
         {/* Progress header */}
         <div className="text-center space-y-2 animate-in fade-in duration-300">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] uppercase font-bold tracking-widest">
             <Sparkles className="size-3" /> Step {step} of 4
           </span>
-          <h1 className="font-display text-3xl tracking-tight text-foreground">Set up your creative studio</h1>
+          <h1 className="font-display text-3xl tracking-tight text-foreground">
+            Set up your creative studio
+          </h1>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             Let's configure your initial profile to ground the AI in your context immediately.
           </p>
@@ -303,7 +399,7 @@ function OnboardingWizard({ profile }: { profile: any }) {
               key={s}
               className={cn(
                 "h-1.5 rounded-full flex-1 transition-all duration-300",
-                step >= s ? "bg-primary" : "bg-muted"
+                step >= s ? "bg-primary" : "bg-muted",
               )}
             />
           ))}
@@ -311,35 +407,42 @@ function OnboardingWizard({ profile }: { profile: any }) {
 
         {/* Form card */}
         <div className="card-soft bg-background/60 backdrop-blur-md border border-border/60 p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden">
-          
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
-              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">Studio Identity</h2>
-              
+              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">
+                Studio Identity
+              </h2>
+
               <label className="block space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Your Name</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Your Name
+                </span>
                 <input
                   type="text"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  placeholder="e.g. Olumayowa"
+                  placeholder="e.g. Alex"
                   className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm mt-1 focus:ring-1 focus:ring-primary focus:outline-none"
                 />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Studio / Business Name</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Studio / Business Name
+                </span>
                 <input
                   type="text"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="e.g. Mayowa Design Studio"
+                  placeholder="e.g. Apex Design Studio"
                   className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm mt-1 focus:ring-1 focus:ring-primary focus:outline-none"
                 />
               </label>
 
               <div className="space-y-2">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">Preferred Currency</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                  Preferred Currency
+                </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {currencyOptions.map((opt) => (
                     <button
@@ -350,7 +453,7 @@ function OnboardingWizard({ profile }: { profile: any }) {
                         "h-11 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]",
                         currency === opt.code
                           ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                          : "bg-muted/40 hover:bg-muted border-border text-muted-foreground"
+                          : "bg-muted/40 hover:bg-muted border-border text-muted-foreground",
                       )}
                     >
                       <span className="text-sm leading-none">{opt.flag}</span>
@@ -364,10 +467,14 @@ function OnboardingWizard({ profile }: { profile: any }) {
 
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
-              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">Focus & Standard Rates</h2>
+              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">
+                Focus & Standard Rates
+              </h2>
 
               <div className="space-y-2">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">Select Creative Disciplines (Tap to select)</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                  Select Creative Disciplines (Tap to select)
+                </span>
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
                   {creativeTagsPreset.map((tag) => {
                     const active = selectedTags.includes(tag);
@@ -386,7 +493,7 @@ function OnboardingWizard({ profile }: { profile: any }) {
                           "px-3 py-1.5 rounded-full border text-[11px] font-medium transition-all duration-200",
                           active
                             ? "bg-primary/15 border-primary/40 text-primary"
-                            : "bg-muted/40 hover:bg-muted border-border text-muted-foreground"
+                            : "bg-muted/40 hover:bg-muted border-border text-muted-foreground",
                         )}
                       >
                         {tag}
@@ -397,7 +504,9 @@ function OnboardingWizard({ profile }: { profile: any }) {
               </div>
 
               <label className="block space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Services Summary</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Services Summary
+                </span>
                 <textarea
                   value={services}
                   onChange={(e) => setServices(e.target.value)}
@@ -409,7 +518,9 @@ function OnboardingWizard({ profile }: { profile: any }) {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Standard Day Rates ({currency})</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    Standard Day Rates ({currency})
+                  </span>
                   <span className="text-[10px] font-mono font-bold text-primary">
                     {dayRateMin.toLocaleString()} – {dayRateMax.toLocaleString()}
                   </span>
@@ -440,14 +551,18 @@ function OnboardingWizard({ profile }: { profile: any }) {
 
           {step === 3 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300">
-              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">Brand Styles & Live Preview</h2>
+              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">
+                Brand Styles & Live Preview
+              </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Inputs block */}
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">Brand Color Palette</span>
-                    
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block">
+                      Brand Color Palette
+                    </span>
+
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[9px] text-muted-foreground">Primary Accent</span>
@@ -480,7 +595,9 @@ function OnboardingWizard({ profile }: { profile: any }) {
                   </div>
 
                   <label className="block space-y-1">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Standard Export Font</span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Standard Export Font
+                    </span>
                     <select
                       value={brandFont}
                       onChange={(e) => setBrandFont(e.target.value)}
@@ -494,27 +611,52 @@ function OnboardingWizard({ profile }: { profile: any }) {
                 </div>
 
                 {/* Mock preview block */}
-                <div className="border border-border/80 rounded-2xl bg-white p-4 text-[10px] text-black shadow-inner flex flex-col justify-between min-h-[180px] select-none" style={{ fontFamily: brandFont === 'TimesRoman' ? 'Times New Roman, serif' : brandFont === 'Courier' ? 'Courier New, monospace' : 'Helvetica, sans-serif' }}>
+                <div
+                  className="border border-border/80 rounded-2xl bg-white p-4 text-[10px] text-black shadow-inner flex flex-col justify-between min-h-[180px] select-none"
+                  style={{
+                    fontFamily:
+                      brandFont === "TimesRoman"
+                        ? "Times New Roman, serif"
+                        : brandFont === "Courier"
+                          ? "Courier New, monospace"
+                          : "Helvetica, sans-serif",
+                  }}
+                >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="font-bold uppercase tracking-wide text-gray-900" style={{ color: primaryColor }}>{businessName || "My Studio"}</p>
+                        <p
+                          className="font-bold uppercase tracking-wide text-gray-900"
+                          style={{ color: primaryColor }}
+                        >
+                          {businessName || "My Studio"}
+                        </p>
                         <p className="text-[8px] text-gray-500">{ownerName || "Creative Owner"}</p>
                       </div>
-                      <span className="font-bold text-[9px] uppercase tracking-widest" style={{ color: accentColor }}>Proposal</span>
+                      <span
+                        className="font-bold text-[9px] uppercase tracking-widest"
+                        style={{ color: accentColor }}
+                      >
+                        Proposal
+                      </span>
                     </div>
-                    
+
                     <div className="h-[0.5px] w-full" style={{ backgroundColor: secondaryColor }} />
-                    
+
                     <div className="space-y-1">
                       <p className="font-bold text-gray-700">Project Overview</p>
-                      <p className="text-[7px] leading-relaxed text-gray-500">Scope includes creative strategy and production deliverables customized to creative industry benchmarks.</p>
+                      <p className="text-[7px] leading-relaxed text-gray-500">
+                        Scope includes creative strategy and production deliverables customized to
+                        creative industry benchmarks.
+                      </p>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
                     <span className="font-bold text-gray-700">Recommended Budget</span>
-                    <span className="font-bold text-[11px]" style={{ color: primaryColor }}>500,000 {currency}</span>
+                    <span className="font-bold text-[11px]" style={{ color: primaryColor }}>
+                      500,000 {currency}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -523,10 +665,14 @@ function OnboardingWizard({ profile }: { profile: any }) {
 
           {step === 4 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
-              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">Billing & Setup Summary</h2>
+              <h2 className="font-display text-lg font-semibold border-b border-border/50 pb-2">
+                Billing & Setup Summary
+              </h2>
 
               <label className="block space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Bank Details / Payment instructions</span>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Bank Details / Payment instructions
+                </span>
                 <textarea
                   value={bankDetails}
                   onChange={(e) => setBankDetails(e.target.value)}
@@ -535,7 +681,8 @@ function OnboardingWizard({ profile }: { profile: any }) {
                   className="w-full px-3 py-2.5 rounded-xl bg-muted border border-border text-sm mt-1 focus:ring-1 focus:ring-primary focus:outline-none resize-none"
                 />
                 <span className="text-[9px] text-muted-foreground leading-normal block mt-1">
-                  Payment instructions are automatically parsed and written directly into invoice and receipt PDF exports.
+                  Payment instructions are automatically parsed and written directly into invoice
+                  and receipt PDF exports.
                 </span>
               </label>
 
@@ -544,7 +691,9 @@ function OnboardingWizard({ profile }: { profile: any }) {
                 <div>
                   <p className="font-semibold text-foreground">Secure & Grounded Context</p>
                   <p className="text-muted-foreground text-[10px] mt-0.5">
-                    Your profile day rates, currencies, and brand presets are compiled into AI queries so that generated drafts match your exact identity. You can adjust all of this later in Settings.
+                    Your profile day rates, currencies, and brand presets are compiled into AI
+                    queries so that generated drafts match your exact identity. You can adjust all
+                    of this later in Settings.
                   </p>
                 </div>
               </div>
@@ -571,15 +720,17 @@ function OnboardingWizard({ profile }: { profile: any }) {
               {saveMut.isPending ? (
                 "Saving Setup..."
               ) : step === 4 ? (
-                <>Finish & Open <Check className="size-4" /></>
+                <>
+                  Finish & Open <Check className="size-4" />
+                </>
               ) : (
-                <>Continue <ArrowRight className="size-4" /></>
+                <>
+                  Continue <ArrowRight className="size-4" />
+                </>
               )}
             </button>
           </div>
-
         </div>
-        
       </div>
     </div>
   );

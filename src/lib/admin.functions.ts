@@ -12,7 +12,7 @@ async function verifyIsAdmin(supabase: SupabaseClient<Database>, userId: string)
     .select("is_admin")
     .eq("id", userId)
     .maybeSingle();
-    
+
   if (error || !profile?.is_admin) {
     throw new Error("Unauthorized: Admin access required");
   }
@@ -41,7 +41,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
       console.warn("[Admin settings] Failed to fetch secrets from table:", secretsError);
     }
 
-    const secrets = ((secretsRaw ?? []) as unknown) as { name: string; value: string }[];
+    const secrets = (secretsRaw ?? []) as unknown as { name: string; value: string }[];
 
     const findSecret = (name: string) => {
       const secret = secrets.find((s) => s.name === name);
@@ -59,12 +59,14 @@ export const getAdminSettings = createServerFn({ method: "GET" })
 export const updateAdminSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      gemini_api_key: z.string().max(500).optional().nullable(),
-      openai_api_key: z.string().max(500).optional().nullable(),
-      lovable_api_key: z.string().max(500).optional().nullable(),
-      preferred_model: z.string().max(100).optional().nullable(),
-    }).parse(d),
+    z
+      .object({
+        gemini_api_key: z.string().max(500).optional().nullable(),
+        openai_api_key: z.string().max(500).optional().nullable(),
+        lovable_api_key: z.string().max(500).optional().nullable(),
+        preferred_model: z.string().max(100).optional().nullable(),
+      })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     await verifyIsAdmin(context.supabase, context.userId);
@@ -79,7 +81,7 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
 
     // 2. Update secrets
     const secretsToUpdate: { name: string; value: string | null }[] = [];
-    
+
     if (data.gemini_api_key !== "••••••••") {
       secretsToUpdate.push({ name: "gemini_api_key", value: data.gemini_api_key ?? null });
     }

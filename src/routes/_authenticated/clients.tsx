@@ -21,13 +21,20 @@ function ClientsPage() {
   const fetchClients = useServerFn(listClients);
   const addClient = useServerFn(createClient);
   const qc = useQueryClient();
-  const { data: clients } = useSuspenseQuery({ queryKey: ["clients"], queryFn: () => fetchClients() });
+  const { data: clients } = useSuspenseQuery({
+    queryKey: ["clients"],
+    queryFn: () => fetchClients(),
+  });
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
 
   const mut = useMutation({
-    mutationFn: (input: { name: string; company?: string; email?: string; tier: "standard" | "preferred" | "enterprise" }) =>
-      addClient({ data: input }),
+    mutationFn: (input: {
+      name: string;
+      company?: string;
+      email?: string;
+      tier: "standard" | "preferred" | "enterprise";
+    }) => addClient({ data: input }),
     onSuccess: () => {
       toast.success("Client added");
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -37,7 +44,9 @@ function ClientsPage() {
   });
 
   const filtered = clients.filter((c) =>
-    !q ? true : `${c.name} ${c.company ?? ""} ${c.email ?? ""}`.toLowerCase().includes(q.toLowerCase()),
+    !q
+      ? true
+      : `${c.name} ${c.company ?? ""} ${c.email ?? ""}`.toLowerCase().includes(q.toLowerCase()),
   );
 
   return (
@@ -45,7 +54,11 @@ function ClientsPage() {
       title="Clients"
       subtitle={`${clients.length} relationships`}
       action={
-        <button onClick={() => setOpen(true)} className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Add client">
+        <button
+          onClick={() => setOpen(true)}
+          className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground"
+          aria-label="Add client"
+        >
           <Plus className="size-[18px]" />
         </button>
       }
@@ -60,7 +73,13 @@ function ClientsPage() {
         />
       </div>
 
-      {open && <NewClientForm onCancel={() => setOpen(false)} onSubmit={(v) => mut.mutate(v)} loading={mut.isPending} />}
+      {open && (
+        <NewClientForm
+          onCancel={() => setOpen(false)}
+          onSubmit={(v) => mut.mutate(v)}
+          loading={mut.isPending}
+        />
+      )}
 
       {filtered.length === 0 ? (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center">
@@ -92,7 +111,12 @@ function NewClientForm({
   onCancel,
   loading,
 }: {
-  onSubmit: (v: { name: string; company?: string; email?: string; tier: "standard" | "preferred" | "enterprise" }) => void;
+  onSubmit: (v: {
+    name: string;
+    company?: string;
+    email?: string;
+    tier: "standard" | "preferred" | "enterprise";
+  }) => void;
   onCancel: () => void;
   loading: boolean;
 }) {
@@ -110,17 +134,48 @@ function NewClientForm({
       }}
       className="card-soft p-4 mb-4 space-y-3"
     >
-      <input className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-      <input className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" placeholder="Company" value={company} onChange={(e) => setCompany(e.target.value)} />
-      <input className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <select className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm" value={tier} onChange={(e) => setTier(e.target.value as "standard" | "preferred" | "enterprise")}>
+      <input
+        className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+      />
+      <input
+        className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+        placeholder="Company"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+      />
+      <input
+        className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <select
+        className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+        value={tier}
+        onChange={(e) => setTier(e.target.value as "standard" | "preferred" | "enterprise")}
+      >
         <option value="standard">Standard</option>
         <option value="preferred">Preferred</option>
         <option value="enterprise">Enterprise</option>
       </select>
       <div className="flex gap-2">
-        <button type="button" onClick={onCancel} className="flex-1 h-11 rounded-full border border-border text-sm">Cancel</button>
-        <button disabled={loading} type="submit" className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 h-11 rounded-full border border-border text-sm"
+        >
+          Cancel
+        </button>
+        <button
+          disabled={loading}
+          type="submit"
+          className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60"
+        >
           {loading ? "Saving…" : "Save"}
         </button>
       </div>

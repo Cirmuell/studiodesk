@@ -1,5 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Briefcase, Calculator, FileText, Settings as SettingsIcon, Plus } from "lucide-react";
+import {
+  Home,
+  Users,
+  Briefcase,
+  Calculator,
+  FileText,
+  Settings as SettingsIcon,
+  Plus,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
