@@ -160,5 +160,11 @@ export async function enforceUsageLimits(
     updates.trial_generations_used = trial_generations_used + 1;
   }
 
-  await (supabaseAdmin.from("profiles") as any).update(updates).eq("id", userId);
+  const { error: updateError } = await (supabaseAdmin.from("profiles") as any)
+    .update(updates)
+    .eq("id", userId);
+  if (updateError) {
+    console.error("[Subscription Security] Error updating trial usage:", updateError.message);
+    throw new Error(`Failed to update trial usage details: ${updateError.message}`);
+  }
 }
