@@ -5,25 +5,44 @@ import { Database } from "@/integrations/supabase/types";
 
 // Common temporary/disposable email domains to prevent trial abuse
 const DISPOSABLE_DOMAINS = new Set([
-  "mailinator.com", "yopmail.com", "10minutemail.com", "tempmail.com", "trashmail.com",
-  "guerrillamail.com", "sharklasers.com", "dispostable.com", "getairmail.com", "maildrop.cc",
-  "temp-mail.org", "fakeinbox.com", "burnermail.io", "getnada.com", "tempmailaddress.com"
+  "mailinator.com",
+  "yopmail.com",
+  "10minutemail.com",
+  "tempmail.com",
+  "trashmail.com",
+  "guerrillamail.com",
+  "sharklasers.com",
+  "dispostable.com",
+  "getairmail.com",
+  "maildrop.cc",
+  "temp-mail.org",
+  "fakeinbox.com",
+  "burnermail.io",
+  "getnada.com",
+  "tempmailaddress.com",
 ]);
 
-export async function enforceUsageLimits(userId: string, userEmail: string | undefined, supabaseClient: SupabaseClient<Database>) {
+export async function enforceUsageLimits(
+  userId: string,
+  userEmail: string | undefined,
+  supabaseClient: SupabaseClient<Database>,
+) {
   // 1. Bad Actor Detection: Block temporary email addresses
   if (userEmail) {
     const domain = userEmail.split("@")[1]?.toLowerCase();
     if (domain && DISPOSABLE_DOMAINS.has(domain)) {
-      throw new Error("Disposable email addresses are not allowed. Please use a standard email provider.");
+      throw new Error(
+        "Disposable email addresses are not allowed. Please use a standard email provider.",
+      );
     }
   }
 
   // Fetch client IP address
   const request = getRequest();
-  const clientIp = request?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-                   request?.headers?.get("x-real-ip")?.trim() || 
-                   "127.0.0.1";
+  const clientIp =
+    request?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request?.headers?.get("x-real-ip")?.trim() ||
+    "127.0.0.1";
 
   let plan = "trial";
   let trial_generations_used = 0;
@@ -37,7 +56,9 @@ export async function enforceUsageLimits(userId: string, userEmail: string | und
   try {
     const query = supabaseClient.from("profiles") as any;
     const { data: profile, error } = await query
-      .select("plan, trial_generations_used, trial_generations_limit, last_generation_at, restricted, signup_ip")
+      .select(
+        "plan, trial_generations_used, trial_generations_limit, last_generation_at, restricted, signup_ip",
+      )
       .eq("id", userId)
       .maybeSingle();
 
@@ -57,13 +78,18 @@ export async function enforceUsageLimits(userId: string, userEmail: string | und
       signup_ip = (profile as any).signup_ip ?? null;
     }
   } catch (err: any) {
-    console.warn("[Subscription Security] Graceful fallback enabled (migration might not be applied):", err.message);
+    console.warn(
+      "[Subscription Security] Graceful fallback enabled (migration might not be applied):",
+      err.message,
+    );
     columnsExist = false;
   }
 
   // If migration has not been run, skip enforcement checks to avoid blocking the app
   if (!columnsExist) {
-    console.info("[Subscription Security] Skipping security gates. Please apply the database migration 20260610000000_add_subscription_and_security.sql.");
+    console.info(
+      "[Subscription Security] Skipping security gates. Please apply the database migration 20260610000000_add_subscription_and_security.sql.",
+    );
     return;
   }
 
@@ -74,7 +100,9 @@ export async function enforceUsageLimits(userId: string, userEmail: string | und
   // 2. Multi-account prevention: Check if this IP is registered to multiple trial accounts
   if (plan === "trial" && clientIp && clientIp !== "127.0.0.1") {
     if (!signup_ip) {
-      await (supabaseClient.from("profiles") as any).update({ signup_ip: clientIp }).eq("id", userId);
+      await (supabaseAdmin.from("profiles") as any)
+        .update({ signup_ip: clientIp })
+        .eq("id", userId);
       signup_ip = clientIp;
     }
 
@@ -88,14 +116,19 @@ export async function enforceUsageLimits(userId: string, userEmail: string | und
 
       // If 3 or more trial accounts share the same IP, restrict the account automatically
       if (!countErr && count && count >= 2) {
-        await (supabaseClient.from("profiles") as any).update({ restricted: true }).eq("id", userId);
-        throw new Error("Access denied: Multiple registrations detected from this network location.");
+        await (supabaseAdmin.from("profiles") as any).update({ restricted: true }).eq("id", userId);
+        throw new Error(
+          "Access denied: Multiple registrations detected from this network location.",
+        );
       }
     } catch (ipErr: any) {
       if (ipErr.message?.includes("Access denied")) {
         throw ipErr;
       }
-      console.warn("[Subscription Security] Skipping IP multi-account prevention check (likely due to missing service role key):", ipErr.message);
+      console.warn(
+        "[Subscription Security] Skipping IP multi-account prevention check (likely due to missing service role key):",
+        ipErr.message,
+      );
     }
   }
 
@@ -104,14 +137,18 @@ export async function enforceUsageLimits(userId: string, userEmail: string | und
     const timeDiff = Date.now() - new Date(last_generation_at).getTime();
     if (timeDiff < 20000) {
       const waitSeconds = Math.ceil((20000 - timeDiff) / 1000);
-      throw new Error(`Rate limit exceeded: Please wait ${waitSeconds} seconds before generating again.`);
+      throw new Error(
+        `Rate limit exceeded: Please wait ${waitSeconds} seconds before generating again.`,
+      );
     }
   }
 
   // 4. Trial limit enforcement
   if (plan === "trial") {
     if (trial_generations_used >= trial_generations_limit) {
-      throw new Error("Free trial limit reached (5 generations). Please upgrade your subscription plan in Settings to continue generating drafts and analyses.");
+      throw new Error(
+        "You have exhausted your free trial limit (5 AI generations). Please subscribe in Settings to continue using the AI pricing and drafting features.",
+      );
     }
   }
 
@@ -123,7 +160,5 @@ export async function enforceUsageLimits(userId: string, userEmail: string | und
     updates.trial_generations_used = trial_generations_used + 1;
   }
 
-  await (supabaseClient.from("profiles") as any)
-    .update(updates)
-    .eq("id", userId);
+  await (supabaseAdmin.from("profiles") as any).update(updates).eq("id", userId);
 }

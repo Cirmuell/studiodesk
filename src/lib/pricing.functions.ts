@@ -54,18 +54,22 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
       .eq("id", context.userId)
       .maybeSingle();
 
-    // Enforce billing limits and security gates
-    await enforceUsageLimits(context.userId, profile?.email ?? undefined, context.supabase);
-
     // Caching check: Avoid calling AI if an identical request was made in the last 5 minutes
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const { data: cachedRun } = await context.supabase
+    let dbQuery = context.supabase
       .from("pricing_runs")
       .select("*")
       .eq("user_id", context.userId)
       .eq("scope", data.scope)
-      .eq("client_tier", data.client_tier)
-      .eq("hours", data.hours ?? null)
+      .eq("client_tier", data.client_tier);
+
+    if (data.hours !== undefined && data.hours !== null) {
+      dbQuery = dbQuery.eq("hours", data.hours);
+    } else {
+      dbQuery = dbQuery.is("hours", null);
+    }
+
+    const { data: cachedRun } = await dbQuery
       .gt("created_at", fiveMinutesAgo)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -76,6 +80,9 @@ export const runPricingAnalysis = createServerFn({ method: "POST" })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return cachedRun as any;
     }
+
+    // Enforce billing limits and security gates
+    await enforceUsageLimits(context.userId, profile?.email ?? undefined, context.supabase);
 
     const { provider, model } = await getAiProvider(context.supabase);
     console.info(`[AI PRICING] Pricing requested. Resolved provider model: ${model}`);

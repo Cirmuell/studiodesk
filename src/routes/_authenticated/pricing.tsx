@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
@@ -25,9 +25,16 @@ function PricingPage() {
   const runAnalysis = useServerFn(runPricingAnalysis);
   const deleteRun = useServerFn(deletePricingRun);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
-  const { data: projects } = useSuspenseQuery({ queryKey: ["projects"], queryFn: () => fetchProjects() });
-  const { data: runs } = useSuspenseQuery({ queryKey: ["pricing_runs"], queryFn: () => fetchRuns() });
+  const { data: projects } = useSuspenseQuery({
+    queryKey: ["projects"],
+    queryFn: () => fetchProjects(),
+  });
+  const { data: runs } = useSuspenseQuery({
+    queryKey: ["pricing_runs"],
+    queryFn: () => fetchRuns(),
+  });
 
   const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
   const selected = projects.find((p) => p.id === projectId);
@@ -40,13 +47,27 @@ function PricingPage() {
 
   const mut = useMutation({
     mutationFn: () =>
-      runAnalysis({ data: { project_id: projectId || undefined, scope, hours, client_tier: tier } }),
+      runAnalysis({
+        data: { project_id: projectId || undefined, scope, hours, client_tier: tier },
+      }),
     onSuccess: () => {
       toast.success("Pricing recommendation ready");
       setSelectedRun(null);
       qc.invalidateQueries({ queryKey: ["pricing_runs"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "Failed";
+      if (msg.includes("free trial limit")) {
+        toast.error(msg, {
+          action: {
+            label: "Go to Settings",
+            onClick: () => navigate({ to: "/settings" }),
+          },
+        });
+      } else {
+        toast.error(msg);
+      }
+    },
   });
 
   const deleteRunMut = useMutation({
@@ -68,11 +89,16 @@ function PricingPage() {
             <span className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center">
               <Sparkles className="size-3.5" />
             </span>
-            <p className="text-xs uppercase tracking-[0.18em] font-semibold text-primary">AI estimate</p>
+            <p className="text-xs uppercase tracking-[0.18em] font-semibold text-primary">
+              AI estimate
+            </p>
           </div>
-          <p className="font-display text-4xl text-foreground">{formatCurrency(latest.recommended_total, latest.currency)}</p>
+          <p className="font-display text-4xl text-foreground">
+            {formatCurrency(latest.recommended_total, latest.currency)}
+          </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Range {formatCurrency(latest.range_low, latest.currency)} – {formatCurrency(latest.range_high, latest.currency)} · {latest.confidence} confidence
+            Range {formatCurrency(latest.range_low, latest.currency)} –{" "}
+            {formatCurrency(latest.range_high, latest.currency)} · {latest.confidence} confidence
           </p>
           {latest.rationale && (
             <p className="text-xs text-foreground/80 mt-3 leading-relaxed">{latest.rationale}</p>
@@ -104,13 +130,19 @@ function PricingPage() {
           >
             <option value="">— Custom (no project) —</option>
             {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.title}</option>
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
             ))}
           </select>
         </Field>
 
         <Field label="Client tier">
-          <select value={tier} onChange={(e) => setTier(e.target.value as typeof tier)} className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm">
+          <select
+            value={tier}
+            onChange={(e) => setTier(e.target.value as typeof tier)}
+            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+          >
             <option value="standard">Standard</option>
             <option value="preferred">Preferred</option>
             <option value="enterprise">Enterprise</option>
@@ -118,7 +150,15 @@ function PricingPage() {
         </Field>
 
         <Field label={`Estimated hours · ${hours}`}>
-          <input type="range" min={8} max={300} step={4} value={hours} onChange={(e) => setHours(Number(e.target.value))} className="w-full accent-[color:var(--color-primary)]" />
+          <input
+            type="range"
+            min={8}
+            max={300}
+            step={4}
+            value={hours}
+            onChange={(e) => setHours(Number(e.target.value))}
+            className="w-full accent-[color:var(--color-primary)]"
+          />
         </Field>
 
         <Field label="Scope summary">
@@ -152,7 +192,9 @@ function PricingPage() {
 
       <h2 className="font-display text-lg mt-8 mb-3">Recent analyses</h2>
       {runs.length === 0 ? (
-        <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center">No analyses yet.</p>
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center">
+          No analyses yet.
+        </p>
       ) : (
         <div className="space-y-2.5">
           {runs.map((r) => (
@@ -171,19 +213,30 @@ function PricingPage() {
               }}
               className={cn(
                 "card-soft p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition active:scale-[0.99]",
-                latest?.id === r.id && "ring-1 ring-primary/30 bg-primary/5"
+                latest?.id === r.id && "ring-1 ring-primary/30 bg-primary/5",
               )}
             >
-              <div className={cn("size-10 rounded-xl grid place-items-center shrink-0", r.confidence === "high" ? "bg-success/15 text-success" : "bg-warning/20 text-warning-foreground")}>
+              <div
+                className={cn(
+                  "size-10 rounded-xl grid place-items-center shrink-0",
+                  r.confidence === "high"
+                    ? "bg-success/15 text-success"
+                    : "bg-warning/20 text-warning-foreground",
+                )}
+              >
                 <Check className="size-[18px]" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{r.project?.title ?? "Custom scope"}</p>
-                <p className="text-xs text-muted-foreground">{timeAgo(r.created_at)} · {r.confidence} confidence</p>
+                <p className="text-xs text-muted-foreground">
+                  {timeAgo(r.created_at)} · {r.confidence} confidence
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-right">
-                  <p className="text-sm font-semibold">{formatCurrency(r.recommended_total, r.currency)}</p>
+                  <p className="text-sm font-semibold">
+                    {formatCurrency(r.recommended_total, r.currency)}
+                  </p>
                   <ArrowRight className="size-3.5 text-muted-foreground inline-block mt-0.5" />
                 </div>
                 <button

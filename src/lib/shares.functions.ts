@@ -32,7 +32,7 @@ type SharedDocResult =
   | { status: "not_found" }
   | { status: "revoked" }
   | { status: "expired" }
-  | { status: "ok"; document: unknown; profile: unknown };
+  | { status: "ok"; document: any; profile: any };
 
 const sharedDocCache = new MemoryCache<SharedDocResult>(60 * 1000); // 60-second TTL
 
