@@ -478,7 +478,13 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      enforce_and_increment_usage: {
+        Args: {
+          user_id: string;
+          client_ip: string;
+        };
+        Returns: unknown;
+      };
     };
     Enums: {
       [_ in never]: never;
