@@ -70,8 +70,8 @@ serve(async (req) => {
         subId = data.reference;
 
         const amount = data.amount; // in kobo
-        // NGN 35,000 = 3500000 kobo (premium)
-        plan = amount >= 3500000 ? "premium" : "basic";
+        // NGN 15,000 = 1500000 kobo (premium)
+        plan = amount >= 1500000 ? "premium" : "basic";
       }
     } else {
       return new Response(JSON.stringify({ error: "Unrecognized signature headers" }), {

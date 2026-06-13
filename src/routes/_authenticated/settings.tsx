@@ -30,6 +30,18 @@ export const Route = createFileRoute("/_authenticated/settings")({
   ),
 });
 
+const getPlanPrice = (plan: "basic" | "premium", userCurrency: string) => {
+  const cur = (userCurrency || "NGN").toUpperCase();
+  const prices: Record<string, { basic: string; premium: string }> = {
+    NGN: { basic: "₦7,500", premium: "₦15,000" }, // Downward-reviewed from ₦15,000 / ₦35,000
+    USD: { basic: "$9", premium: "$19" },
+    EUR: { basic: "€9", premium: "€19" },
+    GBP: { basic: "£8", premium: "£16" },
+  };
+  const set = prices[cur] || { basic: plan === "basic" ? "$9" : "$19", premium: "$19" };
+  return plan === "basic" ? set.basic : set.premium;
+};
+
 function SettingsPage() {
   const router = useRouter();
   const fetchProfile = useServerFn(getProfile);
@@ -655,7 +667,8 @@ function SettingsPage() {
                   </p>
                 </div>
                 <p className="text-sm font-bold">
-                  $9<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
+                  {getPlanPrice("basic", form.currency)}
+                  <span className="text-[10px] font-normal text-muted-foreground">/mo</span>
                 </p>
               </button>
 
@@ -676,7 +689,8 @@ function SettingsPage() {
                   </p>
                 </div>
                 <p className="text-sm font-bold">
-                  $19<span className="text-[10px] font-normal text-muted-foreground">/mo</span>
+                  {getPlanPrice("premium", form.currency)}
+                  <span className="text-[10px] font-normal text-muted-foreground">/mo</span>
                 </p>
               </button>
             </div>
