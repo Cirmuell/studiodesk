@@ -768,9 +768,10 @@ function SettingsPage() {
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   // Use a predictable value for the accordion item based on the title
   const value = title.toLowerCase().replace(/\s+/g, "-");
+  const isDefaultOpen = title === "Business profile" ? value : undefined;
   
   return (
-    <Accordion type="single" collapsible defaultValue={value} className="mb-6 w-full">
+    <Accordion type="single" collapsible defaultValue={isDefaultOpen} className="mb-6 w-full">
       <AccordionItem value={value} className="border-none">
         <AccordionTrigger className="px-1 py-3 hover:no-underline">
           <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
