@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Studio" }] }),
@@ -765,13 +766,22 @@ function SettingsPage() {
 }
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  // Use a predictable value for the accordion item based on the title
+  const value = title.toLowerCase().replace(/\s+/g, "-");
+  
   return (
-    <div className="mb-6">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold px-1 mb-2">
-        {title}
-      </p>
-      {children}
-    </div>
+    <Accordion type="single" collapsible defaultValue={value} className="mb-6 w-full">
+      <AccordionItem value={value} className="border-none">
+        <AccordionTrigger className="px-1 py-3 hover:no-underline">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">
+            {title}
+          </p>
+        </AccordionTrigger>
+        <AccordionContent className="pt-2">
+          {children}
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 
