@@ -119,6 +119,14 @@ function SettingsPage() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("payment") === "success") {
+      toast.success("Payment successful! Your subscription is being processed.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
 
@@ -193,11 +201,11 @@ function SettingsPage() {
   });
 
   const upgradeMut = useMutation({
-    mutationFn: (plan: "basic" | "premium") => upgradePlan({ data: { plan } }),
-    onSuccess: (res) => {
-      toast.success(`Upgraded to ${res.plan} plan successfully!`);
-      qc.invalidateQueries({ queryKey: ["billing"] });
-      setCheckoutOpen(false);
+    mutationFn: (plan: "basic" | "premium") => upgradePlan({ data: { plan, origin: window.location.origin } }),
+    onSuccess: (res: any) => {
+      if (res?.checkoutUrl) {
+        window.location.href = res.checkoutUrl;
+      }
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to subscribe"),
   });
@@ -715,7 +723,7 @@ function SettingsPage() {
                 onClick={() => upgradeMut.mutate(selectedPlan)}
                 className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm disabled:opacity-60"
               >
-                {upgradeMut.isPending ? "Connecting..." : "Simulate Payment"}
+                {upgradeMut.isPending ? "Connecting..." : "Proceed to Payment"}
               </button>
             </div>
           </div>

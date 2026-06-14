@@ -68,6 +68,7 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
       .object({
         plan: z.enum(["basic", "premium"]),
         paymentMethod: z.string().default("card"),
+        origin: z.string().optional(),
       })
       .parse(d),
   )
@@ -110,32 +111,41 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
     //    return { checkoutUrl: session.url };
     // -------------------------------------------------------------
 
-    // Simulated/Mock upgrade flow
     try {
-      const endsAt = new Date();
-      endsAt.setMonth(endsAt.getMonth() + 1); // 1-month duration
+      const email = context.claims?.email;
+      if (!email) throw new Error("Could not fetch user email from session");
 
-      const { error } = await supabaseAdmin
-        .from("profiles")
-        .update({
-          plan: data.plan,
-          subscription_status: "active",
-          subscription_ends_at: endsAt.toISOString(),
-          payment_customer_id: `cus_sim_${Math.random().toString(36).substring(7)}`,
-          payment_subscription_id: `sub_sim_${Math.random().toString(36).substring(7)}`,
-          restricted: false, // Reset restriction on payment
-          trial_generations_used: 0, // Reset usage counter on upgrade
+      const amountKobo = data.plan === "basic" ? 750000 : 1500000;
+      // Fallback to origin provided by client if APP_URL is not set
+      const appUrl = process.env.APP_URL || process.env.VITE_APP_URL || data.origin || "http://localhost:8080";
+
+      const response = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: email,
+          amount: amountKobo,
+          callback_url: `${appUrl}/settings?payment=success`,
+          metadata: { userId: context.userId, plan: data.plan }
         })
-        .eq("id", context.userId);
+      });
 
-      if (error) throw error;
-      return { status: "success", plan: data.plan };
-    } catch (err: any) {
-      if (err.message?.includes("does not exist")) {
-        throw new Error(
-          "Unable to upgrade: Database migration has not been applied yet. Run the SQL script in your Supabase SQL Editor first.",
-        );
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("Paystack API Error:", errorData);
+        throw new Error("Failed to initialize payment with Paystack");
       }
-      throw new Error(`Failed to simulate subscription: ${err.message}`);
+
+      const result = await response.json();
+      if (!result.status) {
+        throw new Error(result.message || "Failed to initialize Paystack transaction");
+      }
+
+      return { checkoutUrl: result.data.authorization_url };
+    } catch (err: any) {
+      throw new Error(`Failed to initialize subscription: ${err.message}`);
     }
   });
