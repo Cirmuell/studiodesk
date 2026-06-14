@@ -43,8 +43,9 @@ export async function enforceUsageLimits(
     request?.headers?.get("x-real-ip")?.trim() ||
     "127.0.0.1";
 
-  // 2. Call the RLS-bypassing secure security definer RPC
-  const { error: rpcError } = await supabaseClient.rpc("enforce_and_increment_usage", {
+  // 2. Call the RLS-bypassing secure security definer RPC using the service role client
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error: rpcError } = await supabaseAdmin.rpc("enforce_and_increment_usage", {
     user_id: userId,
     client_ip: clientIp,
   });

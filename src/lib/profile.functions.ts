@@ -6,15 +6,24 @@ export function cleanBrandAssetUrl(url: string | null | undefined): string | nul
   if (!url) return null;
   try {
     const parsed = new URL(url);
+    
+    // SSRF Protection: Ensure the host is a valid Supabase storage host
+    const supabaseHost = new URL(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://dlaurbatgpnqpqxjyswq.supabase.co").hostname;
+    if (parsed.hostname !== supabaseHost && !parsed.hostname.endsWith('.supabase.co')) {
+      return null; // Reject invalid URL origin
+    }
+
     let path = parsed.pathname;
     if (path.includes("/brand-assets/")) {
       path = path.replace("/object/sign/brand-assets/", "/object/public/brand-assets/");
       return `${parsed.origin}${path}`;
     }
+    
+    return url;
   } catch (e) {
-    // Return original if parsing fails
+    // Return null if parsing fails to prevent arbitrary strings
+    return null;
   }
-  return url;
 }
 
 export async function getSignedBrandAssetUrl(
