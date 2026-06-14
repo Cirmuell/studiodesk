@@ -116,8 +116,22 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
       if (!email) throw new Error("Could not fetch user email from session");
 
       const amountKobo = data.plan === "basic" ? 750000 : 1500000;
-      // Fallback to origin provided by client if APP_URL is not set
-      const appUrl = process.env.APP_URL || process.env.VITE_APP_URL || data.origin || "http://localhost:8080";
+      let appUrl = process.env.APP_URL || process.env.VITE_APP_URL;
+      if (!appUrl && data.origin) {
+        try {
+          const parsedOrigin = new URL(data.origin);
+          if (
+            parsedOrigin.hostname === "localhost" ||
+            parsedOrigin.hostname === "127.0.0.1" ||
+            parsedOrigin.hostname.endsWith(".vercel.app")
+          ) {
+            appUrl = data.origin;
+          }
+        } catch (e) {
+          // Ignore invalid URL
+        }
+      }
+      appUrl = appUrl || "http://localhost:8080";
 
       const response = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
