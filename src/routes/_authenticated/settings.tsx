@@ -213,6 +213,7 @@ function SettingsPage() {
         const loadPaystack = () => {
           const handler = (window as any).PaystackPop.setup({
             key: paystackKey,
+            email: res.email,
             access_code: res.accessCode,
             callback: function () {
               toast.success("Payment successful! Your subscription is being processed.");
