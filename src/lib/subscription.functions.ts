@@ -144,7 +144,7 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
         throw new Error(result.message || "Failed to initialize Paystack transaction");
       }
 
-      return { checkoutUrl: result.data.authorization_url };
+      return { checkoutUrl: result.data.authorization_url, accessCode: result.data.access_code };
     } catch (err: any) {
       throw new Error(`Failed to initialize subscription: ${err.message}`);
     }

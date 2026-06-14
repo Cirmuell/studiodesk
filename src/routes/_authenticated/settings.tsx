@@ -203,8 +203,37 @@ function SettingsPage() {
   const upgradeMut = useMutation({
     mutationFn: (plan: "basic" | "premium") => upgradePlan({ data: { plan, origin: window.location.origin } }),
     onSuccess: (res: any) => {
-      if (res?.checkoutUrl) {
-        window.location.href = res.checkoutUrl;
+      if (res?.accessCode) {
+        const paystackKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+        if (!paystackKey) {
+          toast.error("Paystack Public Key not configured. Please add VITE_PAYSTACK_PUBLIC_KEY to your environment.");
+          return;
+        }
+
+        const loadPaystack = () => {
+          const handler = (window as any).PaystackPop.setup({
+            key: paystackKey,
+            access_code: res.accessCode,
+            callback: function () {
+              toast.success("Payment successful! Your subscription is being processed.");
+              qc.invalidateQueries({ queryKey: ["billing"] });
+              setCheckoutOpen(false);
+            },
+            onClose: function () {
+              toast.info("Payment window closed.");
+            },
+          });
+          handler.openIframe();
+        };
+
+        if (!(window as any).PaystackPop) {
+          const script = document.createElement("script");
+          script.src = "https://js.paystack.co/v1/inline.js";
+          script.onload = loadPaystack;
+          document.body.appendChild(script);
+        } else {
+          loadPaystack();
+        }
       }
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to subscribe"),
