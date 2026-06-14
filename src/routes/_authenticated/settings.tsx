@@ -402,7 +402,7 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border/60">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/60">
             <div>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
                 Primary Color
