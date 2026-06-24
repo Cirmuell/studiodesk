@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,11 @@ import { checkEmailExists, checkBusinessNameExists } from "@/lib/profile.functio
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  beforeLoad: () => {
+    if (typeof window !== "undefined" && !window.localStorage.getItem("has_seen_onboarding")) {
+      throw redirect({ to: "/onboarding" });
+    }
+  },
   head: () => ({ meta: [{ title: "Sign in — Studio" }] }),
   component: AuthPage,
 });

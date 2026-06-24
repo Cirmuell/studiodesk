@@ -20,7 +20,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Studio" }] }),
@@ -202,12 +207,15 @@ function SettingsPage() {
   });
 
   const upgradeMut = useMutation({
-    mutationFn: (plan: "basic" | "premium") => upgradePlan({ data: { plan, origin: window.location.origin } }),
+    mutationFn: (plan: "basic" | "premium") =>
+      upgradePlan({ data: { plan, origin: window.location.origin } }),
     onSuccess: (res: any) => {
       if (res?.accessCode) {
         const paystackKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
         if (!paystackKey) {
-          toast.error("Paystack Public Key not configured. Please add VITE_PAYSTACK_PUBLIC_KEY to your environment.");
+          toast.error(
+            "Paystack Public Key not configured. Please add VITE_PAYSTACK_PUBLIC_KEY to your environment.",
+          );
           return;
         }
 
@@ -769,7 +777,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   // Use a predictable value for the accordion item based on the title
   const value = title.toLowerCase().replace(/\s+/g, "-");
   const isDefaultOpen = title === "Business profile" ? value : undefined;
-  
+
   return (
     <Accordion type="single" collapsible defaultValue={isDefaultOpen} className="mb-6 w-full">
       <AccordionItem value={value} className="border-none">
@@ -778,9 +786,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
             {title}
           </p>
         </AccordionTrigger>
-        <AccordionContent className="pt-2">
-          {children}
-        </AccordionContent>
+        <AccordionContent className="pt-2">{children}</AccordionContent>
       </AccordionItem>
     </Accordion>
   );

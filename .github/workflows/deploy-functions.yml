@@ -5,24 +5,24 @@ on:
     branches:
       - main
     paths:
-      - 'supabase/functions/**'
-      - '.github/workflows/deploy-functions.yml'
+      - "supabase/functions/**"
+      - ".github/workflows/deploy-functions.yml"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       PROJECT_ID: dlaurbatgpnqpqxjyswq
-      
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
-          
+
       - name: Deploy Payment Webhook
         run: supabase functions deploy payment-webhook --project-ref $PROJECT_ID

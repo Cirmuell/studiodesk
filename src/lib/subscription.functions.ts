@@ -137,14 +137,14 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email,
           amount: amountKobo,
           callback_url: `${appUrl}/settings?payment=success`,
-          metadata: { userId: context.userId, plan: data.plan }
-        })
+          metadata: { userId: context.userId, plan: data.plan },
+        }),
       });
 
       if (!response.ok) {
@@ -158,7 +158,12 @@ export const subscribeToPlan = createServerFn({ method: "POST" })
         throw new Error(result.message || "Failed to initialize Paystack transaction");
       }
 
-      return { checkoutUrl: result.data.authorization_url, accessCode: result.data.access_code, email: email, amount: amountKobo };
+      return {
+        checkoutUrl: result.data.authorization_url,
+        accessCode: result.data.access_code,
+        email: email,
+        amount: amountKobo,
+      };
     } catch (err: any) {
       throw new Error(`Failed to initialize subscription: ${err.message}`);
     }

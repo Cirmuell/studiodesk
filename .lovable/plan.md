@@ -1,1 +1,1 @@
-# Fix: Email confirmation links 
+# Fix: Email confirmation links
