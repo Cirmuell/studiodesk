@@ -2,9 +2,10 @@ import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Eye, EyeOff } from "lucide-react";
+import { Mail, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import logoImg from "@/assets/studiodesk-logo.png";
 import { checkEmailExists, checkBusinessNameExists } from "@/lib/profile.functions";
 
@@ -31,6 +32,28 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (otp.length !== 6) return;
+    setOtpLoading(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: verificationEmail,
+        token: otp,
+        type: "signup",
+      });
+      if (error) throw error;
+      toast.success("Email verified successfully!");
+      navigate({ to: "/" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Verification failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -97,31 +120,55 @@ function AuthPage() {
 
   if (verificationEmail) {
     return (
-      <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
+      <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10 relative">
+        <button
+          onClick={() => {
+            setVerificationEmail("");
+            setMode("signin");
+            setEmail(verificationEmail);
+          }}
+          className="absolute top-8 left-6 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          Back to sign in
+        </button>
+
         <div className="flex-1 flex flex-col justify-center text-center">
-          <div className="size-16 rounded-full bg-primary/10 text-primary grid place-items-center mx-auto mb-6">
+          <div className="size-16 rounded-full bg-primary/10 text-primary grid place-items-center mx-auto mb-6 mt-8">
             <Mail className="size-8" />
           </div>
-          <h1 className="font-display text-3xl leading-tight">Verify your email</h1>
-          <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
-            We have sent a verification link to{" "}
-            <strong className="text-foreground">{verificationEmail}</strong>. Please click the link
-            in the email to activate your account and access your creative studio.
+          <h1 className="font-display text-3xl leading-tight">Check your email</h1>
+          <p className="text-muted-foreground mt-4 text-sm leading-relaxed mb-8">
+            We have sent a 6-digit verification code to{" "}
+            <strong className="text-foreground">{verificationEmail}</strong>. Please enter the code
+            below to activate your account.
           </p>
-          <p className="text-xs text-muted-foreground/85 mt-4 bg-surface/50 border border-border/60 rounded-2xl p-3 text-center">
+
+          <form onSubmit={handleVerifyOtp} className="flex flex-col items-center gap-6 w-full">
+            <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+
+            <button
+              type="submit"
+              disabled={otpLoading || otp.length !== 6}
+              className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)] disabled:opacity-60 cursor-pointer"
+            >
+              {otpLoading ? "Verifying…" : "Verify code"}
+            </button>
+          </form>
+
+          <p className="text-xs text-muted-foreground/85 mt-6 bg-surface/50 border border-border/60 rounded-2xl p-3 text-center">
             💡 <strong>Tip:</strong> If you don't see the email, please check your{" "}
             <strong>Spam</strong> or <strong>Junk</strong> folder.
           </p>
-          <button
-            onClick={() => {
-              setVerificationEmail("");
-              setMode("signin");
-              setEmail(verificationEmail);
-            }}
-            className="mt-8 w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)]"
-          >
-            Back to sign in
-          </button>
         </div>
       </div>
     );
