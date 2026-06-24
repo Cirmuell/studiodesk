@@ -34,6 +34,29 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60);
+
+  useEffect(() => {
+    if (verificationEmail && resendTimer > 0) {
+      const timer = setInterval(() => setResendTimer((prev) => prev - 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [verificationEmail, resendTimer]);
+
+  async function handleResendOtp() {
+    if (resendTimer > 0) return;
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: verificationEmail,
+      });
+      if (error) throw error;
+      toast.success("Verification code resent!");
+      setResendTimer(60);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to resend code");
+    }
+  }
 
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
@@ -101,6 +124,7 @@ function AuthPage() {
         // If email confirmation is enabled, session will be null and we need confirmation
         if (data && !data.session && data.user) {
           setVerificationEmail(email);
+          setResendTimer(60);
           setLoading(false);
           return;
         }
@@ -163,6 +187,17 @@ function AuthPage() {
             >
               {otpLoading ? "Verifying…" : "Verify code"}
             </button>
+            
+            <div className="text-sm text-center">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendTimer > 0}
+                className="text-primary hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer font-medium"
+              >
+                {resendTimer > 0 ? `Resend code in ${resendTimer}s` : "Resend code"}
+              </button>
+            </div>
           </form>
 
           <p className="text-xs text-muted-foreground/85 mt-6 bg-surface/50 border border-border/60 rounded-2xl p-3 text-center">
