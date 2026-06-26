@@ -55,6 +55,13 @@ function DocPage() {
   const subtotal = (content.line_items ?? []).reduce((s, li) => s + Number(li.amount || 0), 0);
   const tax = Math.round(subtotal * 0.075);
   const total = subtotal + tax;
+
+  const isReceipt = doc.type === "receipt";
+  const projectTotal = content.project_total;
+  const prevPaid = content.previous_payments || 0;
+  const amtPaid = total;
+  const balanceDue = projectTotal !== undefined ? Math.max(0, projectTotal - prevPaid - amtPaid) : undefined;
+
   const step: 1 | 2 | 3 = savedOnce && !dirty ? 3 : 2;
   const updateContent = (next: DocContent | ((c: DocContent) => DocContent)) => {
     setDirty(true);
@@ -217,6 +224,248 @@ function DocPage() {
         </div>
       ))}
 
+      {/* --- Proposal Specific Editor Blocks --- */}
+      {doc.type === "proposal" && (
+        <>
+          {/* Objectives */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold">Objectives</h3>
+              <button onClick={() => {
+                const arr = [...(content.proposal_objectives ?? []), ""];
+                updateContent({ ...content, proposal_objectives: arr });
+              }} className="text-xs text-primary font-medium">+ Add</button>
+            </div>
+            {(content.proposal_objectives ?? []).map((obj, i) => (
+              <textarea
+                key={i}
+                value={obj}
+                onChange={(e) => {
+                  const arr = [...(content.proposal_objectives ?? [])];
+                  arr[i] = e.target.value;
+                  updateContent({ ...content, proposal_objectives: arr });
+                }}
+                rows={2}
+                className="w-full bg-muted/50 p-2 rounded-lg text-sm border border-border"
+              />
+            ))}
+          </div>
+
+          {/* Scope Inclusions */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Scope (Inclusions)</h3>
+            {(content.proposal_scope_inclusions ?? []).map((item, i) => (
+              <input
+                key={i}
+                value={item}
+                onChange={(e) => {
+                  const arr = [...(content.proposal_scope_inclusions ?? [])];
+                  arr[i] = e.target.value;
+                  updateContent({ ...content, proposal_scope_inclusions: arr });
+                }}
+                className="w-full bg-muted/50 p-2 rounded-lg text-sm border border-border"
+              />
+            ))}
+          </div>
+
+          {/* Scope Exclusions */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Scope (Exclusions)</h3>
+            {(content.proposal_scope_exclusions ?? []).map((item, i) => (
+              <input
+                key={i}
+                value={item}
+                onChange={(e) => {
+                  const arr = [...(content.proposal_scope_exclusions ?? [])];
+                  arr[i] = e.target.value;
+                  updateContent({ ...content, proposal_scope_exclusions: arr });
+                }}
+                className="w-full bg-muted/50 p-2 rounded-lg text-sm border border-border"
+              />
+            ))}
+          </div>
+
+          {/* Key Deliverables */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Key Deliverables</h3>
+            {(content.proposal_deliverables ?? []).map((item, i) => (
+              <input
+                key={i}
+                value={item}
+                onChange={(e) => {
+                  const arr = [...(content.proposal_deliverables ?? [])];
+                  arr[i] = e.target.value;
+                  updateContent({ ...content, proposal_deliverables: arr });
+                }}
+                className="w-full bg-muted/50 p-2 rounded-lg text-sm border border-border"
+              />
+            ))}
+          </div>
+          
+          {/* Methodology */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Methodology</h3>
+            {(content.proposal_methodology ?? []).map((m, i) => (
+              <div key={i} className="bg-muted/50 p-3 rounded-lg border border-border">
+                <input
+                  value={m.title}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_methodology ?? [])];
+                    arr[i] = { ...m, title: e.target.value };
+                    updateContent({ ...content, proposal_methodology: arr });
+                  }}
+                  className="w-full text-sm font-semibold bg-transparent focus:outline-none mb-1"
+                />
+                <textarea
+                  value={m.description}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_methodology ?? [])];
+                    arr[i] = { ...m, description: e.target.value };
+                    updateContent({ ...content, proposal_methodology: arr });
+                  }}
+                  rows={2}
+                  className="w-full bg-background p-2 rounded text-sm border border-border"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Timeline */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Timeline</h3>
+            {(content.proposal_timeline ?? []).map((t, i) => (
+              <div key={i} className="bg-muted/50 p-3 rounded-lg border border-border flex flex-wrap gap-2 text-sm">
+                <input
+                  value={t.phase}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_timeline ?? [])];
+                    arr[i] = { ...t, phase: e.target.value };
+                    updateContent({ ...content, proposal_timeline: arr });
+                  }}
+                  className="bg-background p-1 rounded border flex-1 min-w-[100px]" placeholder="Phase"
+                />
+                <input
+                  value={t.start_date}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_timeline ?? [])];
+                    arr[i] = { ...t, start_date: e.target.value };
+                    updateContent({ ...content, proposal_timeline: arr });
+                  }}
+                  className="bg-background p-1 rounded border flex-1 min-w-[80px]" placeholder="Start Date"
+                />
+                <input
+                  value={t.end_date}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_timeline ?? [])];
+                    arr[i] = { ...t, end_date: e.target.value };
+                    updateContent({ ...content, proposal_timeline: arr });
+                  }}
+                  className="bg-background p-1 rounded border flex-1 min-w-[80px]" placeholder="End Date"
+                />
+                <input
+                  value={t.milestone}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_timeline ?? [])];
+                    arr[i] = { ...t, milestone: e.target.value };
+                    updateContent({ ...content, proposal_timeline: arr });
+                  }}
+                  className="bg-background p-1 rounded border w-full mt-1" placeholder="Milestone"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Risks */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Risk Assessment</h3>
+            {(content.proposal_risks ?? []).map((r, i) => (
+              <div key={i} className="bg-muted/50 p-3 rounded-lg border border-border flex flex-wrap gap-2 text-sm">
+                <input
+                  value={r.risk}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_risks ?? [])];
+                    arr[i] = { ...r, risk: e.target.value };
+                    updateContent({ ...content, proposal_risks: arr });
+                  }}
+                  className="bg-background p-1 rounded border w-full" placeholder="Risk"
+                />
+                <input
+                  value={r.likelihood}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_risks ?? [])];
+                    arr[i] = { ...r, likelihood: e.target.value };
+                    updateContent({ ...content, proposal_risks: arr });
+                  }}
+                  className="bg-background p-1 rounded border flex-1" placeholder="Likelihood"
+                />
+                <input
+                  value={r.impact}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_risks ?? [])];
+                    arr[i] = { ...r, impact: e.target.value };
+                    updateContent({ ...content, proposal_risks: arr });
+                  }}
+                  className="bg-background p-1 rounded border flex-1" placeholder="Impact"
+                />
+                <input
+                  value={r.mitigation}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_risks ?? [])];
+                    arr[i] = { ...r, mitigation: e.target.value };
+                    updateContent({ ...content, proposal_risks: arr });
+                  }}
+                  className="bg-background p-1 rounded border w-full mt-1" placeholder="Mitigation"
+                />
+              </div>
+            ))}
+          </div>
+          {/* Stakeholders */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Stakeholders</h3>
+            {(content.proposal_stakeholders ?? []).map((s, i) => (
+              <div key={i} className="bg-muted/50 p-2 rounded-lg border border-border flex gap-2 text-sm">
+                <input
+                  value={s.team}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_stakeholders ?? [])];
+                    arr[i] = { ...s, team: e.target.value };
+                    updateContent({ ...content, proposal_stakeholders: arr });
+                  }}
+                  className="bg-background p-1 rounded border flex-1" placeholder="Team/Name"
+                />
+                <input
+                  value={s.role}
+                  onChange={(e) => {
+                    const arr = [...(content.proposal_stakeholders ?? [])];
+                    arr[i] = { ...s, role: e.target.value };
+                    updateContent({ ...content, proposal_stakeholders: arr });
+                  }}
+                  className="bg-background p-1 rounded border flex-1" placeholder="Role"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Outcomes */}
+          <div className="card-soft p-4 mb-3 space-y-2">
+            <h3 className="text-sm font-semibold">Expected Outcomes</h3>
+            {(content.proposal_outcomes ?? []).map((item, i) => (
+              <textarea
+                key={i}
+                value={item}
+                onChange={(e) => {
+                  const arr = [...(content.proposal_outcomes ?? [])];
+                  arr[i] = e.target.value;
+                  updateContent({ ...content, proposal_outcomes: arr });
+                }}
+                rows={2}
+                className="w-full bg-muted/50 p-2 rounded-lg text-sm border border-border"
+              />
+            ))}
+          </div>
+        </>
+      )}
+
       <div className="card-soft p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
@@ -263,10 +512,31 @@ function DocPage() {
       </div>
 
       <div className="card-soft p-4 mb-4 space-y-1.5 text-sm">
-        <Row label="Subtotal" value={formatCurrency(subtotal, doc.currency)} />
-        <Row label="VAT (7.5%)" value={formatCurrency(tax, doc.currency)} />
-        <div className="h-px bg-border my-1" />
-        <Row label="Total" value={formatCurrency(total, doc.currency)} bold />
+        {isReceipt && projectTotal !== undefined ? (
+          <>
+            <Row label="Project Total" value={formatCurrency(projectTotal, doc.currency)} />
+            <Row label="Previously Paid" value={formatCurrency(prevPaid, doc.currency)} />
+            <Row label="Amount Paid Now" value={formatCurrency(amtPaid, doc.currency)} bold />
+            <div className="h-px bg-border my-1" />
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Balance Due</span>
+              {balanceDue === 0 ? (
+                <span className="text-[10px] uppercase tracking-wider font-bold bg-success/15 text-success px-2 py-0.5 rounded-full">
+                  Final Payment
+                </span>
+              ) : (
+                <span className="font-display text-primary">{formatCurrency(balanceDue ?? 0, doc.currency)}</span>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <Row label="Subtotal" value={formatCurrency(subtotal, doc.currency)} />
+            <Row label="VAT (7.5%)" value={formatCurrency(tax, doc.currency)} />
+            <div className="h-px bg-border my-1" />
+            <Row label="Total" value={formatCurrency(total, doc.currency)} bold />
+          </>
+        )}
       </div>
 
       <div className="card-soft p-4 mb-4">

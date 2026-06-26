@@ -225,6 +225,10 @@ function SettingsPage() {
             email: res.email,
             amount: res.amount,
             access_code: res.accessCode,
+            metadata: {
+              userId: profile?.id,
+              plan: selectedPlan
+            },
             callback: function () {
               toast.success("Payment successful! Your subscription is being processed.");
               qc.invalidateQueries({ queryKey: ["billing"] });
@@ -498,81 +502,107 @@ function SettingsPage() {
       </Group>
 
       <Group title="Subscription & Billing">
-        <div className="card-soft p-4 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-border overflow-hidden bg-background shadow-sm">
+          <div className="bg-muted/30 p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold capitalize">{billing.plan} Tier</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="size-4 text-primary" />
+                <h4 className="font-display text-lg capitalize">{billing.plan} Tier</h4>
+                <span
+                  className={cn(
+                    "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ml-1",
+                    billing.plan === "trial"
+                      ? "bg-muted-foreground/10 text-muted-foreground"
+                      : "bg-success/15 text-success",
+                  )}
+                >
+                  {billing.plan === "trial" ? "Free Trial" : "Active"}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
                 {billing.plan === "trial"
-                  ? `Usage: ${billing.trial_generations_used} of ${billing.trial_generations_limit} free AI runs used`
-                  : `Status: ${billing.subscription_status} · Renews ${billing.subscription_ends_at ? new Date(billing.subscription_ends_at).toLocaleDateString() : "—"}`}
+                  ? "Experience the full power of Studio AI for free before deciding."
+                  : `Your subscription is active and renews on ${billing.subscription_ends_at ? new Date(billing.subscription_ends_at).toLocaleDateString() : "—"}.`}
               </p>
             </div>
-            <span
-              className={cn(
-                "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full",
-                billing.plan === "trial"
-                  ? "bg-muted text-muted-foreground"
-                  : "bg-success/15 text-success",
-              )}
-            >
-              {billing.plan === "trial" ? "Free Trial" : "Active"}
-            </span>
           </div>
+          
+          <div className="p-5 bg-background">
+            {(() => {
+              const limit = billing.plan === "premium" ? 100 : billing.plan === "basic" ? 30 : billing.trial_generations_limit || 5;
+              const used = billing.trial_generations_used || 0;
+              const title = billing.plan === "trial" ? "Trial Usage" : "Monthly Usage";
+              return (
+                <div className="mb-6 p-4 rounded-xl bg-muted/30 border border-border">
+                  <div className="flex justify-between items-end mb-2">
+                    <p className="text-sm font-semibold">{title}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{used} of {limit} runs used</p>
+                  </div>
+                  <div className="w-full bg-muted/80 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-primary h-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(100, (used / limit) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
-          {billing.plan === "trial" && (
-            <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-primary h-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(100, (billing.trial_generations_used / billing.trial_generations_limit) * 100)}%`,
-                }}
-              />
+            <div className="flex flex-col sm:flex-row gap-3 mt-2">
+              {billing.plan === "trial" ? (
+                <button
+                  type="button"
+                  onClick={() => setCheckoutOpen(true)}
+                  className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 shadow-[var(--shadow-pop)] transition-transform active:scale-[0.98]"
+                >
+                  <CreditCard className="size-4" /> Upgrade Plan
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (billing.plan === "basic") {
+                        toast.info("Cancellation will be available soon. Please contact support to cancel.");
+                      } else {
+                        setSelectedPlan("basic");
+                        setCheckoutOpen(true);
+                      }
+                    }}
+                    className={cn(
+                      "flex-1 h-11 rounded-xl border text-sm font-semibold transition-all",
+                      billing.plan === "basic" 
+                        ? "bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive/10" 
+                        : "border-border hover:bg-muted/50 hover:border-border/80 text-foreground"
+                    )}
+                  >
+                    {billing.plan === "basic" ? "Cancel subscription" : "Switch to Basic"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (billing.plan === "premium") {
+                        toast.info("Cancellation will be available soon. Please contact support to cancel.");
+                      } else {
+                        setSelectedPlan("premium");
+                        setCheckoutOpen(true);
+                      }
+                    }}
+                    className={cn(
+                      "flex-1 h-11 rounded-xl border text-sm font-semibold transition-all",
+                      billing.plan === "premium" 
+                        ? "bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive/10" 
+                        : "border-border hover:bg-muted/50 hover:border-border/80 text-foreground"
+                    )}
+                  >
+                    {billing.plan === "premium" ? "Cancel subscription" : "Upgrade to Premium"}
+                  </button>
+                </>
+              )}
             </div>
-          )}
-
-          {billing.plan === "trial" ? (
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setCheckoutOpen(true)}
-                className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
-              >
-                <CreditCard className="size-4" /> Upgrade Plan
-              </button>
-            </div>
-          ) : (
-            <div className="pt-1 flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPlan("basic");
-                  setCheckoutOpen(true);
-                }}
-                className={cn(
-                  "flex-1 h-9 rounded-lg border border-border text-xs font-medium",
-                  billing.plan === "basic" && "opacity-50 cursor-not-allowed",
-                )}
-                disabled={billing.plan === "basic"}
-              >
-                Switch to Basic
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPlan("premium");
-                  setCheckoutOpen(true);
-                }}
-                className={cn(
-                  "flex-1 h-9 rounded-lg border border-border text-xs font-medium",
-                  billing.plan === "premium" && "opacity-50 cursor-not-allowed",
-                )}
-                disabled={billing.plan === "premium"}
-              >
-                Switch to Premium
-              </button>
-            </div>
-          )}
+          </div>
         </div>
       </Group>
 

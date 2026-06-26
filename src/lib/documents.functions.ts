@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { generateText } from "ai";
+import { generateText, generateObject } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
 import { enforceUsageLimits } from "./security.server";
@@ -20,6 +20,17 @@ const DocContentSchema = z.object({
   line_items: z.array(LineItemSchema),
   terms: z.string(),
   payment_instructions: z.string().optional().default(""),
+  project_total: z.number().optional(),
+  previous_payments: z.number().optional(),
+  proposal_objectives: z.array(z.string()).optional(),
+  proposal_scope_inclusions: z.array(z.string()).optional(),
+  proposal_scope_exclusions: z.array(z.string()).optional(),
+  proposal_deliverables: z.array(z.string()).optional(),
+  proposal_methodology: z.array(z.object({ step: z.number(), title: z.string(), description: z.string() })).optional(),
+  proposal_timeline: z.array(z.object({ phase: z.string(), start_date: z.string(), end_date: z.string(), milestone: z.string() })).optional(),
+  proposal_risks: z.array(z.object({ risk: z.string(), likelihood: z.string(), impact: z.string(), mitigation: z.string() })).optional(),
+  proposal_stakeholders: z.array(z.object({ team: z.string(), role: z.string() })).optional(),
+  proposal_outcomes: z.array(z.string()).optional(),
 });
 
 export type DocContent = z.infer<typeof DocContentSchema>;
@@ -97,7 +108,7 @@ export const draftDocument = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z
       .object({
-        type: z.enum(["proposal", "invoice", "contract", "receipt"]),
+        type: z.enum(["proposal", "invoice", "contract", "receipt", "quotation"]),
         project_id: z.string().uuid().optional().nullable(),
         client_id: z.string().uuid().optional().nullable(),
         notes: z.string().max(2000).optional(),
@@ -131,24 +142,25 @@ export const draftDocument = createServerFn({ method: "POST" })
     const pricingRun = pricingRunRes.data;
     const currency = profile?.currency || "NGN";
 
-    const { provider, model } = await getAiProvider(context.supabase);
+    let previousPayments = 0;
+    if (data.type === "receipt" && data.project_id) {
+      const { data: pastReceipts } = await context.supabase
+        .from("documents")
+        .select("total")
+        .eq("type", "receipt")
+        .eq("project_id", data.project_id)
+        .in("status", ["ready", "sent", "paid"]); // count confirmed receipts
 
-    const schemaShape = `{
-  "title": string,
-  "intro": string,
-  "sections": Array<{ "heading": string, "body": string }>,
-  "line_items": Array<{ "label": string, "quantity": number, "unit": string, "unit_rate": number, "amount": number }>,
-  "terms": string,
-  "payment_instructions": string
-}`;
+      previousPayments = pastReceipts?.reduce((sum, r) => sum + Number(r.total || 0), 0) ?? 0;
+    }
+    const projectBudget = pricingRun ? Number(pricingRun.recommended_total) : Number(project?.budget ?? 0);
+    const balanceRemaining = Math.max(0, projectBudget - previousPayments);
+
+    const { provider, model } = await getAiProvider(context.supabase);
 
     const sys = `You draft ${data.type}s for independent creatives. Use clear, friendly business English. Amounts in ${currency}.
 ${pricingRun ? "IMPORTANT: You MUST use the exact Recommended Total and the detailed line items (labels, rates, quantities, amounts) from the provided PRICING ANALYSIS. Do not invent fake prices or change the totals." : "Include realistic line items derived from the project scope."}
-${profile?.bank_details ? "IMPORTANT: You MUST copy the provided STUDIO BANK DETAILS exactly into the 'payment_instructions' field. Do not invent fake bank accounts or details." : ""}
-
-IMPORTANT: Return ONLY a valid JSON object matching this schema. No markdown, no code fences, no extra prose.
-Schema:
-${schemaShape}`;
+${profile?.bank_details ? "IMPORTANT: You MUST copy the provided STUDIO BANK DETAILS exactly into the 'payment_instructions' field. Do not invent fake bank accounts or details." : ""}`;
 
     const pricingContext = pricingRun
       ? `\nPRICING ANALYSIS (YOU MUST USE THIS FOR THE BUDGET AND LINE ITEMS):
@@ -162,23 +174,55 @@ ${schemaShape}`;
 ${profile.bank_details}`
       : "";
 
+    const receiptContext = data.type === "receipt" && projectBudget > 0 
+      ? `\nRECEIPT MATH:
+- Project Total: ${projectBudget}
+- Previously Paid: ${previousPayments}
+- Remaining Balance (before this payment): ${balanceRemaining}
+Calculate the payment amount based on the NOTES provided. If notes don't specify, assume they are paying the Remaining Balance. The line items MUST total to the amount paid in this receipt.`
+      : "";
+
+    const receiptContentDefaults = data.type === "receipt"
+      ? `\n\nFor receipts, YOU MUST FOLLOW THESE RULES:
+1. DO NOT include a "Project Details" section or "Payment Summary" section in the sections array. The breakdown and totals are already handled by the app's UI and PDF layout.
+2. In the "terms" field, include these standard notes (use exact phrasing where possible):
+- If the remaining balance after this payment is 0, say "This receipt confirms that payment has been received in full." Otherwise, say "This receipt confirms a partial payment towards the total balance."
+- Please keep this document for your records.
+- For inquiries, contact us at: ${profile?.email ?? "hello@studio.com"}
+
+3. In the "payment_instructions" field, list the PAYMENT INFORMATION stacked on separate lines using \\n:
+Payment Information:
+Account Name: (provide name)
+Bank Name: (provide bank)
+Account Number: (provide number)
+Payment Status: "PAID IN FULL" or "PARTIAL PAYMENT"`
+      : "";
+
+    const lengthInstructions = data.type === "proposal"
+      ? `\nIMPORTANT: For PROPOSALS, generate the content using the specific proposal arrays (proposal_objectives, proposal_timeline, proposal_risks, etc.) instead of the generic sections array. This ensures it maps correctly to the highly structured PDF layout.
+Adapt the length and detail of the proposal to the project's size and budget:
+- For small projects or tight budgets, keep it concise.
+- For large, high-budget projects, be extremely detailed.`
+      : "";
+
     const prompt = `STUDIO: ${profile?.business_name ?? "Independent studio"} (${profile?.owner_name ?? ""})
 CLIENT: ${client?.name ?? "Unknown"} ${client?.company ? "— " + client.company : ""}
 PROJECT: ${project?.title ?? "Untitled"}
 SCOPE: ${project?.scope ?? "Not specified"}
 BUDGET: ${pricingRun ? pricingRun.recommended_total : (project?.budget ?? "open")} ${currency}
-NOTES: ${data.notes ?? "(none)"}${pricingContext}${paymentContext}
+NOTES: ${data.notes ?? "(none)"}${pricingContext}${paymentContext}${receiptContext}${receiptContentDefaults}${lengthInstructions}
 
 Generate a complete ${data.type} draft as raw JSON.`;
 
     async function callModel(extra = "") {
       try {
-        const res = await generateText({
+        const res = await generateObject({
           model: provider(model),
           system: sys,
           prompt: prompt + extra,
+          schema: DocContentSchema,
         });
-        return res.text;
+        return JSON.stringify(res.object);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes("429")) throw new Error("AI rate limit reached — please wait and retry.");
@@ -212,6 +256,10 @@ Generate a complete ${data.type} draft as raw JSON.`;
     }
 
     const content = parsed.data;
+    if (data.type === "receipt" && projectBudget > 0) {
+      content.project_total = projectBudget;
+      content.previous_payments = previousPayments;
+    }
     const subtotal = content.line_items.reduce((s, li) => s + Number(li.amount || 0), 0);
 
     // Country-specific tax rate mapping (NG: 7.5%, GH/ZA: 15%, KE: 16%, GB: 20%, CA: 5%, others: 0%)
@@ -228,7 +276,7 @@ Generate a complete ${data.type} draft as raw JSON.`;
     const tax = Math.round(subtotal * taxRate);
     const total = subtotal + tax;
 
-    const prefix = { proposal: "PRO", invoice: "INV", contract: "CON", receipt: "REC" }[data.type];
+    const prefix = { proposal: "PRO", invoice: "INV", contract: "CON", receipt: "REC", quotation: "QUO" }[data.type as "proposal" | "invoice" | "contract" | "receipt" | "quotation"];
     const { count } = await context.supabase
       .from("documents")
       .select("id", { count: "exact", head: true })

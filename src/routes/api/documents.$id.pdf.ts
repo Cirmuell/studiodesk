@@ -45,8 +45,7 @@ export const Route = createFileRoute("/api/documents/$id/pdf")({
           .eq("id", user.user.id)
           .maybeSingle();
 
-        const { renderDocumentPdf } = await import("@/lib/pdf.server");
-        const bytes = await renderDocumentPdf({
+        const docInput = {
           type: docRow.type,
           number: docRow.number,
           title: docRow.title,
@@ -59,7 +58,16 @@ export const Route = createFileRoute("/api/documents/$id/pdf")({
           due_date: docRow.due_date,
           profile: profile ?? null,
           client: docRow.client ?? null,
-        });
+        };
+
+        let bytes;
+        if (docRow.type === "proposal") {
+          const { renderProposalPdf } = await import("@/lib/proposal.server");
+          bytes = await renderProposalPdf(docInput);
+        } else {
+          const { renderDocumentPdf } = await import("@/lib/pdf.server");
+          bytes = await renderDocumentPdf(docInput);
+        }
 
         const filename = `${docRow.type}-${docRow.number ?? docRow.id}.pdf`;
         return new Response(new Uint8Array(bytes), {

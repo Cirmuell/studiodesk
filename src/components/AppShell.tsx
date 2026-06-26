@@ -1,4 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getProfile } from "@/lib/profile.functions";
 import {
   Home,
   Users,
@@ -36,6 +39,18 @@ interface AppShellProps {
 
 export function AppShell({ title, subtitle, children, action }: AppShellProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  
+  const fetchProfile = useServerFn(getProfile);
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => fetchProfile(),
+  });
+
+  const currencySymbol = profile?.currency
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency: profile.currency, currencyDisplay: "narrowSymbol" })
+        .formatToParts(0)
+        .find((x) => x.type === "currency")?.value || "$"
+    : "$";
 
   return (
     <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md sm:max-w-lg w-full">
@@ -52,7 +67,6 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            {action}
             <Link
               to="/settings"
               aria-label="Settings"
@@ -65,6 +79,15 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
       </header>
 
       <main className="flex-1 px-5 pt-4 pb-28">{children}</main>
+
+      {/* Floating Action Area */}
+      {action && (
+        <div className="fixed bottom-[90px] inset-x-0 mx-auto max-w-md sm:max-w-lg px-5 z-50 pointer-events-none flex justify-end">
+          <div className="pointer-events-auto shadow-2xl rounded-full">
+            {action}
+          </div>
+        </div>
+      )}
 
       <nav className="fixed bottom-0 inset-x-0 z-40 mx-auto max-w-md sm:max-w-lg px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
         <div className="bg-surface/95 backdrop-blur-md border border-border rounded-2xl shadow-[var(--shadow-pop)] px-2 py-2 grid grid-cols-5">
@@ -85,7 +108,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
                       "bg-primary",
                     )}
                   >
-                    <Plus className="size-6" />
+                    {profile ? <span className="text-2xl font-medium">{currencySymbol}</span> : <Plus className="size-6" />}
                   </span>
                   <span className="text-[10px] mt-1 font-medium text-muted-foreground">
                     {t.label}

@@ -43,21 +43,79 @@ export async function enforceUsageLimits(
     request?.headers?.get("x-real-ip")?.trim() ||
     "127.0.0.1";
 
-  // 2. Call the RLS-bypassing secure security definer RPC using the service role client
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error: rpcError } = await supabaseAdmin.rpc("enforce_and_increment_usage", {
-    user_id: userId,
-    client_ip: clientIp,
-  });
 
-  if (rpcError) {
-    // Graceful fallback warning if migration has not been applied yet
-    if (rpcError.message.includes("function") && rpcError.message.includes("does not exist")) {
-      console.warn(
-        "[Subscription Security] enforce_and_increment_usage RPC function not found in database. Please apply the database migration 20260613010000_edge_security_definer.sql.",
-      );
-      return;
+  // 2. Fetch user profile statistics
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("restricted, plan, trial_generations_used, trial_generations_limit, last_generation_at, signup_ip")
+    .eq("id", userId)
+    .single();
+
+  if (error || !profile) {
+    throw new Error("Access denied: User profile not found.");
+  }
+
+  // 3. Check restriction status
+  if (profile.restricted) {
+    throw new Error("Access denied: This account has been restricted due to suspicious activity.");
+  }
+
+  let currentSignupIp = profile.signup_ip;
+
+  // 4. Multi-account detection & logging
+  if (profile.plan === "trial" && clientIp && clientIp !== "127.0.0.1") {
+    if (!currentSignupIp) {
+      await supabaseAdmin.from("profiles").update({ signup_ip: clientIp }).eq("id", userId);
+      currentSignupIp = clientIp;
     }
-    throw new Error(rpcError.message);
+
+    // Query other trial accounts sharing this IP
+    const { count } = await supabaseAdmin
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("signup_ip", currentSignupIp)
+      .eq("plan", "trial")
+      .neq("id", userId);
+
+    if (count && count >= 2) {
+      await supabaseAdmin.from("profiles").update({ restricted: true }).eq("id", userId);
+      throw new Error("Access denied: Multiple registrations detected from this network location.");
+    }
+  }
+
+  // 5. API Rate Limiting: Max 1 generation per 20 seconds
+  if (profile.last_generation_at) {
+    const lastGen = new Date(profile.last_generation_at).getTime();
+    const now = new Date().getTime();
+    if (now - lastGen < 20000) {
+      throw new Error("Rate limit exceeded: Please wait a moment before generating again.");
+    }
+  }
+
+  // 6. Enforce plan-specific limits
+  const planLimit = profile.plan === "premium" ? 100 : profile.plan === "basic" ? 30 : profile.trial_generations_limit || 5;
+
+  if (profile.trial_generations_used >= planLimit) {
+    if (profile.plan === "trial") {
+      throw new Error(`You have exhausted your free trial limit (${planLimit} AI generations). Please subscribe in Settings to continue using the AI pricing and drafting features.`);
+    } else if (profile.plan === "basic") {
+      throw new Error(`You have exhausted your Basic plan limit (${planLimit} AI generations). Please upgrade to Premium in Settings to continue using the AI pricing and drafting features.`);
+    } else {
+      throw new Error(`You have exhausted your Premium plan limit (${planLimit} AI generations). Please contact support to request additional generations.`);
+    }
+  }
+
+  // 7. Execute increments and set generation timestamps
+  const { error: updateError } = await supabaseAdmin
+    .from("profiles")
+    .update({
+      last_generation_at: new Date().toISOString(),
+      trial_generations_used: profile.trial_generations_used + 1,
+    })
+    .eq("id", userId);
+
+  if (updateError) {
+    throw new Error("Failed to record usage increment.");
   }
 }

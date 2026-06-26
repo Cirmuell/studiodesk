@@ -100,7 +100,7 @@ export const getProject = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const [{ data: project, error: pErr }, { data: pricing_runs }, { data: documents }] =
+    const [{ data: project, error: pErr }, { data: pricing_runs }, { data: documents }, { data: tasks }, { data: links }] =
       await Promise.all([
         context.supabase
           .from("projects")
@@ -119,6 +119,16 @@ export const getProject = createServerFn({ method: "GET" })
           .select("id, type, number, title, status, total, currency, updated_at")
           .eq("project_id", data.id)
           .order("updated_at", { ascending: false }),
+        context.supabase
+          .from("project_tasks")
+          .select("*")
+          .eq("project_id", data.id)
+          .order("created_at", { ascending: false }),
+        context.supabase
+          .from("project_links")
+          .select("*")
+          .eq("project_id", data.id)
+          .order("created_at", { ascending: false }),
       ]);
     if (pErr || !project) throw new Error(pErr?.message ?? "Project not found");
     const { client, ...rest } = project as typeof project & { client: unknown };
@@ -134,6 +144,8 @@ export const getProject = createServerFn({ method: "GET" })
       } | null,
       pricing_runs: pricing_runs ?? [],
       documents: documents ?? [],
+      tasks: tasks ?? [],
+      links: links ?? [],
     };
   });
 
@@ -142,6 +154,82 @@ export const deleteProject = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { error } = await context.supabase.from("projects").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const addTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      project_id: z.string().uuid(),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      status: z.enum(["todo", "in_progress", "review", "done"]).default("todo"),
+      priority: z.enum(["low", "medium", "high"]).default("medium"),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await context.supabase
+      .from("project_tasks")
+      .insert({ ...data, user_id: context.userId })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const updateTaskStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      status: z.enum(["todo", "in_progress", "review", "done"]),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("project_tasks")
+      .update({ status: data.status })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("project_tasks").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const addProjectLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      project_id: z.string().uuid(),
+      title: z.string().min(1),
+      url: z.string().url(),
+      type: z.enum(["figma", "github", "drive", "notion", "other"]).default("other"),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { data: row, error } = await context.supabase
+      .from("project_links")
+      .insert({ ...data, user_id: context.userId })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const deleteProjectLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase.from("project_links").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

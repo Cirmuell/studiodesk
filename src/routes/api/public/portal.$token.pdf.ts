@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-export const config = {
-  runtime: "edge",
-};
+// Removed edge runtime config to support react-pdf node bindings
 
 export const Route = createFileRoute("/api/public/portal/$token/pdf")({
   server: {
@@ -14,7 +12,6 @@ export const Route = createFileRoute("/api/public/portal/$token/pdf")({
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { renderDocumentPdf } = await import("@/lib/pdf.server");
 
         const { data: share } = await supabaseAdmin
           .from("document_shares")
@@ -39,7 +36,7 @@ export const Route = createFileRoute("/api/public/portal/$token/pdf")({
 
         if (!docRow) return new Response("Not found", { status: 404 });
 
-        const bytes = await renderDocumentPdf({
+        const docInput = {
           type: docRow.type,
           number: docRow.number,
           title: docRow.title,
@@ -52,7 +49,16 @@ export const Route = createFileRoute("/api/public/portal/$token/pdf")({
           due_date: docRow.due_date,
           profile: profile ?? null,
           client: docRow.client ?? null,
-        });
+        };
+
+        let bytes;
+        if (docRow.type === "proposal") {
+          const { renderProposalPdf } = await import("@/lib/proposal.server");
+          bytes = await renderProposalPdf(docInput);
+        } else {
+          const { renderDocumentPdf } = await import("@/lib/pdf.server");
+          bytes = await renderDocumentPdf(docInput);
+        }
 
         const filename = `${docRow.type}-${docRow.number ?? docRow.id}.pdf`;
         return new Response(new Uint8Array(bytes), {

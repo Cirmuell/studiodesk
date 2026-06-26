@@ -12,11 +12,11 @@ import { AppShell } from "@/components/AppShell";
 import { listDocuments, draftDocument, deleteDocument } from "@/lib/documents.functions";
 import { listProjects } from "@/lib/projects.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
-import { FileText, Plus, Receipt, ScrollText, FileCheck2, Sparkles, Trash2 } from "lucide-react";
+import { FileText, Plus, Receipt, ScrollText, FileCheck2, Sparkles, Trash2, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type DocType = "proposal" | "invoice" | "contract" | "receipt";
+type DocType = "proposal" | "invoice" | "contract" | "receipt" | "quotation";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({ meta: [{ title: "Documents — Studio" }] }),
@@ -40,11 +40,13 @@ const typeMeta: Record<DocType, { label: string; icon: typeof FileText; tone: st
   invoice: { label: "Invoices", icon: FileText, tone: "bg-secondary text-secondary-foreground" },
   receipt: { label: "Receipts", icon: Receipt, tone: "bg-success/15 text-success" },
   contract: { label: "Contracts", icon: FileCheck2, tone: "bg-accent text-accent-foreground" },
+  quotation: { label: "Quotations", icon: ClipboardList, tone: "bg-blue-500/10 text-blue-500" },
 };
 
 const filters: { key: DocType | "all"; label: string }[] = [
   { key: "all", label: "All" },
   { key: "proposal", label: "Proposals" },
+  { key: "quotation", label: "Quotations" },
   { key: "invoice", label: "Invoices" },
   { key: "contract", label: "Contracts" },
   { key: "receipt", label: "Receipts" },
@@ -155,6 +157,7 @@ function DocumentsPage() {
         <NewDocForm
           projects={projects}
           loading={mut.isPending}
+          defaultType={filter !== "all" ? filter : "proposal"}
           onCancel={() => setOpen(false)}
           onSubmit={(v) => mut.mutate(v)}
         />
@@ -235,6 +238,7 @@ function NewDocForm({
   onSubmit,
   onCancel,
   loading,
+  defaultType = "proposal",
 }: {
   projects: {
     id: string;
@@ -245,8 +249,9 @@ function NewDocForm({
   onSubmit: (v: { type: DocType; project_id?: string; client_id?: string }) => void;
   onCancel: () => void;
   loading: boolean;
+  defaultType?: DocType;
 }) {
-  const [type, setType] = useState<DocType>("proposal");
+  const [type, setType] = useState<DocType>(defaultType);
   const [projectId, setProjectId] = useState("");
   const selected = projects.find((p) => p.id === projectId);
   return (
@@ -270,6 +275,7 @@ function NewDocForm({
         className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
       >
         <option value="proposal">Proposal</option>
+        <option value="quotation">Quotation</option>
         <option value="invoice">Invoice</option>
         <option value="contract">Contract</option>
         <option value="receipt">Receipt</option>

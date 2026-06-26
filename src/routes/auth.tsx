@@ -60,7 +60,7 @@ function AuthPage() {
 
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (otp.length !== 6) return;
+    if (otp.length !== 8) return;
     setOtpLoading(true);
     try {
       const { data, error } = await supabase.auth.verifyOtp({
@@ -163,13 +163,13 @@ function AuthPage() {
           </div>
           <h1 className="font-display text-3xl leading-tight">Check your email</h1>
           <p className="text-muted-foreground mt-4 text-sm leading-relaxed mb-8">
-            We have sent a 6-digit verification code to{" "}
+            We have sent an 8-digit verification code to{" "}
             <strong className="text-foreground">{verificationEmail}</strong>. Please enter the code
             below to activate your account.
           </p>
 
           <form onSubmit={handleVerifyOtp} className="flex flex-col items-center gap-6 w-full">
-            <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+            <InputOTP maxLength={8} value={otp} onChange={setOtp}>
               <InputOTPGroup>
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
@@ -177,12 +177,14 @@ function AuthPage() {
                 <InputOTPSlot index={3} />
                 <InputOTPSlot index={4} />
                 <InputOTPSlot index={5} />
+                <InputOTPSlot index={6} />
+                <InputOTPSlot index={7} />
               </InputOTPGroup>
             </InputOTP>
 
             <button
               type="submit"
-              disabled={otpLoading || otp.length !== 6}
+              disabled={otpLoading || otp.length !== 8}
               className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)] disabled:opacity-60 cursor-pointer"
             >
               {otpLoading ? "Verifying…" : "Verify code"}
