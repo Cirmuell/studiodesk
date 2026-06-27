@@ -157,7 +157,7 @@ function AuthPage() {
           Back to sign in
         </button>
 
-        <div className="flex-1 flex flex-col justify-center text-center">
+        <div className="my-auto flex flex-col justify-center text-center py-6">
           <div className="size-16 rounded-full bg-primary/10 text-primary grid place-items-center mx-auto mb-6 mt-8">
             <Mail className="size-8" />
           </div>
@@ -213,7 +213,7 @@ function AuthPage() {
 
   return (
     <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
-      <div className="flex-1 flex flex-col justify-center">
+      <div className="my-auto flex flex-col justify-center py-6">
         <div className="flex justify-center mb-6">
           <img
             src={logoImg}
