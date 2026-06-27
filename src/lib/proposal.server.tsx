@@ -88,6 +88,9 @@ export async function renderProposalPdf(input: any): Promise<Uint8Array> {
 
   const hasItems = (arr: any) => arr && arr.length > 0;
   
+  const clientSigData = (input as any).client_signature_data;
+  const clientSigObj = clientSigData && clientSigData !== "null" ? clientSigData : null;
+  
   // Build Dynamic TOC
   const toc: { title: string, id: string }[] = [{ title: "Summary", id: "summary" }];
   if (hasItems(proposal_objectives)) toc.push({ title: "Project Objectives", id: "obj" });
