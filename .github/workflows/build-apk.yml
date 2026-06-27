@@ -27,6 +27,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           
+      - name: Prepare Capacitor directories
+        run: |
+          mkdir -p .output/public
+          mkdir -p android/app/src/main/assets
+          
       - name: Sync Capacitor
         run: npx cap sync android
         
