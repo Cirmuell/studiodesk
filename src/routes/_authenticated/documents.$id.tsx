@@ -431,7 +431,7 @@ function DocPage() {
           <div className="card-soft p-4 mb-3 space-y-2">
             <h3 className="text-sm font-semibold">Stakeholders</h3>
             {(content.proposal_stakeholders ?? []).map((s, i) => (
-              <div key={i} className="bg-muted/50 p-2 rounded-lg border border-border flex gap-2 text-sm">
+              <div key={i} className="bg-muted/50 p-2 rounded-lg border border-border flex flex-col sm:flex-row gap-2 text-sm min-w-0">
                 <input
                   value={s.team}
                   onChange={(e) => {

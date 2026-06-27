@@ -8,6 +8,12 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://studiodesk-rouge.vercel.app/',
     cleartext: true
+  },
+  plugins: {
+    Keyboard: {
+      resize: 'body',
+      resizeOnFullScreen: true
+    }
   }
 };
 

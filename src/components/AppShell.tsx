@@ -61,7 +61,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md sm:max-w-lg w-full">
+    <div className="min-h-screen bg-background flex flex-col mx-auto max-w-md sm:max-w-lg w-full">
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/60 px-5 pt-5 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
