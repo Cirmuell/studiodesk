@@ -3,7 +3,9 @@ import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 
 export function AnimatedSplash({ children }: { children: React.ReactNode }) {
-  const [showSplash, setShowSplash] = useState(true);
+  // Only show splash screen on native Capacitor app (skip on Web/SSR)
+  const isNative = typeof window !== "undefined" && Capacitor.isNativePlatform();
+  const [showSplash, setShowSplash] = useState(isNative);
   const [fading, setFading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
