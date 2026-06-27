@@ -144,7 +144,7 @@ function AuthPage() {
 
   if (verificationEmail) {
     return (
-      <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10 relative">
+      <div className="min-h-screen bg-background flex flex-col mx-auto max-w-md w-full px-6 pt-20 pb-10 sm:justify-center relative">
         <button
           onClick={() => {
             setVerificationEmail("");
@@ -157,7 +157,7 @@ function AuthPage() {
           Back to sign in
         </button>
 
-        <div className="my-auto flex flex-col justify-center text-center py-6">
+        <div className="flex flex-col text-center w-full">
           <div className="size-16 rounded-full bg-primary/10 text-primary grid place-items-center mx-auto mb-6 mt-8">
             <Mail className="size-8" />
           </div>
@@ -212,8 +212,8 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
-      <div className="my-auto flex flex-col justify-center py-6">
+    <div className="min-h-screen bg-background flex flex-col mx-auto max-w-md w-full px-6 pt-16 pb-10 sm:justify-center">
+      <div className="flex flex-col w-full">
         <div className="flex justify-center mb-6">
           <img
             src={logoImg}
