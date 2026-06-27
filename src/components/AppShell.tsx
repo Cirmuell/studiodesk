@@ -57,7 +57,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    router.navigate({ to: "/auth" });
+    window.location.href = "/auth";
   }
 
   return (

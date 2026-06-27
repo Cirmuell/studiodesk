@@ -271,7 +271,7 @@ function SettingsPage() {
 
   async function signOut() {
     await supabase.auth.signOut();
-    router.navigate({ to: "/auth" });
+    window.location.href = "/auth";
   }
 
   return (
@@ -300,7 +300,7 @@ function SettingsPage() {
             <Input
               label="Business name"
               value={form.business_name}
-              onChange={() => {}}
+              onChange={() => { }}
               icon={Building2}
               disabled
             />
@@ -510,7 +510,7 @@ function SettingsPage() {
           <div className="bg-muted/30 p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                
+
                 <h4 className="font-display text-lg capitalize">{billing.plan} Tier</h4>
                 <span
                   className={cn(
@@ -621,7 +621,7 @@ function SettingsPage() {
             />
           </div>
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
-            
+
             AI pricing reads this profile and your rate cards to ground every recommendation.
           </p>
         </div>
@@ -700,7 +700,7 @@ function SettingsPage() {
       </button>
 
       <p className="text-[11px] text-muted-foreground/70 text-center mt-8 flex items-center justify-center gap-1.5">
-        <Receipt className="size-3" /> Studio v1.0 · Built for independent creatives
+        Studio v1.0 · Built for creatives
       </p>
 
       {checkoutOpen && (
@@ -760,7 +760,7 @@ function SettingsPage() {
             </div>
 
             <div className="bg-muted/60 p-3 rounded-lg text-[10px] text-muted-foreground flex items-start gap-1.5 leading-normal">
-              
+
               Select your desired tier to upgrade instantly. Payments are securely processed. You
               can modify or cancel your subscription at any time.
             </div>
