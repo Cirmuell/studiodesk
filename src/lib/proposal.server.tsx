@@ -74,16 +74,14 @@ export async function renderProposalPdf(input: any): Promise<Uint8Array> {
   const styles = getStyles(brandPrimary, brandAccent);
   const formattedDate = issued_date ? format(new Date(issued_date), "MMMM\nyyyy") : "Draft";
 
-  // Use base64 data URIs so react-pdf embeds them perfectly regardless of OS path issues
+  const baseUrl = process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : "https://studiodesk-rouge.vercel.app";
+
+  // Use absolute URLs so react-pdf can fetch them over HTTP,
+  // bypassing Vercel serverless filesystem path limitations.
   const getImageSrc = (filename: string) => {
-    try {
-      const filePath = path.join(process.cwd(), "public", "proposal", filename);
-      const data = fs.readFileSync(filePath);
-      return `data:image/jpeg;base64,${data.toString("base64")}`;
-    } catch (e) {
-      console.error("Failed to load image:", filename, e);
-      return "";
-    }
+    return `${baseUrl}/proposal/${filename}`;
   };
 
   const hasItems = (arr: any) => arr && arr.length > 0;
