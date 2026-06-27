@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.studio.desk',
-  appName: 'Studio Desk',
+  appName: 'StudioDesk',
   webDir: '.output/public', // TanStack Start's client output dir by default
   bundledWebRuntime: false,
   server: {
@@ -13,6 +13,12 @@ const config: CapacitorConfig = {
     Keyboard: {
       resize: 'body',
       resizeOnFullScreen: true
+    },
+    SplashScreen: {
+      launchShowDuration: 0,
+      launchAutoHide: false,
+      backgroundColor: "#ffffffff",
+      showSpinner: false
     }
   }
 };
