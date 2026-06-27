@@ -121,6 +121,8 @@ export const updateProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const cleanedData = { ...data };
+    // Business name changes are locked down to prevent fraud. Only admins can manually change it via the database.
+    delete cleanedData.business_name;
     if (cleanedData.logo_url) {
       cleanedData.logo_url = cleanBrandAssetUrl(cleanedData.logo_url);
     }

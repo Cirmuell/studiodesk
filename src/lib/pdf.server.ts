@@ -495,6 +495,38 @@ export async function renderDocumentPdf(input: PdfInput): Promise<Uint8Array> {
     });
   }
 
+  // Client signature (left)
+  if ((input as any).client_signature_data) {
+    try {
+      const b64Data = (input as any).client_signature_data.split(",")[1];
+      if (b64Data) {
+        const imageBytes = Buffer.from(b64Data, "base64");
+        let img = await doc.embedPng(imageBytes);
+        const dims = img.scaleToFit(120, 35);
+        page.drawImage(img, {
+          x: margin,
+          y: sigY,
+          width: dims.width,
+          height: dims.height,
+        });
+        const clientName = input.client?.name || "Client Signature";
+        page.drawText(clientName, { 
+          x: margin + (dims.width/2) - (font.widthOfTextAtSize(clientName, 9)/2), 
+          y: sigY - 14, 
+          size: 9, font, color: primary 
+        });
+        if ((input as any).client_signed_at) {
+          const dateStr = `Signed: ${new Date((input as any).client_signed_at).toLocaleDateString()}`;
+          page.drawText(dateStr, {
+            x: margin + (dims.width/2) - (font.widthOfTextAtSize(dateStr, 7)/2), 
+            y: sigY - 24, 
+            size: 7, font, color: muted
+          });
+        }
+      }
+    } catch (err) { console.error("Client signature render error:", err); }
+  }
+
   // Footer block on all pages
   const footerH = 45;
   const pages = doc.getPages();

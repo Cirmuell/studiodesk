@@ -356,6 +356,26 @@ export async function renderProposalPdf(input: any): Promise<Uint8Array> {
         </Page>
       )}
 
+      {/* 12.5 Signatures */}
+      {(input as any).client_signature_data && (
+        <Page size="A4" style={{ ...styles.page, padding: 60, justifyContent: "center" }}>
+           <Text style={{ ...styles.titleMedium, textAlign: "center", marginBottom: 60 }}>Signatures</Text>
+           <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <View style={{ width: "40%", borderBottom: `1 solid ${DARK_TEXT}`, paddingBottom: 10 }}>
+                 {clientSigObj && <Image src={clientSigObj} style={{ height: 60, objectFit: "contain", marginBottom: 10 }} />}
+                 <Text style={{ fontSize: 14, fontWeight: "bold" }}>{input.client?.name || "Client"}</Text>
+                 <Text style={{ fontSize: 10, color: MUTED_TEXT }}>Signed on {new Date((input as any).client_signed_at).toLocaleDateString()}</Text>
+              </View>
+              <View style={{ width: "40%", borderBottom: `1 solid ${DARK_TEXT}`, paddingBottom: 10 }}>
+                 {/* Only embed standard URLs, base64 data urls handled directly */}
+                 {profile?.signature_url && <Image src={profile.signature_url} style={{ height: 60, objectFit: "contain", marginBottom: 10 }} />}
+                 <Text style={{ fontSize: 14, fontWeight: "bold", marginTop: profile?.signature_url ? 0 : 70 }}>{profile?.owner_name || "Owner"}</Text>
+                 <Text style={{ fontSize: 10, color: MUTED_TEXT }}>{profile?.business_name}</Text>
+              </View>
+           </View>
+        </Page>
+      )}
+
       {/* 13. Contact Page */}
       <Page size="A4" style={styles.page}>
         <View style={styles.coverTop}>

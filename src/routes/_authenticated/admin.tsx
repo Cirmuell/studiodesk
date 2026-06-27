@@ -154,7 +154,7 @@ function AdminPage() {
 
           <label className="block">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
-              <Sparkles className="size-3" /> Preferred AI Model Override
+              Preferred AI Model Override
             </span>
             <input
               type="text"
@@ -169,7 +169,7 @@ function AdminPage() {
           </label>
 
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5 pt-1">
-            <Sparkles className="size-3 text-primary mt-0.5 shrink-0" />
+            
             Configuring these keys allows your users to generate pricing models and drafts. Leave a
             key empty to fallback to system environment variables.
           </p>

@@ -295,12 +295,16 @@ function SettingsPage() {
             value={form.owner_name}
             onChange={(v) => setForm({ ...form, owner_name: v })}
           />
-          <Input
-            label="Business name"
-            value={form.business_name}
-            onChange={(v) => setForm({ ...form, business_name: v })}
-            icon={Building2}
-          />
+          <div title="Contact support to change your business name" className="cursor-not-allowed opacity-70 relative group">
+            <div className="absolute top-1 right-2 z-10 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Contact support to change</div>
+            <Input
+              label="Business name"
+              value={form.business_name}
+              onChange={() => {}}
+              icon={Building2}
+              disabled
+            />
+          </div>
           <Input
             label="Tagline"
             value={form.tagline}
@@ -502,11 +506,11 @@ function SettingsPage() {
       </Group>
 
       <Group title="Subscription & Billing">
-        <div className="rounded-2xl border border-border overflow-hidden bg-background shadow-sm">
+        <div id="billing" className="rounded-2xl border border-border overflow-hidden bg-background shadow-sm">
           <div className="bg-muted/30 p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="size-4 text-primary" />
+                
                 <h4 className="font-display text-lg capitalize">{billing.plan} Tier</h4>
                 <span
                   className={cn(
@@ -526,10 +530,10 @@ function SettingsPage() {
               </p>
             </div>
           </div>
-          
+
           <div className="p-5 bg-background">
             {(() => {
-              const limit = billing.plan === "premium" ? 100 : billing.plan === "basic" ? 30 : billing.trial_generations_limit || 5;
+              const limit = billing.plan === "premium" ? 100 : billing.plan === "basic" ? 50 : billing.trial_generations_limit || 5;
               const used = billing.trial_generations_used || 0;
               const title = billing.plan === "trial" ? "Trial Usage" : "Monthly Usage";
               return (
@@ -564,40 +568,22 @@ function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (billing.plan === "basic") {
-                        toast.info("Cancellation will be available soon. Please contact support to cancel.");
-                      } else {
-                        setSelectedPlan("basic");
-                        setCheckoutOpen(true);
-                      }
+                      setSelectedPlan(billing.plan as "basic" | "premium");
+                      setCheckoutOpen(true);
                     }}
-                    className={cn(
-                      "flex-1 h-11 rounded-xl border text-sm font-semibold transition-all",
-                      billing.plan === "basic" 
-                        ? "bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive/10" 
-                        : "border-border hover:bg-muted/50 hover:border-border/80 text-foreground"
-                    )}
+                    className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 shadow-[var(--shadow-pop)] transition-transform active:scale-[0.98]"
                   >
-                    {billing.plan === "basic" ? "Cancel subscription" : "Switch to Basic"}
+                    <CreditCard className="size-4" /> Top-up {billing.plan === "basic" ? "Basic" : "Premium"}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      if (billing.plan === "premium") {
-                        toast.info("Cancellation will be available soon. Please contact support to cancel.");
-                      } else {
-                        setSelectedPlan("premium");
-                        setCheckoutOpen(true);
-                      }
+                      setSelectedPlan(billing.plan === "basic" ? "premium" : "basic");
+                      setCheckoutOpen(true);
                     }}
-                    className={cn(
-                      "flex-1 h-11 rounded-xl border text-sm font-semibold transition-all",
-                      billing.plan === "premium" 
-                        ? "bg-destructive/5 border-destructive/20 text-destructive hover:bg-destructive/10" 
-                        : "border-border hover:bg-muted/50 hover:border-border/80 text-foreground"
-                    )}
+                    className="flex-1 h-11 rounded-xl border border-border hover:bg-muted/50 hover:border-border/80 text-foreground text-sm font-semibold transition-all"
                   >
-                    {billing.plan === "premium" ? "Cancel subscription" : "Upgrade to Premium"}
+                    {billing.plan === "basic" ? "Upgrade to Premium" : "Downgrade to Basic"}
                   </button>
                 </>
               )}
@@ -635,7 +621,7 @@ function SettingsPage() {
             />
           </div>
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
-            <Sparkles className="size-3 text-primary mt-0.5 shrink-0" />
+            
             AI pricing reads this profile and your rate cards to ground every recommendation.
           </p>
         </div>
@@ -741,7 +727,7 @@ function SettingsPage() {
                 <div>
                   <p className="text-sm font-semibold">Basic Studio</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    30 runs/month · Standard speed
+                    50 runs/month
                   </p>
                 </div>
                 <p className="text-sm font-bold">
@@ -763,7 +749,7 @@ function SettingsPage() {
                 <div>
                   <p className="text-sm font-semibold">Premium Studio</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    100 runs/month · Priority AI · portal logo
+                    100 runs/month ·
                   </p>
                 </div>
                 <p className="text-sm font-bold">
@@ -774,7 +760,7 @@ function SettingsPage() {
             </div>
 
             <div className="bg-muted/60 p-3 rounded-lg text-[10px] text-muted-foreground flex items-start gap-1.5 leading-normal">
-              <Sparkles className="size-3.5 text-primary shrink-0 mt-0.5" />
+              
               Select your desired tier to upgrade instantly. Payments are securely processed. You
               can modify or cancel your subscription at any time.
             </div>
@@ -829,6 +815,7 @@ function Input({
   type = "text",
   icon: Icon,
   placeholder,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -836,6 +823,7 @@ function Input({
   type?: string;
   icon?: React.ComponentType<{ className?: string }>;
   placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -847,7 +835,8 @@ function Input({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1"
+        disabled={disabled}
+        className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
       />
     </label>
   );

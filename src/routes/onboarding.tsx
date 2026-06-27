@@ -19,7 +19,7 @@ const ONBOARDING_STEPS = [
     title: "Your creative business, powered by AI.",
     description:
       "StudioDesk handles the business side of your creativity so you can focus on doing great work.",
-    icon: <Sparkles className="size-16 text-primary" />,
+    icon: null,
     color: "bg-primary/10",
   },
   {

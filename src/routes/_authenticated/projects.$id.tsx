@@ -193,7 +193,7 @@ function ProjectPage() {
                         : "bg-warning/20 text-warning-foreground",
                     )}
                   >
-                    <Sparkles className="size-[18px]" />
+                    
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">

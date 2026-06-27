@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getProfile } from "@/lib/profile.functions";
@@ -10,9 +10,11 @@ import {
   FileText,
   Settings as SettingsIcon,
   Plus,
+  LogOut,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 type Tab = {
   to: string;
@@ -39,6 +41,7 @@ interface AppShellProps {
 
 export function AppShell({ title, subtitle, children, action }: AppShellProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const router = useRouter();
   
   const fetchProfile = useServerFn(getProfile);
   const { data: profile } = useQuery({
@@ -51,6 +54,11 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
         .formatToParts(0)
         .find((x) => x.type === "currency")?.value || "$"
     : "$";
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    router.navigate({ to: "/auth" });
+  }
 
   return (
     <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md sm:max-w-lg w-full">
@@ -67,6 +75,13 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={signOut}
+              aria-label="Sign out"
+              className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-destructive transition"
+            >
+              <LogOut className="size-[18px]" />
+            </button>
             <Link
               to="/settings"
               aria-label="Settings"

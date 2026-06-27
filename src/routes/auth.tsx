@@ -189,7 +189,7 @@ function AuthPage() {
             >
               {otpLoading ? "Verifying…" : "Verify code"}
             </button>
-            
+
             <div className="text-sm text-center">
               <button
                 type="button"
@@ -225,7 +225,7 @@ function AuthPage() {
           {mode === "signup" ? "Start your creative studio." : "Welcome back."}
         </h1>
         <p className="text-muted-foreground mt-3 text-sm leading-relaxed text-center">
-          AI-grounded pricing, proposals, invoices and contracts — built for independent creatives.
+          AI-grounded pricing and branded documents creation — built for creatives.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-3">

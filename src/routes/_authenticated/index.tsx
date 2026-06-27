@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { formatCurrency, timeAgo } from "@/lib/format";
 import { listProjects } from "@/lib/projects.functions";
-import { listDocuments } from "@/lib/documents.functions";
+import { getDashboardStats } from "@/lib/dashboard.functions";
 import { listPricingRuns } from "@/lib/pricing.functions";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +24,10 @@ import {
   Palette,
   CreditCard,
   Shield,
+  Clock,
+  Target
 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -52,18 +55,18 @@ function Dashboard() {
 function DashboardInner() {
   const router = useRouter();
   const fetchProjects = useServerFn(listProjects);
-  const fetchDocs = useServerFn(listDocuments);
   const fetchRuns = useServerFn(listPricingRuns);
   const fetchProfile = useServerFn(getProfile);
+  const fetchStats = useServerFn(getDashboardStats);
 
   const profileQ = useSuspenseQuery({ queryKey: ["profile"], queryFn: () => fetchProfile() });
   const projectsQ = useSuspenseQuery({ queryKey: ["projects"], queryFn: () => fetchProjects() });
-  const docsQ = useSuspenseQuery({ queryKey: ["documents"], queryFn: () => fetchDocs() });
+  const statsQ = useSuspenseQuery({ queryKey: ["dashboard_stats"], queryFn: () => fetchStats() });
   const runsQ = useSuspenseQuery({ queryKey: ["pricing_runs"], queryFn: () => fetchRuns() });
 
   const profile = profileQ.data;
   const projects = projectsQ.data;
-  const docs = docsQ.data;
+  const stats = statsQ.data;
   const runs = runsQ.data;
   const currency = profile?.currency || "NGN";
 
@@ -72,17 +75,8 @@ function DashboardInner() {
   }
 
   const activeProjects = projects.filter((p) => p.status === "active");
-  const recentDocs = docs.slice(0, 3);
+  const recentDocs = stats.recentDocs || [];
   const lastRun = runs[0];
-
-  const invoicedThisMonth = docs
-    .filter((d) => d.type === "invoice" && d.status !== "draft")
-    .reduce((s, d) => s + Number(d.total ?? 0), 0);
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    router.navigate({ to: "/auth" });
-  }
 
   return (
     <AppShell
@@ -92,15 +86,6 @@ function DashboardInner() {
         day: "numeric",
       })}
       title={`Hello, ${profile?.owner_name?.split(" ")[0] ?? "there"}`}
-      action={
-        <button
-          onClick={signOut}
-          aria-label="Sign out"
-          className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground"
-        >
-          <LogOut className="size-[18px]" />
-        </button>
-      }
     >
       <section className="relative overflow-hidden rounded-3xl bg-foreground text-background p-5 mb-5">
         <div className="absolute -top-12 -right-10 size-44 rounded-full bg-primary/40 blur-2xl" />
@@ -108,16 +93,60 @@ function DashboardInner() {
         <div className="relative">
           <p className="text-xs uppercase tracking-[0.2em] opacity-70">Invoiced</p>
           <p className="font-display text-4xl mt-1">
-            {formatCurrency(invoicedThisMonth, currency)}
+            {formatCurrency(stats.invoicedThisMonth, currency)}
           </p>
           <p className="text-sm opacity-80 mt-0.5">
-            Across {docs.filter((d) => d.type === "invoice").length} invoices
+            Across {stats.documentsCount} invoices
           </p>
           <div className="flex items-center gap-1.5 mt-3 text-xs">
             <TrendingUp className="size-3.5 text-primary" />
             <span className="text-primary font-medium">{projects.length}</span>
             <span className="opacity-60">projects total</span>
           </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="card-soft p-4 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Outstanding</p>
+            <Clock className="size-3.5 text-warning" />
+          </div>
+          <p className="font-display text-xl text-foreground mt-1">
+            {formatCurrency(stats.outstandingBalance, currency)}
+          </p>
+        </div>
+        <div className="card-soft p-4 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Win Rate</p>
+            <Target className="size-3.5 text-success" />
+          </div>
+          <p className="font-display text-xl text-foreground mt-1">
+            {stats.winRate}%
+          </p>
+        </div>
+      </div>
+
+      <section className="card-soft p-5 mb-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm font-semibold">Income Trends</p>
+          <p className="text-xs text-muted-foreground">Last 6 months</p>
+        </div>
+        <div className="h-40 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={stats.last6Months} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} tickFormatter={(val) => val >= 1000 ? `${val/1000}k` : val} />
+              <Tooltip 
+                cursor={{ fill: 'var(--color-muted)', opacity: 0.2 }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-background)', color: 'var(--color-foreground)', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                formatter={(val: number) => [formatCurrency(val, currency), "Revenue"]}
+                labelStyle={{ color: 'var(--color-muted-foreground)', fontSize: '12px', marginBottom: '4px' }}
+              />
+              <Bar dataKey="revenue" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </section>
 
@@ -130,8 +159,8 @@ function DashboardInner() {
             <Calculator className="size-[18px]" />
           </div>
           <div>
-            <p className="font-medium text-sm">Price a project</p>
-            <p className="text-xs text-muted-foreground">AI-grounded estimates</p>
+            <p className="font-medium text-sm">Price project</p>
+            <p className="text-xs text-muted-foreground">AI-grounded estimate</p>
           </div>
         </Link>
         <Link
@@ -143,7 +172,7 @@ function DashboardInner() {
           </div>
           <div>
             <p className="font-medium text-sm">New document</p>
-            <p className="text-xs text-muted-foreground">Proposal · invoice · contract</p>
+            <p className="text-xs text-muted-foreground">Proposal or invoice</p>
           </div>
         </Link>
       </div>
@@ -151,7 +180,7 @@ function DashboardInner() {
       {lastRun && (
         <section className="card-soft p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="size-4 text-primary" />
+            
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-medium">
               Latest pricing insight
             </p>
@@ -207,7 +236,7 @@ function DashboardInner() {
         <EmptyHint text="Draft your first proposal or invoice from Docs." />
       ) : (
         <div className="space-y-2.5">
-          {recentDocs.map((d) => (
+          {recentDocs.map((d: any) => (
             <Link
               to="/documents/$id"
               params={{ id: d.id }}
@@ -382,7 +411,7 @@ function OnboardingWizard({ profile }: { profile: any }) {
         {/* Progress header */}
         <div className="text-center space-y-2 animate-in fade-in duration-300">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] uppercase font-bold tracking-widest">
-            <Sparkles className="size-3" /> Step {step} of 4
+            Step {step} of 4
           </span>
           <h1 className="font-display text-3xl tracking-tight text-foreground">
             Set up your creative studio

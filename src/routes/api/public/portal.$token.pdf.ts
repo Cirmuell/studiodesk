@@ -49,16 +49,12 @@ export const Route = createFileRoute("/api/public/portal/$token/pdf")({
           due_date: docRow.due_date,
           profile: profile ?? null,
           client: docRow.client ?? null,
+          client_signature_data: docRow.client_signature_data ?? null,
+          client_signed_at: docRow.client_signed_at ?? null,
         };
 
-        let bytes;
-        if (docRow.type === "proposal") {
-          const { renderProposalPdf } = await import("@/lib/proposal.server");
-          bytes = await renderProposalPdf(docInput);
-        } else {
-          const { renderDocumentPdf } = await import("@/lib/pdf.server");
-          bytes = await renderDocumentPdf(docInput);
-        }
+        const { getOrGeneratePdf } = await import("@/lib/pdf-cache.server");
+        const bytes = await getOrGeneratePdf(docInput, docRow.type, supabaseAdmin);
 
         const filename = `${docRow.type}-${docRow.number ?? docRow.id}.pdf`;
         return new Response(new Uint8Array(bytes), {

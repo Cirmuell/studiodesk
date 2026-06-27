@@ -15,6 +15,7 @@ import { formatCurrency, timeAgo } from "@/lib/format";
 import { FileText, Plus, Receipt, ScrollText, FileCheck2, Sparkles, Trash2, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 type DocType = "proposal" | "invoice" | "contract" | "receipt" | "quotation";
 
@@ -68,6 +69,7 @@ function DocumentsPage() {
 
   const [filter, setFilter] = useState<DocType | "all">("all");
   const [open, setOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const filtered = filter === "all" ? docs : docs.filter((d) => d.type === filter);
 
   const mut = useMutation({
@@ -81,13 +83,8 @@ function DocumentsPage() {
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : "Failed";
-      if (msg.includes("free trial limit")) {
-        toast.error(msg, {
-          action: {
-            label: "Go to Settings",
-            onClick: () => navigate({ to: "/settings" }),
-          },
-        });
+      if (msg.includes("free trial limit") || msg.includes("exhausted your Basic plan limit")) {
+        setUpgradeModalOpen(true);
       } else {
         toast.error(msg);
       }
@@ -117,6 +114,8 @@ function DocumentsPage() {
         </button>
       }
     >
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
+
       <div className="grid grid-cols-4 gap-2 mb-5">
         {(Object.keys(typeMeta) as DocType[]).map((t) => {
           const m = typeMeta[t];
@@ -267,7 +266,7 @@ function NewDocForm({
       className="card-soft p-4 mb-4 space-y-3"
     >
       <div className="flex items-center gap-2 text-xs text-primary">
-        <Sparkles className="size-3.5" /> AI will draft this for you to review and edit.
+        AI will draft this for you to review and edit.
       </div>
       <select
         value={type}

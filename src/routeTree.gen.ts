@@ -21,6 +21,7 @@ import { Route as AuthenticatedDocumentsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicGeoRouteImport } from './routes/api/public/geo'
+import { Route as ApiCronFollowUpsRouteImport } from './routes/api/cron/follow-ups'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
 import { Route as AuthenticatedClientsIdRouteImport } from './routes/_authenticated/clients.$id'
@@ -86,6 +87,11 @@ const ApiPublicGeoRoute = ApiPublicGeoRouteImport.update({
   path: '/api/public/geo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronFollowUpsRoute = ApiCronFollowUpsRouteImport.update({
+  id: '/api/cron/follow-ups',
+  path: '/api/cron/follow-ups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/clients/$id': typeof AuthenticatedClientsIdRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/api/cron/follow-ups': typeof ApiCronFollowUpsRoute
   '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/clients/$id': typeof AuthenticatedClientsIdRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/api/cron/follow-ups': typeof ApiCronFollowUpsRoute
   '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/_authenticated/clients/$id': typeof AuthenticatedClientsIdRoute
   '/_authenticated/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/api/cron/follow-ups': typeof ApiCronFollowUpsRoute
   '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/clients/$id'
     | '/documents/$id'
     | '/projects/$id'
+    | '/api/cron/follow-ups'
     | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
     | '/clients/$id'
     | '/documents/$id'
     | '/projects/$id'
+    | '/api/cron/follow-ups'
     | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clients/$id'
     | '/_authenticated/documents/$id'
     | '/_authenticated/projects/$id'
+    | '/api/cron/follow-ups'
     | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
@@ -232,6 +244,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   OnboardingRoute: typeof OnboardingRoute
   PortalTokenRoute: typeof PortalTokenRoute
+  ApiCronFollowUpsRoute: typeof ApiCronFollowUpsRoute
   ApiPublicGeoRoute: typeof ApiPublicGeoRoute
   ApiDocumentsIdPdfRoute: typeof ApiDocumentsIdPdfRoute
   ApiPublicPortalTokenPdfRoute: typeof ApiPublicPortalTokenPdfRoute
@@ -321,6 +334,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/geo'
       fullPath: '/api/public/geo'
       preLoaderRoute: typeof ApiPublicGeoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/follow-ups': {
+      id: '/api/cron/follow-ups'
+      path: '/api/cron/follow-ups'
+      fullPath: '/api/cron/follow-ups'
+      preLoaderRoute: typeof ApiCronFollowUpsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/projects/$id': {
@@ -427,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   OnboardingRoute: OnboardingRoute,
   PortalTokenRoute: PortalTokenRoute,
+  ApiCronFollowUpsRoute: ApiCronFollowUpsRoute,
   ApiPublicGeoRoute: ApiPublicGeoRoute,
   ApiDocumentsIdPdfRoute: ApiDocumentsIdPdfRoute,
   ApiPublicPortalTokenPdfRoute: ApiPublicPortalTokenPdfRoute,

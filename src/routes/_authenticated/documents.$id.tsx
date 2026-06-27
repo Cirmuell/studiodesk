@@ -560,6 +560,21 @@ function DocPage() {
         />
       </div>
 
+      {doc.client_signature_data && (
+        <div className="card-soft p-5 mb-4 bg-success/5 border border-success/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3">
+             <span className="text-[10px] uppercase tracking-wider font-semibold bg-success/20 text-success px-2 py-1 rounded-full">Legally Signed</span>
+          </div>
+          <h3 className="font-display text-lg mb-1 text-success">Signed & Accepted</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Signed on {doc.client_signed_at ? new Date(doc.client_signed_at).toLocaleString() : "Unknown"}
+          </p>
+          <div className="bg-white rounded-lg p-2 inline-block border border-border">
+            <img src={doc.client_signature_data} alt="Client signature" className="h-20 object-contain" />
+          </div>
+        </div>
+      )}
+
       <div className="card-soft p-3 mb-3 flex items-center gap-2 text-xs">
         <span
           className={cn(
@@ -595,7 +610,7 @@ function DocPage() {
       </div>
 
       <p className="text-[11px] text-muted-foreground text-center mt-4 flex items-center justify-center gap-1.5">
-        <Sparkles className="size-3" /> Drafted by AI · Always review before sending
+        Drafted by AI · Always review before sending
       </p>
     </AppShell>
   );

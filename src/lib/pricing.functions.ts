@@ -3,7 +3,7 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
-import { enforceUsageLimits } from "./security.server";
+import { enforceUsageLimits, incrementUsageLimit } from "./security.server";
 
 const PricingSchema = z.object({
   recommended_total: z.number(),
@@ -196,6 +196,8 @@ Produce a pricing recommendation with line items (realistic deliverables and tas
     }
     if (rec < low) rec = low;
     if (rec > high) rec = high;
+
+    await incrementUsageLimit(context.userId);
 
     const { data: row, error } = await context.supabase
       .from("pricing_runs")

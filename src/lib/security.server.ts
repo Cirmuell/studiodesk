@@ -94,28 +94,34 @@ export async function enforceUsageLimits(
   }
 
   // 6. Enforce plan-specific limits
-  const planLimit = profile.plan === "premium" ? 100 : profile.plan === "basic" ? 30 : profile.trial_generations_limit || 5;
+  const planLimit = profile.plan === "premium" ? 100 : profile.plan === "basic" ? 50 : profile.trial_generations_limit || 5;
 
   if (profile.trial_generations_used >= planLimit) {
     if (profile.plan === "trial") {
       throw new Error(`You have exhausted your free trial limit (${planLimit} AI generations). Please subscribe in Settings to continue using the AI pricing and drafting features.`);
     } else if (profile.plan === "basic") {
-      throw new Error(`You have exhausted your Basic plan limit (${planLimit} AI generations). Please upgrade to Premium in Settings to continue using the AI pricing and drafting features.`);
+      throw new Error(`You have exhausted your Basic plan limit (${planLimit} AI generations). Please renew or upgrade to Premium in Settings to continue using the AI pricing and drafting features.`);
     } else {
       throw new Error(`You have exhausted your Premium plan limit (${planLimit} AI generations). Please contact support to request additional generations.`);
     }
   }
+}
 
-  // 7. Execute increments and set generation timestamps
-  const { error: updateError } = await supabaseAdmin
+export async function incrementUsageLimit(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .update({
-      last_generation_at: new Date().toISOString(),
-      trial_generations_used: profile.trial_generations_used + 1,
-    })
-    .eq("id", userId);
+    .select("trial_generations_used")
+    .eq("id", userId)
+    .single();
 
-  if (updateError) {
-    throw new Error("Failed to record usage increment.");
+  if (profile) {
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        last_generation_at: new Date().toISOString(),
+        trial_generations_used: (profile.trial_generations_used || 0) + 1,
+      })
+      .eq("id", userId);
   }
 }

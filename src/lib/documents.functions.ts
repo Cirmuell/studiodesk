@@ -3,7 +3,15 @@ import { z } from "zod";
 import { generateText, generateObject } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
-import { enforceUsageLimits } from "./security.server";
+import { enforceUsageLimits, incrementUsageLimit } from "./security.server";
+import { invalidateDashboardStats } from "./dashboard.functions";
+
+async function sha256(message: string) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 const LineItemSchema = z.object({
   label: z.string(),
@@ -100,6 +108,7 @@ export const updateDocument = createServerFn({ method: "POST" })
       .update(data.patch as never)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    await invalidateDashboardStats(context.userId);
     return { ok: true };
   });
 
@@ -156,34 +165,75 @@ export const draftDocument = createServerFn({ method: "POST" })
     const projectBudget = pricingRun ? Number(pricingRun.recommended_total) : Number(project?.budget ?? 0);
     const balanceRemaining = Math.max(0, projectBudget - previousPayments);
 
-    const { provider, model } = await getAiProvider(context.supabase);
+    const cachePayload = {
+      type: data.type,
+      notes: data.notes,
+      profile: {
+        business_name: profile?.business_name,
+        owner_name: profile?.owner_name,
+        bank_details: profile?.bank_details,
+        currency,
+      },
+      project: {
+        title: project?.title,
+        scope: project?.scope,
+        budget: projectBudget,
+      },
+      client: {
+        name: client?.name,
+        company: client?.company,
+      },
+      pricingRun: pricingRun ? {
+        recommended_total: pricingRun.recommended_total,
+        line_items: pricingRun.line_items,
+      } : null,
+      previousPayments,
+    };
 
-    const sys = `You draft ${data.type}s for independent creatives. Use clear, friendly business English. Amounts in ${currency}.
+    const hashKey = await sha256(JSON.stringify(cachePayload));
+
+    // 1. Check cache
+    const { data: cached } = await (context.supabase as any)
+      .from("document_draft_caches")
+      .select("content")
+      .eq("hash_key", hashKey)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    let content: DocContent;
+
+    if (cached?.content) {
+      console.info("[AI DOCUMENT DRAFT] Using cached document draft.");
+      content = cached.content as DocContent;
+    } else {
+      const { provider, model } = await getAiProvider(context.supabase);
+
+      const sys = `You draft ${data.type}s for independent creatives. Use clear, friendly business English. Amounts in ${currency}.
 ${pricingRun ? "IMPORTANT: You MUST use the exact Recommended Total and the detailed line items (labels, rates, quantities, amounts) from the provided PRICING ANALYSIS. Do not invent fake prices or change the totals." : "Include realistic line items derived from the project scope."}
 ${profile?.bank_details ? "IMPORTANT: You MUST copy the provided STUDIO BANK DETAILS exactly into the 'payment_instructions' field. Do not invent fake bank accounts or details." : ""}`;
 
-    const pricingContext = pricingRun
-      ? `\nPRICING ANALYSIS (YOU MUST USE THIS FOR THE BUDGET AND LINE ITEMS):
+      const pricingContext = pricingRun
+        ? `\nPRICING ANALYSIS (YOU MUST USE THIS FOR THE BUDGET AND LINE ITEMS):
 - Recommended Total Budget: ${pricingRun.recommended_total} ${currency}
 - Price Range: ${pricingRun.range_low} - ${pricingRun.range_high} ${currency}
 - Line Items to Include: ${JSON.stringify(pricingRun.line_items)}`
-      : "";
+        : "";
 
-    const paymentContext = profile?.bank_details
-      ? `\nSTUDIO BANK DETAILS / PAYMENT INSTRUCTIONS:
+      const paymentContext = profile?.bank_details
+        ? `\nSTUDIO BANK DETAILS / PAYMENT INSTRUCTIONS:
 ${profile.bank_details}`
-      : "";
+        : "";
 
-    const receiptContext = data.type === "receipt" && projectBudget > 0 
-      ? `\nRECEIPT MATH:
+      const receiptContext = data.type === "receipt" && projectBudget > 0 
+        ? `\nRECEIPT MATH:
 - Project Total: ${projectBudget}
 - Previously Paid: ${previousPayments}
 - Remaining Balance (before this payment): ${balanceRemaining}
 Calculate the payment amount based on the NOTES provided. If notes don't specify, assume they are paying the Remaining Balance. The line items MUST total to the amount paid in this receipt.`
-      : "";
+        : "";
 
-    const receiptContentDefaults = data.type === "receipt"
-      ? `\n\nFor receipts, YOU MUST FOLLOW THESE RULES:
+      const receiptContentDefaults = data.type === "receipt"
+        ? `\n\nFor receipts, YOU MUST FOLLOW THESE RULES:
 1. DO NOT include a "Project Details" section or "Payment Summary" section in the sections array. The breakdown and totals are already handled by the app's UI and PDF layout.
 2. In the "terms" field, include these standard notes (use exact phrasing where possible):
 - If the remaining balance after this payment is 0, say "This receipt confirms that payment has been received in full." Otherwise, say "This receipt confirms a partial payment towards the total balance."
@@ -196,16 +246,16 @@ Account Name: (provide name)
 Bank Name: (provide bank)
 Account Number: (provide number)
 Payment Status: "PAID IN FULL" or "PARTIAL PAYMENT"`
-      : "";
+        : "";
 
-    const lengthInstructions = data.type === "proposal"
-      ? `\nIMPORTANT: For PROPOSALS, generate the content using the specific proposal arrays (proposal_objectives, proposal_timeline, proposal_risks, etc.) instead of the generic sections array. This ensures it maps correctly to the highly structured PDF layout.
+      const lengthInstructions = data.type === "proposal"
+        ? `\nIMPORTANT: For PROPOSALS, generate the content using the specific proposal arrays (proposal_objectives, proposal_timeline, proposal_risks, etc.) instead of the generic sections array. This ensures it maps correctly to the highly structured PDF layout.
 Adapt the length and detail of the proposal to the project's size and budget:
 - For small projects or tight budgets, keep it concise.
 - For large, high-budget projects, be extremely detailed.`
-      : "";
+        : "";
 
-    const prompt = `STUDIO: ${profile?.business_name ?? "Independent studio"} (${profile?.owner_name ?? ""})
+      const prompt = `STUDIO: ${profile?.business_name ?? "Independent studio"} (${profile?.owner_name ?? ""})
 CLIENT: ${client?.name ?? "Unknown"} ${client?.company ? "— " + client.company : ""}
 PROJECT: ${project?.title ?? "Untitled"}
 SCOPE: ${project?.scope ?? "Not specified"}
@@ -214,48 +264,57 @@ NOTES: ${data.notes ?? "(none)"}${pricingContext}${paymentContext}${receiptConte
 
 Generate a complete ${data.type} draft as raw JSON.`;
 
-    async function callModel(extra = "") {
-      try {
-        const res = await generateObject({
-          model: provider(model),
-          system: sys,
-          prompt: prompt + extra,
-          schema: DocContentSchema,
-        });
-        return JSON.stringify(res.object);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("429")) throw new Error("AI rate limit reached — please wait and retry.");
-        if (msg.includes("402")) throw new Error("AI credits exhausted — top up to keep drafting.");
-        throw new Error(`AI draft failed: ${msg}`);
-      }
-    }
-
-    let text = await callModel();
-    let parsed = DocContentSchema.safeParse(
-      (() => {
+      async function callModel(extra = "") {
         try {
-          return JSON.parse(extractJson(text));
-        } catch {
-          return null;
+          const res = await generateObject({
+            model: provider(model),
+            system: sys,
+            prompt: prompt + extra,
+            schema: DocContentSchema,
+          });
+          return JSON.stringify(res.object);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes("429")) throw new Error("AI rate limit reached — please wait and retry.");
+          if (msg.includes("402")) throw new Error("AI credits exhausted — top up to keep drafting.");
+          throw new Error(`AI draft failed: ${msg}`);
         }
-      })(),
-    );
-    if (!parsed.success) {
-      text = await callModel(
-        `\n\nYour previous response was invalid. Return ONLY raw JSON matching the schema. Previous output:\n${text.slice(0, 500)}`,
-      );
-      try {
-        parsed = DocContentSchema.safeParse(JSON.parse(extractJson(text)));
-      } catch (e) {
-        throw new Error(`AI draft failed to return valid JSON: ${(e as Error).message}`);
       }
-      if (!parsed.success) {
-        throw new Error(`AI draft response did not match schema: ${parsed.error.message}`);
-      }
-    }
 
-    const content = parsed.data;
+      let text = await callModel();
+      let parsed = DocContentSchema.safeParse(
+        (() => {
+          try {
+            return JSON.parse(extractJson(text));
+          } catch {
+            return null;
+          }
+        })(),
+      );
+      if (!parsed.success) {
+        text = await callModel(
+          `\n\nYour previous response was invalid. Return ONLY raw JSON matching the schema. Previous output:\n${text.slice(0, 500)}`,
+        );
+        try {
+          parsed = DocContentSchema.safeParse(JSON.parse(extractJson(text)));
+        } catch (e) {
+          throw new Error(`AI draft failed to return valid JSON: ${(e as Error).message}`);
+        }
+        if (!parsed.success) {
+          throw new Error(`AI draft response did not match schema: ${parsed.error.message}`);
+        }
+      }
+
+      await incrementUsageLimit(context.userId);
+      content = parsed.data;
+
+      // 2. Save cache
+      await (context.supabase as any).from("document_draft_caches").insert({
+        hash_key: hashKey,
+        user_id: context.userId,
+        content,
+      });
+    }
     if (data.type === "receipt" && projectBudget > 0) {
       content.project_total = projectBudget;
       content.previous_payments = previousPayments;
@@ -303,6 +362,7 @@ Generate a complete ${data.type} draft as raw JSON.`;
       .select()
       .single();
     if (error) throw new Error(error.message);
+    await invalidateDashboardStats(context.userId);
     return row;
   });
 
@@ -312,5 +372,6 @@ export const deleteDocument = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { error } = await context.supabase.from("documents").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    await invalidateDashboardStats(context.userId);
     return { ok: true };
   });
