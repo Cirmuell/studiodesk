@@ -17,6 +17,7 @@
     "@ai-sdk/google": "^3.0.80",
     "@ai-sdk/openai-compatible": "^2.0.48",
     "@capacitor/android": "^8.4.1",
+    "@capacitor/browser": "^8.0.3",
     "@capacitor/core": "^8.4.1",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/cloud-auth-js": "^1.1.2",

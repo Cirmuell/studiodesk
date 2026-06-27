@@ -8,6 +8,8 @@ import { formatCurrency } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Download, Save, Sparkles, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { SharePanel } from "@/components/SharePanel";
 import { cn } from "@/lib/utils";
 
@@ -109,7 +111,13 @@ function DocPage() {
       if (!token) throw new Error("Not authenticated");
 
       toast.info("Downloading PDF...");
-      window.location.href = `/api/documents/${id}/pdf?token=${token}`;
+      const fullUrl = `${window.location.origin}/api/documents/${id}/pdf?token=${token}`;
+      
+      if (Capacitor.isNativePlatform()) {
+        await Browser.open({ url: fullUrl });
+      } else {
+        window.open(fullUrl, "_blank");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "PDF failed");
     } finally {
