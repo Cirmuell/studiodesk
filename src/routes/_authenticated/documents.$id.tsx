@@ -10,6 +10,8 @@ import { ArrowLeft, Download, Save, Sparkles, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import { SharePanel } from "@/components/SharePanel";
 import { cn } from "@/lib/utils";
 
@@ -114,7 +116,26 @@ function DocPage() {
       const fullUrl = `${window.location.origin}/api/documents/${id}/pdf?token=${token}`;
       
       if (Capacitor.isNativePlatform()) {
-        await Browser.open({ url: fullUrl });
+        try {
+          const download = await Filesystem.downloadFile({
+            url: fullUrl,
+            path: `StudioDesk_Document_${id.slice(0, 8)}.pdf`,
+            directory: Directory.Cache
+          });
+          
+          if (download.path) {
+            await Share.share({
+              title: 'StudioDesk Document',
+              text: 'Here is your PDF document from StudioDesk',
+              url: download.path,
+              dialogTitle: 'Share or Save PDF',
+            });
+          }
+        } catch (downloadError: any) {
+          console.error("Native download error:", downloadError);
+          // Fallback to browser if filesystem download fails
+          await Browser.open({ url: fullUrl });
+        }
       } else {
         window.open(fullUrl, "_blank");
       }
