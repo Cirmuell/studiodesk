@@ -125,6 +125,22 @@ export const draftDocument = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    // 0. Deduplicate: if document of this type already exists for the project, return it
+    if (data.project_id) {
+      const { data: existingDoc } = await context.supabase
+        .from("documents")
+        .select("id")
+        .eq("project_id", data.project_id)
+        .eq("type", data.type)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingDoc) {
+        return { ok: true, id: existingDoc.id };
+      }
+    }
+
     const [{ data: profile }, projectRes, clientRes, pricingRunRes] = await Promise.all([
       context.supabase.from("profiles").select("*").eq("id", context.userId).maybeSingle(),
       data.project_id
