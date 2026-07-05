@@ -14,10 +14,13 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: true
     },
     SplashScreen: {
-      launchShowDuration: 0,
+      launchShowDuration: 3000,
       launchAutoHide: false,
       backgroundColor: "#ffffffff",
-      showSpinner: false
+      androidScaleType: "CENTER_CROP",
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true
     }
   }
 };

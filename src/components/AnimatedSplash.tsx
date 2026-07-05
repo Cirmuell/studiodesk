@@ -9,20 +9,28 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
   const [fading, setFading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  useEffect(() => {
-    // When the component mounts, hide the native OS splash screen.
-    // Since our video is now rendering, it creates a seamless transition.
-    const hideNativeSplash = async () => {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          await SplashScreen.hide();
-        } catch (e) {
-          console.error("Failed to hide native splash", e);
-        }
+  const hideNativeSplash = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await SplashScreen.hide();
+      } catch (e) {
+        console.error("Failed to hide native splash", e);
       }
-    };
-    hideNativeSplash();
+    }
+  };
+
+  useEffect(() => {
+    // In case the video fails to load or play, set a fallback timeout
+    // to ensure the app doesn't stay stuck on the splash screen indefinitely.
+    const fallbackTimeout = setTimeout(() => {
+      hideNativeSplash();
+    }, 2000);
+    return () => clearTimeout(fallbackTimeout);
   }, []);
+
+  const handleVideoPlaying = () => {
+    hideNativeSplash();
+  };
 
   const handleVideoEnd = () => {
     // Start fading out the splash screen
@@ -51,7 +59,9 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
           playsInline
           onEnded={handleVideoEnd}
           onError={handleVideoEnd}
-          className="w-full h-full object-cover"
+          onPlaying={handleVideoPlaying}
+          style={{ pointerEvents: 'none' }}
+          className="w-full h-full object-cover [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden"
         />
       </div>
       {/* We render children behind the splash screen so the app loads in the background */}
