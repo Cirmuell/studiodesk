@@ -7,7 +7,6 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
   const isNative = typeof window !== "undefined" && Capacitor.isNativePlatform();
   const [showSplash, setShowSplash] = useState(isNative);
   const [fading, setFading] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
   const hideNativeSplash = async () => {
     if (Capacitor.isNativePlatform()) {
@@ -20,26 +19,30 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // In case the video fails to load or play, set a fallback timeout
-    // to ensure the app doesn't stay stuck on the splash screen indefinitely.
+    // Fallback timeout in case the image fails to load,
+    // ensuring the app doesn't stay stuck on the splash screen indefinitely.
     const fallbackTimeout = setTimeout(() => {
       hideNativeSplash();
-    }, 2000);
+      setFading(true);
+      setTimeout(() => setShowSplash(false), 500);
+    }, 4000);
     return () => clearTimeout(fallbackTimeout);
   }, []);
 
-  const handleVideoPlaying = () => {
+  const handleImageLoad = () => {
+    // 1. Hide the native splash screen as soon as the GIF is loaded
     hideNativeSplash();
-  };
 
-  const handleVideoEnd = () => {
-    // Start fading out the splash screen
-    setFading(true);
-    
-    // Completely remove it from DOM after fade animation completes
+    // 2. Wait for the GIF animation to finish (e.g., 2.5 seconds)
+    // IMPORTANT: Adjust 2500 below to match the exact length of your GIF animation
     setTimeout(() => {
-      setShowSplash(false);
-    }, 500); // 500ms fade transition
+      setFading(true);
+
+      // Completely remove it from DOM after the 500ms fade transition completes
+      setTimeout(() => {
+        setShowSplash(false);
+      }, 500);
+    }, 500);
   };
 
   if (!showSplash) {
@@ -48,20 +51,16 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div 
+      <div
         className={`fixed inset-0 z-[9999] bg-background flex items-center justify-center transition-opacity duration-500 ${fading ? 'opacity-0' : 'opacity-100'}`}
       >
-        <video
-          ref={videoRef}
-          src="/splash.mp4"
-          autoPlay
-          muted
-          playsInline
-          onEnded={handleVideoEnd}
-          onError={handleVideoEnd}
-          onPlaying={handleVideoPlaying}
+        <img
+          src="/splash.gif"
+          alt="Splash Screen Animation"
+          onLoad={handleImageLoad}
+          onError={handleImageLoad}
           style={{ pointerEvents: 'none' }}
-          className="w-full h-full object-cover [&::-webkit-media-controls]:hidden [&::-webkit-media-controls-enclosure]:hidden"
+          className="w-full h-full object-cover"
         />
       </div>
       {/* We render children behind the splash screen so the app loads in the background */}

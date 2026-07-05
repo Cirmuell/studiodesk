@@ -106,33 +106,30 @@ function OnboardingPage() {
         </Carousel>
       </div>
 
-      <div className="px-6 pb-12 pt-6 max-w-md mx-auto w-full">
-        <div className="flex justify-center gap-2 mb-8">
+      <div className="px-6 pb-12 pt-6 max-w-md mx-auto w-full flex flex-col items-center">
+        <div className="flex justify-center gap-2 mb-8 h-2">
           {ONBOARDING_STEPS.map((_, index) => (
             <button
               key={index}
               onClick={() => api?.scrollTo(index)}
-              className={`h-2 rounded-full transition-all \${
+              className={`h-2 rounded-full transition-all duration-300 ${
                 current === index ? "w-8 bg-primary" : "w-2 bg-primary/20"
               }`}
-              aria-label={`Go to slide \${index + 1}`}
+              aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
 
-        <button
-          onClick={handleNext}
-          className="w-full h-14 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2 shadow-[var(--shadow-pop)] active:scale-[0.98] transition-transform"
-        >
-          {current === ONBOARDING_STEPS.length - 1 ? (
-            "Get Started"
-          ) : (
-            <>
-              Continue
-              <ArrowRight className="size-4" />
-            </>
+        <div className="h-14 flex items-center justify-center w-full">
+          {current === ONBOARDING_STEPS.length - 1 && (
+            <button
+              onClick={handleNext}
+              className="w-2/3 max-w-[220px] h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)] active:scale-[0.98] transition-all animate-in fade-in slide-in-from-bottom-2 duration-300"
+            >
+              Get Started
+            </button>
           )}
-        </button>
+        </div>
       </div>
     </div>
   );
