@@ -53,6 +53,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
       gemini_api_key: findSecret("gemini_api_key"),
       openai_api_key: findSecret("openai_api_key"),
       lovable_api_key: findSecret("lovable_api_key"),
+      is_superadmin: context.claims?.email === "mzsolex@gmail.com",
     };
   });
 
@@ -125,7 +126,7 @@ export const getAdminSubscribers = createServerFn({ method: "GET" })
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data: profiles, error, count } = await context.supabase
+    const { data: profiles, error, count } = await supabaseAdmin
       .from("profiles")
       .select("id, email, plan, restricted, subscription_status, subscription_ends_at, trial_generations_limit, trial_generations_used, is_admin, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
@@ -154,14 +155,29 @@ export const updateAdminSubscriber = createServerFn({ method: "POST" })
       throw new Error("You cannot remove your own admin privileges.");
     }
 
+    const updates: any = {};
+    if (data.plan !== undefined) {
+      updates.plan = data.plan;
+      // Auto-update limit if plan changes and limit wasn't explicitly provided
+      if (data.trial_generations_limit === undefined) {
+        if (data.plan === "premium") updates.trial_generations_limit = 100;
+        else if (data.plan === "basic") updates.trial_generations_limit = 50;
+        else if (data.plan === "trial") updates.trial_generations_limit = 5;
+      }
+    }
+    if (data.trial_generations_limit !== undefined) {
+      updates.trial_generations_limit = data.trial_generations_limit;
+    }
+    if (data.restricted !== undefined) {
+      updates.restricted = data.restricted;
+    }
+    if (data.is_admin !== undefined) {
+      updates.is_admin = data.is_admin;
+    }
+
     const { error } = await supabaseAdmin
       .from("profiles")
-      .update({
-        ...(data.plan !== undefined && { plan: data.plan }),
-        ...(data.trial_generations_limit !== undefined && { trial_generations_limit: data.trial_generations_limit }),
-        ...(data.restricted !== undefined && { restricted: data.restricted }),
-        ...(data.is_admin !== undefined && { is_admin: data.is_admin }),
-      })
+      .update(updates)
       .eq("id", data.userId);
 
     if (error) throw new Error(error.message);

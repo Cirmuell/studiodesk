@@ -14,6 +14,17 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminDashboard() {
   const [tab, setTab] = useState<"settings" | "subscribers">("settings");
+  const fetchSettings = useServerFn(getAdminSettings);
+  const { data: settings } = useQuery({ queryKey: ["admin_settings"], queryFn: () => fetchSettings() });
+  
+  const isSuperAdmin = settings?.is_superadmin === true;
+
+  // If not superadmin and somehow on subscribers tab, switch to settings
+  useEffect(() => {
+    if (tab === "subscribers" && settings && !isSuperAdmin) {
+      setTab("settings");
+    }
+  }, [tab, settings, isSuperAdmin]);
 
   return (
     <AppShell title="Admin" subtitle="SaaS Administration">
@@ -26,17 +37,19 @@ function AdminDashboard() {
         >
           <Settings className="size-3.5" /> API Settings
         </button>
-        <button
-          onClick={() => setTab("subscribers")}
-          className={`flex-1 text-xs font-medium py-2 rounded-lg transition flex items-center justify-center gap-2 ${
-            tab === "subscribers" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Users className="size-3.5" /> Subscribers
-        </button>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setTab("subscribers")}
+            className={`flex-1 text-xs font-medium py-2 rounded-lg transition flex items-center justify-center gap-2 ${
+              tab === "subscribers" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Users className="size-3.5" /> Subscribers
+          </button>
+        )}
       </div>
 
-      {tab === "settings" ? <AdminSettings /> : <AdminSubscribers />}
+      {tab === "settings" ? <AdminSettings /> : isSuperAdmin ? <AdminSubscribers /> : null}
     </AppShell>
   );
 }
@@ -283,7 +296,7 @@ function AdminSubscribers() {
                     <span className="capitalize">{profile.plan}</span>
                   </td>
                   <td className="px-4 py-3">
-                    {profile.trial_generations_used} / {profile.trial_generations_limit}
+                    {profile.trial_generations_used} / {profile.plan === "premium" ? 100 : profile.plan === "basic" ? 50 : (profile.trial_generations_limit || 5)}
                   </td>
                   <td className="px-4 py-3">
                     {profile.restricted ? (
