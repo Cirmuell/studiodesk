@@ -42,7 +42,7 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
       setTimeout(() => {
         setShowSplash(false);
       }, 500);
-    }, 500);
+    }, 2500);
   };
 
   if (!showSplash) {
