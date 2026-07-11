@@ -158,3 +158,57 @@
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
 }
+
+/* Driver.js Custom Premium Theme */
+.driver-premium-theme {
+  border-radius: var(--radius-xl) !important;
+  background-color: var(--color-card) !important;
+  color: var(--color-foreground) !important;
+  box-shadow: var(--shadow-pop) !important;
+  border: 1px solid var(--color-border) !important;
+  font-family: var(--font-sans) !important;
+  padding: 1.5rem !important;
+}
+
+.driver-premium-theme .driver-popover-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.5rem !important;
+  color: var(--color-foreground) !important;
+}
+
+.driver-premium-theme .driver-popover-description {
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  color: var(--color-muted-foreground) !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.driver-premium-theme .driver-popover-footer button {
+  background-color: var(--color-surface) !important;
+  color: var(--color-foreground) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 999px !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+  text-shadow: none !important;
+}
+
+.driver-premium-theme .driver-popover-footer .driver-popover-next-btn {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.driver-premium-theme .driver-popover-footer button:hover {
+  filter: brightness(0.95);
+}
+
+.driver-premium-theme .driver-popover-progress-text {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: var(--color-muted-foreground) !important;
+}
