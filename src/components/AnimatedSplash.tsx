@@ -41,7 +41,7 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
       // Completely remove it from DOM after the 500ms fade transition completes
       setTimeout(() => {
         setShowSplash(false);
-      }, 500);
+      }, 2500);
     }, 2500);
   };
 
