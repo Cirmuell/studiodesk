@@ -86,7 +86,7 @@ function ProjectsPage() {
   return (
     <AppShell
       title="Projects"
-      subtitle={`${projects.length} total`}
+      //subtitle={`${projects.length} total`}
       action={
         <button
           onClick={() => setOpen(true)}
@@ -125,7 +125,7 @@ function ProjectsPage() {
 
       {filtered.length === 0 ? (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center">
-          No projects in this view.
+          No projects yet — tap + to create one.
         </p>
       ) : (
         <div className="space-y-3">

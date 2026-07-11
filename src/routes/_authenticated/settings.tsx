@@ -18,6 +18,7 @@ import {
   Shield,
   Crown,
   Lock,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -125,7 +126,7 @@ function SettingsPage() {
   const canEditSig = (plan === "premium" && sigEdits < 3) || ((plan === "trial" || plan === "basic") && !form.signature_url);
   const canEditColors = plan === "premium" || (plan === "basic" && colorEdits < 5) || (plan === "trial" && colorEdits < 1);
   const canUploadFont = plan === "premium";
-  
+
   const rateLimit = plan === "premium" ? Infinity : plan === "basic" ? 20 : 3;
   const canAddRate = rates.length < rateLimit;
 

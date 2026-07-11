@@ -103,7 +103,7 @@ function DocumentsPage() {
   return (
     <AppShell
       title="Documents"
-      subtitle={`${docs.length} total`}
+      //subtitle={`${docs.length} total`}
       action={
         <button
           onClick={() => setOpen(true)}
