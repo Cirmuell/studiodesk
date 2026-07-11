@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { listRateCards, createRateCard, deleteRateCard } from "@/lib/rate-cards.functions";
-import { getBillingInfo, subscribeToPlan } from "@/lib/subscription.functions";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   Building2,
@@ -36,17 +36,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
   ),
 });
 
-const getPlanPrice = (plan: "basic" | "premium", userCurrency: string) => {
-  const cur = (userCurrency || "NGN").toUpperCase();
-  const prices: Record<string, { basic: string; premium: string }> = {
-    NGN: { basic: "₦7,500", premium: "₦15,000" }, // Downward-reviewed from ₦15,000 / ₦35,000
-    USD: { basic: "$9", premium: "$19" },
-    EUR: { basic: "€9", premium: "€19" },
-    GBP: { basic: "£8", premium: "£16" },
-  };
-  const set = prices[cur] || { basic: plan === "basic" ? "$9" : "$19", premium: "$19" };
-  return plan === "basic" ? set.basic : set.premium;
-};
+
 
 function SettingsPage() {
   const router = useRouter();
@@ -55,8 +45,6 @@ function SettingsPage() {
   const fetchRates = useServerFn(listRateCards);
   const addRate = useServerFn(createRateCard);
   const delRate = useServerFn(deleteRateCard);
-  const fetchBilling = useServerFn(getBillingInfo);
-  const upgradePlan = useServerFn(subscribeToPlan);
   const qc = useQueryClient();
 
   const { data: profile } = useSuspenseQuery({
@@ -67,13 +55,7 @@ function SettingsPage() {
     queryKey: ["rate_cards"],
     queryFn: () => fetchRates(),
   });
-  const { data: billing } = useSuspenseQuery({
-    queryKey: ["billing"],
-    queryFn: () => fetchBilling(),
-  });
 
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<"basic" | "premium">("basic");
 
   const [form, setForm] = useState({
     owner_name: profile?.owner_name ?? "",
@@ -125,13 +107,7 @@ function SettingsPage() {
     }
   }, [profile]);
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("payment") === "success") {
-      toast.success("Payment successful! Your subscription is being processed.");
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
+
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
@@ -206,53 +182,7 @@ function SettingsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const upgradeMut = useMutation({
-    mutationFn: (plan: "basic" | "premium") =>
-      upgradePlan({ data: { plan, origin: window.location.origin } }),
-    onSuccess: (res: any) => {
-      if (res?.accessCode) {
-        const paystackKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-        if (!paystackKey) {
-          toast.error(
-            "Paystack Public Key not configured. Please add VITE_PAYSTACK_PUBLIC_KEY to your environment.",
-          );
-          return;
-        }
 
-        const loadPaystack = () => {
-          const handler = (window as any).PaystackPop.setup({
-            key: paystackKey,
-            email: res.email,
-            amount: res.amount,
-            access_code: res.accessCode,
-            metadata: {
-              userId: profile?.id,
-              plan: selectedPlan
-            },
-            callback: function () {
-              toast.success("Payment successful! Your subscription is being processed.");
-              qc.invalidateQueries({ queryKey: ["billing"] });
-              setCheckoutOpen(false);
-            },
-            onClose: function () {
-              toast.info("Payment window closed.");
-            },
-          });
-          handler.openIframe();
-        };
-
-        if (!(window as any).PaystackPop) {
-          const script = document.createElement("script");
-          script.src = "https://js.paystack.co/v1/inline.js";
-          script.onload = loadPaystack;
-          document.body.appendChild(script);
-        } else {
-          loadPaystack();
-        }
-      }
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to subscribe"),
-  });
 
   const addRateMut = useMutation({
     mutationFn: (v: { name: string; unit: string; rate: number }) =>
@@ -505,92 +435,7 @@ function SettingsPage() {
         </div>
       </Group>
 
-      <Group title="Subscription & Billing">
-        <div id="billing" className="rounded-2xl border border-border overflow-hidden bg-background shadow-sm">
-          <div className="bg-muted/30 p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
 
-                <h4 className="font-display text-lg capitalize">{billing.plan} Tier</h4>
-                <span
-                  className={cn(
-                    "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ml-1",
-                    billing.plan === "trial"
-                      ? "bg-muted-foreground/10 text-muted-foreground"
-                      : "bg-success/15 text-success",
-                  )}
-                >
-                  {billing.plan === "trial" ? "Free Trial" : "Active"}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {billing.plan === "trial"
-                  ? "Experience the full power of Studio AI for free before deciding."
-                  : `Your subscription is active and renews on ${billing.subscription_ends_at ? new Date(billing.subscription_ends_at).toLocaleDateString() : "—"}.`}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 bg-background">
-            {(() => {
-              const limit = billing.plan === "premium" ? 100 : billing.plan === "basic" ? 50 : billing.trial_generations_limit || 5;
-              const used = billing.trial_generations_used || 0;
-              const title = billing.plan === "trial" ? "Trial Usage" : "Monthly Usage";
-              return (
-                <div className="mb-6 p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="flex justify-between items-end mb-2">
-                    <p className="text-sm font-semibold">{title}</p>
-                    <p className="text-xs font-medium text-muted-foreground">{used} of {limit} runs used</p>
-                  </div>
-                  <div className="w-full bg-muted/80 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-primary h-full transition-all duration-300"
-                      style={{
-                        width: `${Math.min(100, (used / limit) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div className="flex flex-col sm:flex-row gap-3 mt-2">
-              {billing.plan === "trial" ? (
-                <button
-                  type="button"
-                  onClick={() => setCheckoutOpen(true)}
-                  className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 shadow-[var(--shadow-pop)] transition-transform active:scale-[0.98]"
-                >
-                  <CreditCard className="size-4" /> Upgrade Plan
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedPlan(billing.plan as "basic" | "premium");
-                      setCheckoutOpen(true);
-                    }}
-                    className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-2 shadow-[var(--shadow-pop)] transition-transform active:scale-[0.98]"
-                  >
-                    <CreditCard className="size-4" /> Top-up {billing.plan === "basic" ? "Basic" : "Premium"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedPlan(billing.plan === "basic" ? "premium" : "basic");
-                      setCheckoutOpen(true);
-                    }}
-                    className="flex-1 h-11 rounded-xl border border-border hover:bg-muted/50 hover:border-border/80 text-foreground text-sm font-semibold transition-all"
-                  >
-                    {billing.plan === "basic" ? "Upgrade to Premium" : "Downgrade to Basic"}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </Group>
 
       <Group title="Context for AI pricing">
         <div className="card-soft p-4 space-y-3">
@@ -703,88 +548,7 @@ function SettingsPage() {
         Studio v1.0 · Built for creatives
       </p>
 
-      {checkoutOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs grid place-items-center p-4">
-          <div className="card-soft bg-background w-full max-w-sm p-6 space-y-4 shadow-xl border border-border animate-in fade-in zoom-in-95 duration-200">
-            <div className="text-center">
-              <h3 className="font-display text-xl">Upgrade Your Plan</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Select a plan to unlock full features
-              </p>
-            </div>
 
-            <div className="space-y-2.5">
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("basic")}
-                className={cn(
-                  "w-full text-left p-3.5 rounded-xl border transition-all flex items-start justify-between",
-                  selectedPlan === "basic"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted/30",
-                )}
-              >
-                <div>
-                  <p className="text-sm font-semibold">Basic Studio</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    50 runs/month
-                  </p>
-                </div>
-                <p className="text-sm font-bold">
-                  {getPlanPrice("basic", form.currency)}
-                  <span className="text-[10px] font-normal text-muted-foreground">/mo</span>
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("premium")}
-                className={cn(
-                  "w-full text-left p-3.5 rounded-xl border transition-all flex items-start justify-between",
-                  selectedPlan === "premium"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted/30",
-                )}
-              >
-                <div>
-                  <p className="text-sm font-semibold">Premium Studio</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    100 runs/month ·
-                  </p>
-                </div>
-                <p className="text-sm font-bold">
-                  {getPlanPrice("premium", form.currency)}
-                  <span className="text-[10px] font-normal text-muted-foreground">/mo</span>
-                </p>
-              </button>
-            </div>
-
-            <div className="bg-muted/60 p-3 rounded-lg text-[10px] text-muted-foreground flex items-start gap-1.5 leading-normal">
-
-              Select your desired tier to upgrade instantly. Payments are securely processed. You
-              can modify or cancel your subscription at any time.
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCheckoutOpen(false)}
-                className="flex-1 h-11 rounded-full border border-border text-xs font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={upgradeMut.isPending}
-                onClick={() => upgradeMut.mutate(selectedPlan)}
-                className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm disabled:opacity-60"
-              >
-                {upgradeMut.isPending ? "Connecting..." : "Proceed to Payment"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AppShell>
   );
 }

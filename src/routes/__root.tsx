@@ -13,7 +13,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
-import { OnboardingTour } from "@/components/OnboardingTour";
 
 function NotFoundComponent() {
   return (
@@ -158,7 +157,6 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AnimatedSplash>
         <Outlet />
-        <OnboardingTour />
       </AnimatedSplash>
     </QueryClientProvider>
   );

@@ -1,4 +1,12 @@
 import { Link, useRouterState, useRouter } from "@tanstack/react-router";
+import { OnboardingTour } from "@/components/OnboardingTour";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getProfile } from "@/lib/profile.functions";
@@ -11,6 +19,8 @@ import {
   Settings as SettingsIcon,
   Plus,
   LogOut,
+  User,
+  CreditCard,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -75,20 +85,40 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={signOut}
-              aria-label="Sign out"
-              className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-destructive transition"
-            >
-              <LogOut className="size-[18px]" />
-            </button>
-            <Link
-              to="/settings"
-              aria-label="Settings"
-              className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground transition"
-            >
-              <SettingsIcon className="size-[18px]" />
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  aria-label="Settings menu"
+                  className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-foreground transition"
+                >
+                  <SettingsIcon className="size-[18px]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 shadow-[var(--shadow-pop)] border-border/80">
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-2.5">
+                  <Link to="/settings" className="flex items-center gap-2.5 w-full">
+                    <User className="size-[15px]" />
+                    <span className="font-medium text-[13px]">Business Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-2.5">
+                  <Link to="/subscription" className="flex items-center gap-2.5 w-full">
+                    <CreditCard className="size-[15px]" />
+                    <span className="font-medium text-[13px]">Subscription</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1.5" />
+                <DropdownMenuItem 
+                  onClick={signOut} 
+                  className="rounded-xl cursor-pointer py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive"
+                >
+                  <div className="flex items-center gap-2.5 w-full">
+                    <LogOut className="size-[15px]" />
+                    <span className="font-medium text-[13px]">Sign out</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -149,6 +179,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
           })}
         </div>
       </nav>
+      <OnboardingTour />
     </div>
   );
 }
