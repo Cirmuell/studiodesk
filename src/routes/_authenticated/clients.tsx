@@ -5,9 +5,10 @@ import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { listClients, createClient } from "@/lib/clients.functions";
-import { Plus, Search, ChevronRight, Globe, Building2 } from "lucide-react";
+import { Plus, Search, ChevronRight, Globe, Building2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Outlet, useChildMatches } from "@tanstack/react-router";
+import { getProfile } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({ meta: [{ title: "Clients — Studio" }] }),
@@ -29,11 +30,22 @@ function ClientsLayout() {
 function ClientsPage() {
   const fetchClients = useServerFn(listClients);
   const addClient = useServerFn(createClient);
+  const fetchProfile = useServerFn(getProfile);
   const qc = useQueryClient();
+
   const { data: clients } = useSuspenseQuery({
     queryKey: ["clients"],
     queryFn: () => fetchClients(),
   });
+  const { data: profile } = useSuspenseQuery({
+    queryKey: ["profile"],
+    queryFn: () => fetchProfile(),
+  });
+
+  const plan = (profile as any)?.plan || "trial";
+  const limit = plan === "premium" ? Infinity : plan === "basic" ? 10 : 1;
+  const canAddClient = clients.length < limit;
+
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
 
@@ -61,15 +73,26 @@ function ClientsPage() {
   return (
     <AppShell
       title="Clients"
-      subtitle={`${clients.length} relationships`}
+      //subtitle={`${clients.length} relationships`}
       action={
-        <button
-          onClick={() => setOpen(true)}
-          className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground"
-          aria-label="Add client"
-        >
-          <Plus className="size-[18px]" />
-        </button>
+        canAddClient ? (
+          <button
+            onClick={() => setOpen(true)}
+            className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground transition-transform active:scale-95 shadow-sm"
+            aria-label="Add client"
+          >
+            <Plus className="size-[18px]" />
+          </button>
+        ) : (
+          <Link
+            to="/subscription"
+            className="h-10 px-3.5 flex items-center gap-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors shadow-sm"
+            aria-label="Upgrade to add more clients"
+          >
+            <Crown className="size-[16px]" />
+            <span className="text-xs font-semibold">Upgrade</span>
+          </Link>
+        )
       }
     >
       <div className="relative mb-4">
@@ -91,9 +114,19 @@ function ClientsPage() {
       )}
 
       {filtered.length === 0 ? (
-        <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center">
-          {clients.length === 0 ? "No clients yet — tap + to add your first." : "No matches."}
-        </p>
+        <div className="text-center bg-muted/50 rounded-2xl px-4 py-8">
+          <p className="text-sm text-muted-foreground mb-2">
+            {clients.length === 0 ? "No clients yet." : "No matches."}
+          </p>
+          {clients.length === 0 && canAddClient && (
+            <button onClick={() => setOpen(true)} className="text-primary font-semibold text-xs">Tap + to add your first</button>
+          )}
+          {!canAddClient && (
+            <p className="text-xs text-muted-foreground/70 flex items-center justify-center gap-1.5 mt-2">
+              <Crown className="size-3 text-primary" /> Client limit reached for {plan} tier.
+            </p>
+          )}
+        </div>
       ) : (
         <div className="space-y-2.5">
           {filtered.map((c) => (
@@ -111,9 +144,9 @@ function ClientsPage() {
                 </div>
                 <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
                   {c.company ? (
-                     <><Building2 className="size-3" /> {c.company}</>
+                    <><Building2 className="size-3" /> {c.company}</>
                   ) : c.industry ? (
-                     <><Building2 className="size-3" /> {c.industry}</>
+                    <><Building2 className="size-3" /> {c.industry}</>
                   ) : null}
                   {c.email && (
                     <span className="truncate opacity-70 flex-1 ml-1">• {c.email}</span>

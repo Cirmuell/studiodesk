@@ -1,0 +1,6 @@
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS logo_edits_this_month INT DEFAULT 0,
+ADD COLUMN IF NOT EXISTS signature_edits_this_month INT DEFAULT 0,
+ADD COLUMN IF NOT EXISTS color_edits_this_month INT DEFAULT 0,
+ADD COLUMN IF NOT EXISTS edits_reset_at TIMESTAMPTZ DEFAULT now(),
+ADD COLUMN IF NOT EXISTS custom_font_url TEXT;

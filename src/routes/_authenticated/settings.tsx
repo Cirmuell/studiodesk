@@ -14,9 +14,10 @@ import {
   Plus,
   Receipt,
   Sparkles,
-  Trash2,
   Upload,
   Shield,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -71,6 +72,7 @@ function SettingsPage() {
     currency: profile?.currency ?? "NGN",
     logo_url: profile?.logo_url ?? "",
     signature_url: profile?.signature_url ?? "",
+    custom_font_url: (profile as any)?.custom_font_url ?? "",
     brand_color: (profile as any)?.brand_color ?? "#8B5CF6",
     brand_color_primary:
       (profile as any)?.brand_color_primary ?? (profile as any)?.brand_color ?? "#8B5CF6",
@@ -96,6 +98,7 @@ function SettingsPage() {
         currency: profile.currency ?? "NGN",
         logo_url: profile.logo_url ?? "",
         signature_url: profile.signature_url ?? "",
+        custom_font_url: (profile as any).custom_font_url ?? "",
         brand_color: (profile as any).brand_color ?? "#8B5CF6",
         brand_color_primary:
           (profile as any).brand_color_primary ?? (profile as any).brand_color ?? "#8B5CF6",
@@ -111,14 +114,28 @@ function SettingsPage() {
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [uploadingFont, setUploadingFont] = useState(false);
 
-  const handleFileUpload = async (file: File, type: "logo" | "signature") => {
+  const plan = (profile as any)?.plan || "trial";
+  const logoEdits = (profile as any)?.logo_edits_this_month || 0;
+  const sigEdits = (profile as any)?.signature_edits_this_month || 0;
+  const colorEdits = (profile as any)?.color_edits_this_month || 0;
+
+  const canEditLogo = plan === "premium" || (plan === "basic" && logoEdits < 3);
+  const canEditSig = (plan === "premium" && sigEdits < 3) || ((plan === "trial" || plan === "basic") && !form.signature_url);
+  const canEditColors = plan === "premium" || (plan === "basic" && colorEdits < 5) || (plan === "trial" && colorEdits < 1);
+  const canUploadFont = plan === "premium";
+  
+  const rateLimit = plan === "premium" ? Infinity : plan === "basic" ? 20 : 3;
+  const canAddRate = rates.length < rateLimit;
+
+  const handleFileUpload = async (file: File, type: "logo" | "signature" | "custom_font") => {
     if (!profile?.id) {
       toast.error("User profile not loaded yet");
       return;
     }
 
-    const setUploading = type === "logo" ? setUploadingLogo : setUploadingSignature;
+    const setUploading = type === "logo" ? setUploadingLogo : type === "signature" ? setUploadingSignature : setUploadingFont;
     setUploading(true);
 
     try {
@@ -140,9 +157,9 @@ function SettingsPage() {
 
       setForm((prev) => ({
         ...prev,
-        [type === "logo" ? "logo_url" : "signature_url"]: publicUrl,
+        [type === "logo" ? "logo_url" : type === "signature" ? "signature_url" : "custom_font_url"]: publicUrl,
       }));
-      toast.success(`${type === "logo" ? "Logo" : "Signature"} uploaded successfully`);
+      toast.success(`${type === "logo" ? "Logo" : type === "signature" ? "Signature" : "Font"} uploaded successfully`);
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Failed to upload file");
@@ -168,6 +185,7 @@ function SettingsPage() {
           currency: form.currency,
           logo_url: form.logo_url || null,
           signature_url: form.signature_url || null,
+          custom_font_url: (form as any).custom_font_url || null,
           brand_color: form.brand_color_primary,
           brand_color_primary: form.brand_color_primary,
           brand_color_secondary: form.brand_color_secondary,
@@ -261,37 +279,47 @@ function SettingsPage() {
       <Group title="Brand assets">
         <div className="card-soft p-4 space-y-4">
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-2">
               Brand Logo
+              {!canEditLogo && (
+                <span className="flex items-center gap-1 text-primary bg-primary/10 px-1.5 py-0.5 rounded ml-2">
+                  <Crown className="size-3" /> <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider">Upgrade to modify</span>
+                </span>
+              )}
             </span>
             <div className="flex items-center gap-4">
               {form.logo_url ? (
-                <div className="relative group border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0">
+                <div className={cn("relative border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0", canEditLogo ? "group" : "")}>
                   <img
                     src={form.logo_url}
                     alt="Brand Logo"
-                    className="max-w-full max-h-full object-contain"
+                    className={cn("max-w-full max-h-full object-contain", !canEditLogo && "opacity-60")}
                   />
-                  <button
-                    onClick={() => setForm({ ...form, logo_url: "" })}
-                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
-                    title="Remove Logo"
-                  >
-                    ×
-                  </button>
+                  {canEditLogo && (
+                    <button
+                      onClick={() => setForm({ ...form, logo_url: "" })}
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
+                      title="Remove Logo"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="border border-dashed border-border rounded-lg size-20 flex flex-col items-center justify-center text-muted-foreground bg-muted shrink-0">
-                  <span className="text-[10px]">No Logo</span>
+                  {canEditLogo ? <span className="text-[10px]">No Logo</span> : <Lock className="size-4 opacity-50" />}
                 </div>
               )}
-              <label className="flex items-center gap-2 px-4 h-10 rounded-lg bg-muted border border-border text-sm font-medium cursor-pointer hover:bg-muted/80 transition-colors">
-                <Upload className="size-4 text-muted-foreground" />
-                {uploadingLogo ? "Uploading..." : form.logo_url ? "Replace Logo" : "Upload Logo"}
+              <label className={cn(
+                "flex items-center gap-2 px-4 h-10 rounded-lg border border-border text-sm font-medium transition-colors",
+                canEditLogo ? "bg-muted cursor-pointer hover:bg-muted/80 text-foreground" : "bg-muted/50 cursor-not-allowed opacity-60 text-muted-foreground"
+              )}>
+                {canEditLogo ? <Upload className="size-4 text-muted-foreground" /> : <Lock className="size-4 text-muted-foreground" />}
+                {uploadingLogo ? "Uploading..." : form.logo_url ? (canEditLogo ? "Replace Logo" : "Limit Reached") : "Upload Logo"}
                 <input
                   type="file"
                   accept="image/*"
-                  disabled={uploadingLogo}
+                  disabled={uploadingLogo || !canEditLogo}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileUpload(file, "logo");
@@ -303,41 +331,51 @@ function SettingsPage() {
           </div>
 
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-2">
               Signature (for documents)
+              {!canEditSig && (
+                <span className="flex items-center gap-1 text-primary bg-primary/10 px-1.5 py-0.5 rounded ml-2">
+                  <Crown className="size-3" /> <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider">Upgrade to modify</span>
+                </span>
+              )}
             </span>
             <div className="flex items-center gap-4">
               {form.signature_url ? (
-                <div className="relative group border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0">
+                <div className={cn("relative border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0", canEditSig ? "group" : "")}>
                   <img
                     src={form.signature_url}
                     alt="Brand Signature"
-                    className="max-w-full max-h-full object-contain"
+                    className={cn("max-w-full max-h-full object-contain", !canEditSig && "opacity-60")}
                   />
-                  <button
-                    onClick={() => setForm({ ...form, signature_url: "" })}
-                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
-                    title="Remove Signature"
-                  >
-                    ×
-                  </button>
+                  {canEditSig && (
+                    <button
+                      onClick={() => setForm({ ...form, signature_url: "" })}
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
+                      title="Remove Signature"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="border border-dashed border-border rounded-lg size-20 flex flex-col items-center justify-center text-muted-foreground bg-muted shrink-0">
-                  <span className="text-[10px]">No Signature</span>
+                  {canEditSig ? <span className="text-[10px]">No Signature</span> : <Lock className="size-4 opacity-50" />}
                 </div>
               )}
-              <label className="flex items-center gap-2 px-4 h-10 rounded-lg bg-muted border border-border text-sm font-medium cursor-pointer hover:bg-muted/80 transition-colors">
-                <Upload className="size-4 text-muted-foreground" />
+              <label className={cn(
+                "flex items-center gap-2 px-4 h-10 rounded-lg border border-border text-sm font-medium transition-colors",
+                canEditSig ? "bg-muted cursor-pointer hover:bg-muted/80 text-foreground" : "bg-muted/50 cursor-not-allowed opacity-60 text-muted-foreground"
+              )}>
+                {canEditSig ? <Upload className="size-4 text-muted-foreground" /> : <Lock className="size-4 text-muted-foreground" />}
                 {uploadingSignature
                   ? "Uploading..."
                   : form.signature_url
-                    ? "Replace Signature"
+                    ? (canEditSig ? "Replace Signature" : "Modify Signature")
                     : "Upload Signature"}
                 <input
                   type="file"
                   accept="image/*"
-                  disabled={uploadingSignature}
+                  disabled={uploadingSignature || !canEditSig}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileUpload(file, "signature");
@@ -348,8 +386,15 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/60">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/60 relative">
+            {!canEditColors && (
+              <div className="absolute inset-0 z-10 bg-background/5 backdrop-blur-[1px] flex items-center justify-center">
+                <span className="flex items-center gap-1.5 bg-background shadow-md border border-border px-3 py-1.5 rounded-full text-xs font-medium text-muted-foreground">
+                  <Crown className="size-3.5 text-primary" /> Upgrade to modify colors
+                </span>
+              </div>
+            )}
+            <div className={cn(!canEditColors && "opacity-50 pointer-events-none")}>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
                 Primary Color
               </span>
@@ -413,24 +458,53 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="pt-2">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
+          <div className={cn("pt-2", !canEditColors && "opacity-50 pointer-events-none")}>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-1.5">
               PDF Font Style
             </span>
-            <select
-              value={form.brand_font}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  brand_font: e.target.value as "Helvetica" | "TimesRoman" | "Courier",
-                })
-              }
-              className="w-full h-9 px-2 rounded-lg bg-muted border border-border text-xs font-medium mt-0"
-            >
-              <option value="Helvetica">Helvetica (Sans)</option>
-              <option value="TimesRoman">Times Roman (Serif)</option>
-              <option value="Courier">Courier (Mono)</option>
-            </select>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <select
+                value={form.brand_font}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    brand_font: e.target.value as "Helvetica" | "TimesRoman" | "Courier",
+                  })
+                }
+                className="w-full sm:w-1/2 h-9 px-2 rounded-lg bg-muted border border-border text-xs font-medium mt-0"
+              >
+                <option value="Helvetica">Helvetica (Sans)</option>
+                <option value="TimesRoman">Times Roman (Serif)</option>
+                <option value="Courier">Courier (Mono)</option>
+              </select>
+
+              <div className="w-full sm:w-1/2 relative flex items-center">
+                {!canUploadFont && (
+                  <div className="absolute inset-0 z-10 bg-background/5 backdrop-blur-[1px] flex items-center justify-center rounded-lg">
+                    <span className="flex items-center gap-1.5 bg-background shadow-sm border border-border px-2 py-1 rounded-full text-[10px] font-medium text-muted-foreground">
+                      <Crown className="size-3 text-primary" /> Upgrade to upload font
+                    </span>
+                  </div>
+                )}
+                <label className={cn(
+                  "flex items-center gap-2 px-3 h-9 w-full rounded-lg border border-border text-xs font-medium transition-colors justify-center",
+                  canUploadFont ? "bg-muted cursor-pointer hover:bg-muted/80 text-foreground" : "bg-muted/50 cursor-not-allowed opacity-60 text-muted-foreground"
+                )}>
+                  {canUploadFont ? <Upload className="size-3.5 text-muted-foreground" /> : <Lock className="size-3.5 text-muted-foreground" />}
+                  {uploadingFont ? "Uploading..." : (form as any).custom_font_url ? "Replace Custom Font (.ttf/.woff)" : "Upload Custom Font (.ttf/.woff)"}
+                  <input
+                    type="file"
+                    accept=".ttf,.woff,.woff2,.otf"
+                    disabled={uploadingFont || !canUploadFont}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, "custom_font");
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </Group>
@@ -487,16 +561,27 @@ function SettingsPage() {
                   {r.rate} {r.currency}/{r.unit}
                 </p>
               </div>
-              <button onClick={() => delRateMut.mutate(r.id)} className="text-muted-foreground">
+              <button onClick={() => delRateMut.mutate(r.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                 <Trash2 className="size-4" />
               </button>
             </div>
           ))}
-          <RateForm
-            currency={form.currency}
-            loading={addRateMut.isPending}
-            onSubmit={(v) => addRateMut.mutate(v)}
-          />
+          {canAddRate ? (
+            <RateForm
+              currency={form.currency}
+              loading={addRateMut.isPending}
+              onSubmit={(v) => addRateMut.mutate(v)}
+            />
+          ) : (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm">
+              <span className="text-muted-foreground text-xs flex items-center gap-1.5">
+                <Crown className="size-4 text-primary" /> Rate card limit reached ({rates.length}/{rateLimit}).
+              </span>
+              <Link to="/subscription" className="text-primary font-semibold text-xs px-2 py-1 hover:underline">
+                Upgrade Plan
+              </Link>
+            </div>
+          )}
         </div>
       </Group>
 
