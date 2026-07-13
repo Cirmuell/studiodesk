@@ -75,8 +75,8 @@ export const getProfile = createServerFn({ method: "GET" })
       if (data.signature_url) {
         data.signature_url = await getSignedBrandAssetUrl(data.signature_url);
       }
-      if (data.custom_font_url) {
-        data.custom_font_url = await getSignedBrandAssetUrl(data.custom_font_url);
+      if ((data as any).custom_font_url) {
+        (data as any).custom_font_url = await getSignedBrandAssetUrl((data as any).custom_font_url);
       }
     }
     return data;

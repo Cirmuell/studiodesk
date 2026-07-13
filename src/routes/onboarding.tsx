@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Sparkles, TrendingUp, FileText, LayoutDashboard, ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -16,32 +16,49 @@ export const Route = createFileRoute("/onboarding")({
 
 const ONBOARDING_STEPS = [
   {
-    title: "Your creative business, powered by AI.",
+    title: "Your Creative\nBusiness,\nPowered by AI.",
     description:
       "StudioDesk handles the business side of your creativity so you can focus on doing great work.",
-    icon: null,
-    color: "bg-primary/10",
+    image: "/images/onboarding/step-1.png",
+    bgClass: "bg-[#FAF8F3]",
+    textClass: "text-[#3B241A]",
+    blobClass: "bg-[#3B241A] w-[400px] h-[400px] -top-[80px] -left-[80px]",
+    navBtnClass: "bg-[#3B241A] text-white",
+    skipBtnClass: "bg-[#D96B52] text-white",
   },
   {
-    title: "Price with Confidence",
+    title: "Price\nwith\nConfidence",
     description:
-      "Stop guessing. Get intelligent project estimates grounded in market data, your profile, and the client's tier.",
-    icon: <TrendingUp className="size-16 text-[var(--color-chart-1)]" />,
-    color: "bg-[var(--color-chart-1)]/10",
+      "Stop guessing. Get intelligent estimates grounded in market data, your profile, and the client's tier.",
+    image: "/images/onboarding/step-2.png",
+    bgClass: "bg-[#D96B52]",
+    textClass: "text-white",
+    blobClass: "bg-[#FAF8F3] w-[340px] h-[340px] -top-[40px] -right-[40px]",
+    navBtnClass: "bg-[#FAF8F3] text-[#3B241A]",
+    skipBtnClass: "bg-[#241A15] text-white",
   },
   {
-    title: "Automate Your Paperwork",
+    title: "Automate\nYour\nPaperwork",
     description:
       "Generate professional proposals, invoices, contracts, and receipts instantly from your project scopes.",
-    icon: <FileText className="size-16 text-[var(--color-chart-2)]" />,
-    color: "bg-[var(--color-chart-2)]/10",
+    image: "/images/onboarding/step-3.png",
+    bgClass: "bg-[#FAF8F3]",
+    textClass: "text-[#3B241A]",
+    blobClass: "bg-[#D96B52] w-[360px] h-[360px] -top-[60px] -left-[60px]",
+    navBtnClass: "bg-[#D96B52] text-white",
+    skipBtnClass: "bg-[#3B241A] text-white",
   },
   {
-    title: "Everything in One Place",
+    title: "Everything\nin One\nPlace",
     description:
       "Manage client relationships and track active projects seamlessly without switching between apps.",
-    icon: <LayoutDashboard className="size-16 text-[var(--color-chart-3)]" />,
-    color: "bg-[var(--color-chart-3)]/10",
+    image: "/images/onboarding/step-4.png",
+    bgClass: "bg-[#3B241A]",
+    textClass: "text-[#FAF8F3]",
+    blobClass: "bg-[#FAF8F3] w-[340px] h-[340px] -top-[50px] -left-[40px]",
+    navBtnClass: "",
+    skipBtnClass: "",
+    startBtnClass: "bg-[#FAF8F3] text-[#3B241A]",
   },
 ];
 
@@ -60,77 +77,114 @@ function OnboardingPage() {
   }, [api]);
 
   const handleNext = () => {
-    if (current === ONBOARDING_STEPS.length - 1) {
-      // Finish onboarding
-      localStorage.setItem("has_seen_onboarding", "true");
-      navigate({ to: "/auth" });
-    } else {
-      api?.scrollNext();
-    }
+    api?.scrollNext();
   };
 
-  const handleSkip = () => {
+  const handlePrev = () => {
+    api?.scrollPrev();
+  };
+
+  const handleComplete = () => {
     localStorage.setItem("has_seen_onboarding", "true");
     navigate({ to: "/auth" });
   };
 
-  return (
-    <div className="min-h-dvh bg-background flex flex-col">
-      <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full relative">
-        <button
-          onClick={handleSkip}
-          className="absolute top-8 right-6 text-sm font-medium text-muted-foreground hover:text-foreground z-10"
-        >
-          Skip
-        </button>
+  const step = ONBOARDING_STEPS[current];
 
-        <Carousel setApi={setApi} className="w-full" opts={{ loop: false }}>
-          <CarouselContent>
-            {ONBOARDING_STEPS.map((step, index) => (
+  return (
+    <div className={`min-h-dvh flex flex-col overflow-x-hidden transition-colors duration-500 ${step.bgClass}`}>
+      <div className="flex-1 flex flex-col max-w-md mx-auto w-full relative h-full">
+        <Carousel setApi={setApi} className="w-full flex-1 flex flex-col" opts={{ loop: false }}>
+          <CarouselContent className="h-full m-0 flex-1">
+            {ONBOARDING_STEPS.map((s, index) => (
               <CarouselItem
                 key={index}
-                className="flex flex-col items-center text-center px-8 pt-12 pb-8"
+                className="flex flex-col h-full pl-0 overflow-hidden relative"
               >
-                <div
-                  className={`size-48 rounded-full flex items-center justify-center mb-12 \${step.color}`}
-                >
-                  {step.icon}
+                {/* Illustration Section (Golden Ratio ~60% of viewport) */}
+                <div className="w-full h-[58vh] shrink-0 relative flex items-center justify-center">
+                  {/* Blob Background */}
+                  <div
+                    className={`absolute rounded-full transition-all duration-500 ${s.blobClass}`}
+                  />
+
+                  {/* Illustration Image Placeholder */}
+                  <div className="relative z-10 w-full h-full flex items-center justify-center p-8 pb-0">
+                    {s.image ? (
+                      <img
+                        src={s.image}
+                        alt="illustration"
+                        className="w-full h-full object-contain drop-shadow-2xl"
+                      />
+                    ) : (
+                      <div className="w-full max-w-[280px] aspect-square border-2 border-dashed border-current opacity-30 rounded-2xl flex items-center justify-center text-center p-4">
+                        <span className={`font-medium ${s.textClass}`}>
+                          [Illustration Placeholder]
+                          <br />
+                          <span className="text-sm opacity-75">Replace with image asset</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <h1 className="font-display text-3xl leading-tight mb-4">{step.title}</h1>
-
-                <p className="text-muted-foreground leading-relaxed">{step.description}</p>
+                {/* Text Section (Golden Ratio ~40% of viewport) */}
+                <div className="w-full px-10 pt-8 pb-4 flex flex-col justify-start">
+                  <h1
+                    className={`font-serif text-[2.5rem] leading-[1.1] mb-6 font-bold whitespace-pre-line tracking-tight ${s.textClass}`}
+                  >
+                    {s.title}
+                  </h1>
+                  <p className={`text-[1.1rem] leading-relaxed opacity-90 ${s.textClass}`}>
+                    {s.description}
+                  </p>
+                </div>
               </CarouselItem>
             ))}
           </CarouselContent>
         </Carousel>
-      </div>
 
-      <div className="px-6 pb-12 pt-6 max-w-md mx-auto w-full flex flex-col items-center">
-        <div className="flex justify-center gap-2 mb-8 h-2">
-          {ONBOARDING_STEPS.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => api?.scrollTo(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                current === index ? "w-8 bg-primary" : "w-2 bg-primary/20"
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+        {/* Footer Navigation */}
+        <div className="px-10 pb-12 pt-4 flex items-center justify-between mt-auto shrink-0 min-h-[100px]">
+          {current === ONBOARDING_STEPS.length - 1 ? (
+            <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <button
+                onClick={handleComplete}
+                className={`w-auto px-12 h-14 rounded-full font-bold tracking-widest text-sm flex items-center justify-center active:scale-95 transition-all ${step.startBtnClass}`}
+              >
+                START
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-4">
+                {current > 0 && (
+                  <button
+                    onClick={handlePrev}
+                    className={`size-14 rounded-full flex items-center justify-center active:scale-95 transition-all ${step.navBtnClass}`}
+                  >
+                    <ArrowLeft size={24} />
+                  </button>
+                )}
+                <button
+                  onClick={handleNext}
+                  className={`size-14 rounded-full flex items-center justify-center active:scale-95 transition-all ${step.navBtnClass}`}
+                >
+                  <ArrowRight size={24} />
+                </button>
+              </div>
 
-        <div className="h-14 flex items-center justify-center w-full">
-          {current === ONBOARDING_STEPS.length - 1 && (
-            <button
-              onClick={handleNext}
-              className="w-2/3 max-w-[220px] h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)] active:scale-[0.98] transition-all animate-in fade-in slide-in-from-bottom-2 duration-300"
-            >
-              Get Started
-            </button>
+              <button
+                onClick={handleComplete}
+                className={`px-8 h-12 rounded-full font-bold text-xs tracking-[0.2em] flex items-center justify-center active:scale-95 transition-all ${step.skipBtnClass}`}
+              >
+                SKIP
+              </button>
+            </>
           )}
         </div>
       </div>
     </div>
   );
 }
+
