@@ -19,7 +19,7 @@ const ONBOARDING_STEPS = [
     title: "Your Creative\nBusiness,\nPowered by AI.",
     description:
       "StudioDesk handles the business side of your creativity so you can focus on doing great work.",
-    image: "/images/onboarding/step-1.png",
+    image: "/images/onboarding/step-1.webp",
     bgClass: "bg-[#FAF8F3]",
     textClass: "text-[#3B241A]",
     blobClass: "bg-[#3B241A] w-[400px] h-[400px] -top-[80px] -left-[80px]",
@@ -30,7 +30,7 @@ const ONBOARDING_STEPS = [
     title: "Price\nwith\nConfidence",
     description:
       "Stop guessing. Get intelligent estimates grounded in market data, your profile, and the client's tier.",
-    image: "/images/onboarding/step-2.png",
+    image: "/images/onboarding/step-2.webp",
     bgClass: "bg-[#D96B52]",
     textClass: "text-white",
     blobClass: "bg-[#FAF8F3] w-[340px] h-[340px] -top-[40px] -right-[40px]",
@@ -41,7 +41,7 @@ const ONBOARDING_STEPS = [
     title: "Automate\nYour\nPaperwork",
     description:
       "Generate professional proposals, invoices, contracts, and receipts instantly from your project scopes.",
-    image: "/images/onboarding/step-3.png",
+    image: "/images/onboarding/step-3.webp",
     bgClass: "bg-[#FAF8F3]",
     textClass: "text-[#3B241A]",
     blobClass: "bg-[#D96B52] w-[360px] h-[360px] -top-[60px] -left-[60px]",
@@ -52,7 +52,7 @@ const ONBOARDING_STEPS = [
     title: "Everything\nin One\nPlace",
     description:
       "Manage client relationships and track active projects seamlessly without switching between apps.",
-    image: "/images/onboarding/step-4.png",
+    image: "/images/onboarding/step-4.webp",
     bgClass: "bg-[#3B241A]",
     textClass: "text-[#FAF8F3]",
     blobClass: "bg-[#FAF8F3] w-[340px] h-[340px] -top-[50px] -left-[40px]",

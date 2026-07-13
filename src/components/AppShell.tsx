@@ -21,6 +21,9 @@ import {
   LogOut,
   User,
   CreditCard,
+  HelpCircle,
+  ShieldCheck,
+  Scale,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -105,6 +108,25 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
                   <Link to="/subscription" className="flex items-center gap-2.5 w-full">
                     <CreditCard className="size-[15px]" />
                     <span className="font-medium text-[13px]">Subscription</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1.5" />
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-2.5">
+                  <Link to="/faq" className="flex items-center gap-2.5 w-full">
+                    <HelpCircle className="size-[15px]" />
+                    <span className="font-medium text-[13px]">FAQ</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-2.5">
+                  <Link to="/privacy" className="flex items-center gap-2.5 w-full">
+                    <ShieldCheck className="size-[15px]" />
+                    <span className="font-medium text-[13px]">Privacy Policy</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-2.5">
+                  <Link to="/tos" className="flex items-center gap-2.5 w-full">
+                    <Scale className="size-[15px]" />
+                    <span className="font-medium text-[13px]">Terms of Service</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1.5" />
