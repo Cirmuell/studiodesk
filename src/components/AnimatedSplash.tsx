@@ -14,11 +14,12 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isNative) return;
 
-    // Dismiss the native Android splash immediately — our JS splash takes over.
-    SplashScreen.hide().catch(() => {});
-
     // Safety fallback so the app is never permanently stuck on the splash.
-    const fallback = setTimeout(() => setShowSplash(false), MAX_WAIT_MS);
+    const fallback = setTimeout(() => {
+      SplashScreen.hide().catch(() => {});
+      setShowSplash(false);
+    }, MAX_WAIT_MS);
+    
     return () => clearTimeout(fallback);
   }, [isNative]);
 
@@ -40,10 +41,19 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
           alt=""
           aria-hidden="true"
           onLoad={() => {
+            if (isNative) {
+              // Hide native splash screen seamlessly as the JS splash starts playing
+              SplashScreen.hide().catch(() => {});
+            }
             // Image loaded — wait exactly one full animation cycle then proceed.
             setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
           }}
-          onError={() => setShowSplash(false)}
+          onError={() => {
+            if (isNative) {
+              SplashScreen.hide().catch(() => {});
+            }
+            setShowSplash(false);
+          }}
           style={{
             width: "100%",
             height: "100%",
