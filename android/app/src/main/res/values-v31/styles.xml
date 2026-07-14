@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        Android 12+ (API 31) uses its own OS-level splash screen API.
+        The system reads android:windowSplashScreenBackground (with the
+        android: prefix) from the v31 qualifier — the compat attribute in
+        values/styles.xml is ignored on these devices.
+
+        Setting it here replaces the default black OS splash background with
+        the brand orange, so the mandatory system splash looks intentional.
+    -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:windowSplashScreenBackground">#e36650</item>
+        <item name="windowSplashScreenBackground">#e36650</item>
+    </style>
+
+</resources>

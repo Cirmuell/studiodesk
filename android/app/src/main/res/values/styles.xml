@@ -9,16 +9,27 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <!--
+        NoActionBar is the theme used while the WebView is active.
+        Setting windowBackground to the brand orange means the window is
+        orange from the moment the Activity starts — no black or cream flash
+        before the WebView / Capacitor SplashScreen paints.
+    -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:background">#FAF8F3</item>
-        <item name="android:windowBackground">#FAF8F3</item>
+        <item name="android:background">#e36650</item>
+        <item name="android:windowBackground">#e36650</item>
     </style>
 
-
+    <!--
+        Launch theme — used for the Android SplashScreen compat library
+        (pre-Android 12 devices). The android:windowSplashScreenBackground
+        attribute is added in values-v31/styles.xml for Android 12+ devices.
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
         <item name="windowSplashScreenBackground">#e36650</item>
     </style>
+
 </resources>
