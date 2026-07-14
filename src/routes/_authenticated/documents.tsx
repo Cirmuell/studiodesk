@@ -9,6 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { listDocuments, draftDocument, deleteDocument } from "@/lib/documents.functions";
 import { listProjects } from "@/lib/projects.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
@@ -22,7 +23,7 @@ type DocType = "proposal" | "invoice" | "contract" | "receipt" | "quotation";
 export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({ meta: [{ title: "Documents — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Documents">{null}</AppShell>}>
+    <Suspense fallback={<ListPageSkeleton title="Documents" />}>
       <DocumentsLayout />
     </Suspense>
   ),

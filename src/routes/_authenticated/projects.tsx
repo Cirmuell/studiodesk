@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar } from "@/components/ClientBadge";
 import { listProjects, createProject, deleteProject } from "@/lib/projects.functions";
 import { listClients } from "@/lib/clients.functions";
@@ -16,7 +17,7 @@ type Status = "lead" | "active" | "completed" | "archived";
 export const Route = createFileRoute("/_authenticated/projects")({
   head: () => ({ meta: [{ title: "Projects — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Projects">{null}</AppShell>}>
+    <Suspense fallback={<ListPageSkeleton title="Projects" />}>
       <ProjectsLayout />
     </Suspense>
   ),

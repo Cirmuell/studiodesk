@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { DetailPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { getProject, addTask, updateTaskStatus, deleteTask, addProjectLink, deleteProjectLink } from "@/lib/projects.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
@@ -13,7 +14,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/projects/$id")({
   head: () => ({ meta: [{ title: "Project — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Project">{null}</AppShell>}>
+    <Suspense fallback={<DetailPageSkeleton title="Project" />}>
       <ProjectPage />
     </Suspense>
   ),

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { DetailPageSkeleton } from "@/components/PageSkeleton";
 import { getDocument, updateDocument, type DocContent } from "@/lib/documents.functions";
 import { formatCurrency } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/documents/$id")({
   head: () => ({ meta: [{ title: "Document — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Document">{null}</AppShell>}>
+    <Suspense fallback={<DetailPageSkeleton title="Document" />}>
       <DocPage />
     </Suspense>
   ),

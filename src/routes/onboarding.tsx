@@ -101,7 +101,7 @@ function OnboardingPage() {
             {ONBOARDING_STEPS.map((s, index) => (
               <CarouselItem
                 key={index}
-                className="flex flex-col h-full pl-0 relative"
+                className="flex flex-col h-full pl-0 relative overflow-hidden"
               >
                 {/* ── Illustration Section ──────────────────────────────────
                     Uses flex-[0_0_55%] — 55% of the carousel container height

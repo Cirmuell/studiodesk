@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
+import { SettingsSkeleton } from "@/components/PageSkeleton";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { listRateCards, createRateCard, deleteRateCard } from "@/lib/rate-cards.functions";
 
@@ -43,7 +44,7 @@ import {
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Settings">{null}</AppShell>}>
+    <Suspense fallback={<SettingsSkeleton />}>
       <SettingsPage />
     </Suspense>
   ),

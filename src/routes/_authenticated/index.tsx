@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Suspense, useState, useEffect } from "react";
+import { DashboardSkeleton } from "@/components/PageSkeleton";
 import { AppShell } from "@/components/AppShell";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { formatCurrency, timeAgo } from "@/lib/format";
@@ -46,7 +47,7 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function Dashboard() {
   return (
-    <Suspense fallback={<AppShell title="Loading…">{null}</AppShell>}>
+    <Suspense fallback={<DashboardSkeleton />}>
       <DashboardInner />
     </Suspense>
   );

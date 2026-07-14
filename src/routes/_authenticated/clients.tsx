@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { listClients, createClient } from "@/lib/clients.functions";
 import { Plus, Search, ChevronRight, Globe, Building2, Crown } from "lucide-react";
@@ -13,7 +14,7 @@ import { getProfile } from "@/lib/profile.functions";
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({ meta: [{ title: "Clients — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Clients">{null}</AppShell>}>
+    <Suspense fallback={<ListPageSkeleton title="Clients" />}>
       <ClientsLayout />
     </Suspense>
   ),
