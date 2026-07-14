@@ -92,23 +92,29 @@ function OnboardingPage() {
   const step = ONBOARDING_STEPS[current];
 
   return (
-    <div className={`min-h-dvh flex flex-col overflow-x-hidden transition-colors duration-500 ${step.bgClass}`}>
-      <div className="flex-1 flex flex-col max-w-md mx-auto w-full relative h-full">
-        <Carousel setApi={setApi} className="w-full flex-1 flex flex-col" opts={{ loop: false }}>
+    <div className={`h-dvh overflow-hidden flex flex-col transition-colors duration-500 ${step.bgClass}`}>
+      <div className="flex-1 min-h-0 flex flex-col max-w-md mx-auto w-full relative">
+
+        {/* Carousel fills all space above the footer */}
+        <Carousel setApi={setApi} className="flex-1 min-h-0 flex flex-col w-full" opts={{ loop: false }}>
           <CarouselContent className="h-full m-0 flex-1">
             {ONBOARDING_STEPS.map((s, index) => (
               <CarouselItem
                 key={index}
-                className="flex flex-col h-full pl-0 overflow-hidden relative"
+                className="flex flex-col h-full pl-0 relative"
               >
-                {/* Illustration Section (Golden Ratio ~60% of viewport) */}
-                <div className="w-full h-[58vh] shrink-0 relative flex items-center justify-center">
+                {/* ── Illustration Section ──────────────────────────────────
+                    Uses flex-[0_0_55%] — 55% of the carousel container height
+                    (NOT 58vh which was 58% of the full viewport and caused
+                    overflow when combined with text + footer).
+                    The blob circles are absolute-positioned with fixed px so
+                    they are completely unaffected by this change. */}
+                <div className="flex-[0_0_55%] w-full relative flex items-center justify-center">
                   {/* Blob Background */}
                   <div
                     className={`absolute rounded-full transition-all duration-500 ${s.blobClass}`}
                   />
-
-                  {/* Illustration Image Placeholder */}
+                  {/* Illustration Image */}
                   <div className="relative z-10 w-full h-full flex items-center justify-center p-8 pb-0">
                     {s.image ? (
                       <img
@@ -128,14 +134,17 @@ function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Text Section (Golden Ratio ~40% of viewport) */}
-                <div className="w-full px-10 pt-8 pb-4 flex flex-col justify-start">
+                {/* ── Text Section ─────────────────────────────────────────
+                    flex-1 min-h-0 = takes all remaining space below illustration.
+                    Font sizes are clamped so they scale down gracefully on
+                    very small screens without overflowing. */}
+                <div className="flex-1 min-h-0 w-full px-10 pt-6 pb-2 flex flex-col justify-start overflow-hidden">
                   <h1
-                    className={`font-serif text-[2.5rem] leading-[1.1] mb-6 font-bold whitespace-pre-line tracking-tight ${s.textClass}`}
+                    className={`font-serif text-[clamp(1.85rem,7vw,2.5rem)] leading-[1.1] mb-4 font-bold whitespace-pre-line tracking-tight ${s.textClass}`}
                   >
                     {s.title}
                   </h1>
-                  <p className={`text-[1.1rem] leading-relaxed opacity-90 ${s.textClass}`}>
+                  <p className={`text-[clamp(0.9rem,3.5vw,1.1rem)] leading-relaxed opacity-90 ${s.textClass}`}>
                     {s.description}
                   </p>
                 </div>
@@ -144,8 +153,10 @@ function OnboardingPage() {
           </CarouselContent>
         </Carousel>
 
-        {/* Footer Navigation */}
-        <div className="px-10 pb-12 pt-4 flex items-center justify-between mt-auto shrink-0 min-h-[100px]">
+        {/* ── Footer Navigation ────────────────────────────────────────────
+            shrink-0 = never compressed. Lives outside the carousel so it is
+            always pinned to the bottom of the screen regardless of content. */}
+        <div className="px-10 pb-10 pt-3 flex items-center justify-between shrink-0">
           {current === ONBOARDING_STEPS.length - 1 ? (
             <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <button
@@ -183,8 +194,8 @@ function OnboardingPage() {
             </>
           )}
         </div>
+
       </div>
     </div>
   );
 }
-
