@@ -2,32 +2,43 @@ import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 
-// How long to hold the JS splash before revealing the app (ms)
-const SPLASH_DURATION_MS = 2400;
+// Animated WebP duration in ms — matches the converted splash animation.
+// We add a 500ms buffer so the last frame isn't clipped.
+const SPLASH_DURATION_MS = 5500;
 
 export function AnimatedSplash({ children }: { children: React.ReactNode }) {
-  const isNative = typeof window !== "undefined" && Capacitor.isNativePlatform();
-  const [showSplash, setShowSplash] = useState(isNative);
-  const [visible, setVisible] = useState(false);
+  // IMPORTANT: initialise to false, not Capacitor.isNativePlatform().
+  // The server always renders with showSplash=false. If we initialised to
+  // isNative here, React hydration would keep the server value (false) and
+  // the splash would silently never appear. We set it to true via useEffect
+  // after hydration, at which point Capacitor.isNativePlatform() is reliable.
+  const [showSplash, setShowSplash] = useState(false);
 
+  // Effect 1 — runs once after hydration.
+  // If we're on a native platform, flip showSplash to true so the JS splash
+  // div is committed to the DOM on the very next render.
   useEffect(() => {
-    if (!isNative) return;
+    if (!Capacitor.isNativePlatform()) return;
+    setShowSplash(true);
+  }, []);
 
-    // Hide the native Capacitor splash — our JS splash takes over
+  // Effect 2 — runs only when showSplash becomes true (i.e. after Effect 1).
+  // At this point the splash div IS in the DOM, so it's safe to hide the
+  // native orange background without any white-flash gap.
+  useEffect(() => {
+    if (!showSplash) return;
+
+    // Native orange bg disappears — our JS splash is already on screen.
     SplashScreen.hide().catch(() => {});
 
-    // Small delay so the orange background paints before fading in the logo
-    const fadeIn = setTimeout(() => setVisible(true), 80);
-
-    // Dismiss the JS splash after the hold duration
+    // Dismiss the JS splash after the animation has played.
     const dismiss = setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
 
-    return () => {
-      clearTimeout(fadeIn);
-      clearTimeout(dismiss);
-    };
-  }, [isNative]);
+    // Safety valve — never get permanently stuck (e.g. if the webp fails).
+    return () => clearTimeout(dismiss);
+  }, [showSplash]);
 
+  // While the splash is not needed, render children directly.
   if (!showSplash) {
     return <>{children}</>;
   }
@@ -35,8 +46,9 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
   return (
     <>
       {/*
-        All styles are inline — no Tailwind dependency — so the orange
-        background is guaranteed to render before any CSS file is parsed.
+        All layout is inline — no Tailwind dependency — so the background
+        colour is guaranteed to be applied before any CSS file is parsed
+        by the Android WebView.
       */}
       <div
         style={{
@@ -44,26 +56,32 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
           inset: 0,
           zIndex: 9999,
           backgroundColor: "#e36650",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          overflow: "hidden",
         }}
       >
         <img
-          src="/sla.png"
-          alt="StudioDesk"
+          src="/splash.webp"
+          alt=""
+          aria-hidden="true"
           style={{
-            width: "200px",
-            height: "auto",
-            objectFit: "contain",
-            opacity: visible ? 1 : 0,
-            transform: visible ? "scale(1)" : "scale(0.9)",
-            transition: "opacity 0.5s ease, transform 0.5s ease",
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
             pointerEvents: "none",
+          }}
+          onError={() => {
+            // If the webp fails to load, dismiss the splash immediately
+            // so the user isn't stuck on the orange screen forever.
+            SplashScreen.hide().catch(() => {});
+            setShowSplash(false);
           }}
         />
       </div>
-      {/* App renders behind the splash so it's fully ready when the splash exits */}
+
+      {/*
+        Children render behind the splash while it plays so the app is
+        fully loaded by the time the splash exits — no loading lag.
+      */}
       {children}
     </>
   );
