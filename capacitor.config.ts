@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'StudioDesk',
   webDir: '.output/public', // TanStack Start's client output dir by default
   server: {
-    url: 'https://studiodesk-rouge.vercel.app/',
+    url: 'https://studiodesk-rouge.vercel.app/dashboard',
     cleartext: true
   },
   plugins: {
@@ -14,10 +14,9 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: false
     },
     SplashScreen: {
-      launchShowDuration: 3000,
-      launchAutoHide: false,
+      launchShowDuration: 0,
+      launchAutoHide: true,
       backgroundColor: "#e36650",
-      androidScaleType: "CENTER_CROP",
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true

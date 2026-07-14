@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 
-// How long to show the JS splash before revealing the app (ms)
-const SPLASH_DURATION_MS = 2200;
+// How long to hold the JS splash before revealing the app (ms)
+const SPLASH_DURATION_MS = 2400;
 
 export function AnimatedSplash({ children }: { children: React.ReactNode }) {
   const isNative = typeof window !== "undefined" && Capacitor.isNativePlatform();
@@ -13,18 +13,17 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isNative) return;
 
-    // Fade the logo in on the next frame
-    const fadeIn = requestAnimationFrame(() => setVisible(true));
-
-    // Hide the native Capacitor splash immediately — our JS splash takes over
+    // Hide the native Capacitor splash — our JS splash takes over
     SplashScreen.hide().catch(() => {});
+
+    // Small delay so the orange background paints before fading in the logo
+    const fadeIn = setTimeout(() => setVisible(true), 80);
 
     // Dismiss the JS splash after the hold duration
     const dismiss = setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
 
-    // Safety valve — never get permanently stuck
     return () => {
-      cancelAnimationFrame(fadeIn);
+      clearTimeout(fadeIn);
       clearTimeout(dismiss);
     };
   }, [isNative]);
@@ -35,25 +34,36 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/*
+        All styles are inline — no Tailwind dependency — so the orange
+        background is guaranteed to render before any CSS file is parsed.
+      */}
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center"
-        style={{ backgroundColor: "#e36650" }}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          backgroundColor: "#e36650",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
         <img
           src="/sla.png"
           alt="StudioDesk"
           style={{
-            width: "180px",
+            width: "200px",
             height: "auto",
             objectFit: "contain",
             opacity: visible ? 1 : 0,
-            transform: visible ? "scale(1)" : "scale(0.92)",
-            transition: "opacity 0.55s ease, transform 0.55s ease",
+            transform: visible ? "scale(1)" : "scale(0.9)",
+            transition: "opacity 0.5s ease, transform 0.5s ease",
             pointerEvents: "none",
           }}
         />
       </div>
-      {/* App renders behind the splash so it's fully loaded when the splash exits */}
+      {/* App renders behind the splash so it's fully ready when the splash exits */}
       {children}
     </>
   );
