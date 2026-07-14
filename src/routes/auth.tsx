@@ -134,7 +134,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Authentication failed";
       
