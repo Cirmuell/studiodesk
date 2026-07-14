@@ -15,8 +15,14 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
     if (!Capacitor.isNativePlatform()) return;
 
     // Show the JS splash immediately after hydration.
-    // The Android window and WebView backgrounds are already orange
-    // (from theme + MainActivity), so there is no visible gap here.
+    // Dismiss the native orange screen with the pulsing logo now that JS is hydrated
+    if (typeof window !== "undefined" && (window as any).AndroidLoadingOverlay?.dismiss) {
+      try {
+        (window as any).AndroidLoadingOverlay.dismiss();
+      } catch (e) {
+        console.error("Failed to dismiss Android loading overlay", e);
+      }
+    }
     setShowSplash(true);
 
     const dismiss = setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
