@@ -18,6 +18,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    if (req.method === "GET") {
+      const { data, error } = await supabase.from("profiles").select("*").limit(5);
+      return new Response(JSON.stringify({ profiles: data, error }), { headers: corsHeaders });
+    }
+
     const bodyText = await req.text();
     let payload;
     try {
@@ -65,7 +70,13 @@ serve(async (req) => {
 
       if (eventType === "charge.success") {
         const data = payload.data;
-        userId = data.metadata?.userId || data.metadata?.user_id;
+        
+        let meta = data.metadata;
+        if (typeof meta === "string") {
+          try { meta = JSON.parse(meta); } catch(e) {}
+        }
+        
+        userId = meta?.userId || meta?.user_id;
         customerId = String(data.customer?.id || "");
         subId = data.reference;
 

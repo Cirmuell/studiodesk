@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StudioSaaS | The Dynamic Architect</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,600;0,8..60,800;1,8..60,600;1,8..60,800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Three.js for 3D visual -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#eae8e3",
+                    "on-secondary-container": "#73200d",
+                    "on-secondary-fixed": "#3d0600",
+                    "surface-variant": "#e4e2dd",
+                    "surface-container-low": "#f5f3ee",
+                    "muted-border": "rgba(59, 36, 26, 0.12)",
+                    "outline": "#82746f",
+                    "surface-dim": "#dbdad5",
+                    "secondary-fixed-dim": "#ffb4a3",
+                    "primary-fixed": "#ffdbcd",
+                    "on-tertiary": "#ffffff",
+                    "inverse-on-surface": "#f2f1ec",
+                    "surface-container-highest": "#e4e2dd",
+                    "outline-variant": "#d4c3bd",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#cee8e5",
+                    "tertiary": "#011817",
+                    "on-tertiary-fixed-variant": "#344b4a",
+                    "on-primary-fixed-variant": "#5b4135",
+                    "terra-cotta": "#D96B52",
+                    "on-surface": "#1b1c19",
+                    "tertiary-fixed-dim": "#b2cbc9",
+                    "tertiary-container": "#162d2c",
+                    "inverse-primary": "#e5beaf",
+                    "inverse-surface": "#30312e",
+                    "on-tertiary-fixed": "#071f1e",
+                    "surface-tint": "#75584c",
+                    "surface-bright": "#fbf9f4",
+                    "primary-container": "#3b241a",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#802916",
+                    "primary": "#241007",
+                    "background": "#fbf9f4",
+                    "on-error-container": "#93000a",
+                    "surface": "#fbf9f4",
+                    "primary-fixed-dim": "#e5beaf",
+                    "on-surface-variant": "#504440",
+                    "secondary": "#9f402a",
+                    "on-primary-container": "#ab897c",
+                    "paper-cream": "#FAF8F3",
+                    "on-secondary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#7d9593",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-container": "#fd876c",
+                    "surface-container": "#f0eee9",
+                    "on-error": "#ffffff",
+                    "ink-deep": "#3B241A",
+                    "secondary-fixed": "#ffdad2",
+                    "on-background": "#1b1c19",
+                    "on-primary-fixed": "#2b160d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-mobile": "20px",
+                    "container-max": "1200px",
+                    "gutter": "24px",
+                    "margin-desktop": "64px",
+                    "base": "8px",
+                    "section-gap": "128px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["\"Source Serif 4\""],
+                    "display-lg": ["\"Source Serif 4\""],
+                    "body-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "display-lg-mobile": ["\"Source Serif 4\""],
+                    "headline-sm": ["\"Source Serif 4\""]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "headline-md": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-lg": ["72px", {"lineHeight": "80px", "letterSpacing": "-0.03em", "fontWeight": "800"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "display-lg-mobile": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "headline-sm": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #FAF8F3;
+            color: #3B241A;
+            overflow-x: hidden;
+        }
+        .editorial-shadow {
+            box-shadow: 0 12px 40px -12px rgba(59, 36, 26, 0.12);
+        }
+        
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+        
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        #shader-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+
+        .blend-multiply { mix-blend-mode: multiply; }
+        
+        .immersive-mask {
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased">
+<!-- WebGL Background Shader -->
+<canvas id="shader-canvas"></canvas>
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full bg-paper-cream/40 dark:bg-surface/40 border-b border-muted-border/30 backdrop-blur-xl z-50 transition-all duration-500 ease-in-out h-20">
+<div class="flex justify-between items-center px-margin-desktop h-full max-w-container-max mx-auto">
+<div class="font-display-lg text-[24px] text-ink-deep dark:text-inverse-on-surface tracking-tighter">
+                StudioSaaS
+            </div>
+<div class="hidden md:flex items-center gap-12">
+<a class="font-label-md text-label-md text-terra-cotta font-bold relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-terra-cotta" href="#">Product</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-terra-cotta transition-colors duration-200" href="#">Features</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-terra-cotta transition-colors duration-200" href="#">Pricing</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-terra-cotta transition-colors duration-200" href="#">About</a>
+</div>
+<div class="flex items-center gap-6">
+<button class="font-label-md text-label-md text-on-surface hover:text-terra-cotta transition-colors">Sign In</button>
+<button class="bg-ink-deep text-paper-cream px-8 py-3 font-label-md text-label-md hover:bg-opacity-90 transition-all editorial-shadow">Get Started</button>
+</div>
+</div>
+</nav>
+<main class="relative">
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center pt-20">
+<div class="max-w-container-max mx-auto px-margin-desktop grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center relative z-10">
+<div class="lg:col-span-8 py-16 animate-fade-in-up stagger-1">
+<span class="inline-block px-4 py-1.5 bg-terra-cotta text-paper-cream font-label-sm text-label-sm uppercase tracking-[0.2em] mb-10 editorial-shadow">Architecting Tomorrow</span>
+<h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-ink-deep mb-10 leading-[0.95]">
+                        Orchestrate <span class="italic text-terra-cotta">Complex</span> <br/>
+<span class="relative">
+                            Digital Flows.
+                            <svg class="absolute -bottom-4 left-0 w-full h-2 text-terra-cotta/20" fill="currentColor" viewbox="0 0 400 20"><path d="M0 10 Q 100 0 200 10 T 400 10" fill="none" stroke="currentColor" stroke-width="4"></path></svg>
+</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mb-14 leading-relaxed">
+                        A high-fidelity environment for elite engineering teams to design, deploy, and scale <span class="text-terra-cotta font-semibold">mission-critical operations</span> with architectural precision.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-8">
+<button class="bg-terra-cotta text-paper-cream px-12 py-5 font-label-md text-label-md hover:scale-105 transition-all duration-300 editorial-shadow group">
+                            Start Building 
+                            <span class="inline-block transition-transform group-hover:translate-x-1 ml-2">→</span>
+</button>
+<button class="bg-paper-cream/50 backdrop-blur-md border border-ink-deep/20 text-ink-deep px-12 py-5 font-label-md text-label-md hover:bg-ink-deep hover:text-paper-cream transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined text-[24px]">play_arrow</span>
+                            View Technical Demo
+                        </button>
+</div>
+</div>
+<!-- 3D Scene Replacement -->
+<div class="lg:col-span-4 relative hidden lg:block h-[600px] animate-fade-in-up stagger-3">
+<div class="w-full h-full animate-float" id="hero-3d-container"></div>
+<!-- Technical overlays -->
+<div class="absolute top-0 right-0 p-6 border-r border-t border-terra-cotta/30 font-label-sm text-label-sm text-terra-cotta mix-blend-multiply">
+                        NODE_ARCH_v4.2<br/>STABILITY: 99.9%
+                    </div>
+</div>
+</div>
+</section>
+<!-- Unconventional Layout Section (Trusted By) -->
+<section class="py-24 relative overflow-hidden animate-fade-in-up">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row items-center gap-16">
+<div class="md:w-1/4">
+<h3 class="font-label-md text-label-md text-terra-cotta uppercase tracking-widest leading-tight">Powering Global <br/>Infrastructure</h3>
+</div>
+<div class="md:w-3/4 flex flex-wrap justify-between items-center gap-12 opacity-60 grayscale">
+<img alt="Lumina" class="h-6 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBf34U90q0ggHR2SYF_1InYGl_4URU8V5Ao9HMrZ4BxhJz4WoGFbwqevgjN3iCgkjiEMZ2H6wzyz5yoBi5qNWTkMTIG2REPDbdJMqq859-HZp4MkiIvACIp4zRVGzqnq1r165ap6Owc87HiR4mrjRPglAtcjPBeXsALMHRksK7r6AGnhmc6toRpPj4Ym_YDKOAwLtRX_TZa0OSM9it9POpqMmIneRRxof8ZYgQupMWibIi1NwdEsCrRgbwzKS6F2chcVvXedd2SIPk"/>
+<img alt="Artifact" class="h-6 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1UOvJOLmJZXO5Zhul1tokMYAyeSyAkVmGDiMMMTGPqrllz_9JTzSmT2n4sREuIqVI6Bi6s7w2ZoSbQD-MCS-qzg3JL102MHD7MR7yTs4bPY1gojAaK4wH8HKLrermtCwLSrgg5rIOOnkaZAglebTvLlcYjKhuy6yBpKlh710DyzNxJisgv3qiWZvlRv8slMTctIn0iFUjgXuh4-VtjD5xCBKYrqVl2zbQRpqD0LYr4vHiesjIDs4O5KsV7Hepn1nB0XsrY926oco"/>
+<img alt="Nexus" class="h-6 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgNXnTb1adfk5qvESHlT81XfbqNGT-VO2YnezY3K13BZknUGXokrmwHEHiDZF-oK5rkQAIEJDC8svt-hSZs5owAnVzDQaeKkc1qU4rv9uQTHrIOcO8BNcdLNvUIj4elbEvsl81FRnWd424SMDFfu6sfdqpT8A_CZbXnMJgXPDJDE2XEDkxf1dCcc7YZnZBa7rjGuF4JiNSkNPauhJxMojPpIEloUMoj1D0epryHF74OgFpC5Oh3vr2XaOXOor1bcNdqa_EGwLutg8"/>
+<img alt="Monolith" class="h-6 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7p_ydwHeCO89N7IbatYIYaZiU5N4qnC58rIEKx5EgMZI6nkI-K9l2Q3B7S8jzzBqylr0f097aUMBXxSoNb2YcO7Ub8Uax0k8ZzDEMbJIhyEid4hQQjJHSfdINi_F1g9kbniL8tMauNkRGgyrAwnjJ-Og1Crlc9b95_cQu5oKKUfek4nyBBYsz6zgtYenC3lX29ofqi71k3vb-ydXPCK4ZinxXgLqkoD08Y8ptxvWOK-w7kT4RGt_97DDBLbDr35axz4ASkoKY1QE"/>
+</div>
+</div>
+</section>
+<!-- Immersive Bento Section -->
+<section class="py-section-gap relative">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="mb-24 flex flex-col md:flex-row justify-between items-end gap-8 animate-fade-in-up">
+<div class="max-w-2xl">
+<h2 class="font-display-lg text-headline-md md:text-[56px] text-ink-deep mb-8 leading-tight">Engineering <span class="text-terra-cotta italic">Superiority</span> by Design.</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">We built the engine so you can focus on the architecture. Performance is not a feature; it's our foundation.</p>
+</div>
+<div class="hidden md:block pb-2">
+<div class="w-32 h-0.5 bg-terra-cotta"></div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Feature 1: Large & Bold -->
+<div class="md:col-span-7 bg-white/40 backdrop-blur-sm border border-muted-border p-16 group hover:border-terra-cotta transition-all duration-500 animate-fade-in-up stagger-1">
+<div class="mb-12">
+<span class="material-symbols-outlined text-terra-cotta text-[48px]" data-weight="fill">architecture</span>
+</div>
+<h3 class="font-display-lg text-headline-sm text-ink-deep mb-6">Precise Logic <span class="text-terra-cotta">Engine</span></h3>
+<p class="font-body-lg text-on-surface-variant max-w-md">Our visual compiler transforms complex diagrams into highly optimized <span class="text-ink-deep font-semibold">edge-native execution</span> nodes instantly.</p>
+</div>
+<!-- Feature 2: Tall -->
+<div class="md:col-span-5 bg-ink-deep p-16 text-paper-cream flex flex-col justify-between group hover:bg-terra-cotta transition-all duration-500 animate-fade-in-up stagger-2">
+<div class="mb-12">
+<span class="material-symbols-outlined text-paper-cream text-[48px]">bolt</span>
+</div>
+<div>
+<h3 class="font-display-lg text-headline-sm mb-6">Neural <span class="italic opacity-80">Sync</span></h3>
+<p class="font-body-md opacity-70">Experience sub-1ms state propagation across our global distributed ledger, ensuring total consistency.</p>
+</div>
+</div>
+<!-- Feature 3 -->
+<div class="md:col-span-5 bg-white/40 backdrop-blur-sm border border-muted-border p-16 group hover:border-terra-cotta transition-all duration-500 animate-fade-in-up stagger-3">
+<div class="mb-12">
+<span class="material-symbols-outlined text-terra-cotta text-[48px]">shield_lock</span>
+</div>
+<h3 class="font-display-lg text-headline-sm text-ink-deep mb-6">Hardened Security</h3>
+<p class="font-body-md text-on-surface-variant">Military-grade <span class="text-terra-cotta font-semibold">AES-256 wrapping</span> for every packet, coupled with granular identity orchestration.</p>
+</div>
+<!-- Feature 4 -->
+<div class="md:col-span-7 bg-terra-cotta/5 backdrop-blur-sm border border-terra-cotta/20 p-16 group hover:bg-paper-cream transition-all duration-500 animate-fade-in-up stagger-4">
+<div class="mb-12">
+<span class="material-symbols-outlined text-terra-cotta text-[48px]">group_work</span>
+</div>
+<h3 class="font-display-lg text-headline-sm text-ink-deep mb-6">Atomic Collaboration</h3>
+<p class="font-body-lg text-on-surface-variant max-w-md">Multi-user workspace with <span class="text-terra-cotta italic">Conflict-free Replicated Data Types</span> for perfect real-time synchronization.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Process Section: Dark & Unconventional -->
+<section class="py-section-gap bg-ink-deep text-paper-cream relative overflow-hidden">
+<!-- Decorative Background Element -->
+<div class="absolute -right-20 top-0 text-[400px] font-display-lg opacity-[0.03] leading-none select-none">SYSTEM</div>
+<div class="max-w-container-max mx-auto px-margin-desktop relative z-10">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+<div class="animate-fade-in-up">
+<h2 class="font-display-lg text-display-lg-mobile md:text-display-lg mb-12">The <br/><span class="text-terra-cotta">Architectural</span> <br/>Standard.</h2>
+<p class="font-body-lg opacity-60 max-w-md mb-16">Deployment isn't an event; it's a continuous state of flow. We've redesigned the pipeline from the ground up.</p>
+<div class="space-y-16">
+<div class="flex gap-8 group">
+<span class="font-display-lg text-terra-cotta opacity-30 text-[48px] group-hover:opacity-100 transition-opacity">01</span>
+<div>
+<h4 class="font-headline-sm mb-3">Declarative Mapping</h4>
+<p class="font-body-md opacity-60">Define logic through visual schemas that auto-generate type-safe contracts.</p>
+</div>
+</div>
+<div class="flex gap-8 group">
+<span class="font-display-lg text-terra-cotta opacity-30 text-[48px] group-hover:opacity-100 transition-opacity">02</span>
+<div>
+<h4 class="font-headline-sm mb-3">Logic Injection</h4>
+<p class="font-body-md opacity-60">Apply neural triggers and algorithmic filters to stream data with zero friction.</p>
+</div>
+</div>
+<div class="flex gap-8 group">
+<span class="font-display-lg text-terra-cotta opacity-30 text-[48px] group-hover:opacity-100 transition-opacity">03</span>
+<div>
+<h4 class="font-headline-sm mb-3">Quantum Scaling</h4>
+<p class="font-body-md opacity-60">Instantly distribute your architecture across 120+ global nodes with one commit.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="hidden lg:block relative animate-fade-in-up stagger-3">
+<div class="aspect-[4/5] bg-paper-cream/10 border border-paper-cream/20 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-tr from-terra-cotta/20 to-transparent"></div>
+<div class="p-12 h-full flex flex-col justify-end">
+<div class="font-label-sm text-terra-cotta uppercase tracking-widest mb-4">Core Engine Status</div>
+<div class="text-[64px] font-display-lg leading-none mb-8">ACTIVE</div>
+<div class="space-y-2 opacity-40 font-mono text-[10px]">
+<div>&gt; BOOTING_SEQUENCER...</div>
+<div>&gt; ALLOCATING_MEMORY_RESERVE...</div>
+<div>&gt; ESTABLISHING_QUANTUM_TUNNEL...</div>
+<div>&gt; SYSTEM_READY.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing: Minimalist & High Contrast -->
+<section class="py-section-gap bg-paper-cream">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="text-center mb-24 animate-fade-in-up">
+<h2 class="font-display-lg text-headline-md md:text-display-lg text-ink-deep mb-8">Investment in <span class="italic text-terra-cotta">Scale</span>.</h2>
+<p class="font-body-lg text-on-surface-variant">Simple, transparent, architectural tiers.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+<!-- Starter -->
+<div class="p-12 border border-ink-deep/10 hover:border-ink-deep transition-colors group animate-fade-in-up stagger-1">
+<h3 class="font-label-md text-on-surface-variant uppercase tracking-[0.2em] mb-12">Foundation</h3>
+<div class="flex items-baseline gap-2 mb-12">
+<span class="font-display-lg text-[64px] text-ink-deep">$0</span>
+<span class="font-body-md text-on-surface-variant">/mo</span>
+</div>
+<ul class="space-y-6 mb-16 opacity-70">
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> 3 Active Flows</li>
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Community Workspace</li>
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Standard Edge Node</li>
+</ul>
+<button class="w-full py-5 border border-ink-deep text-ink-deep font-label-md hover:bg-ink-deep hover:text-paper-cream transition-all">Select Plan</button>
+</div>
+<!-- Pro -->
+<div class="p-12 bg-ink-deep text-paper-cream relative overflow-hidden group animate-fade-in-up stagger-2 shadow-2xl">
+<div class="absolute top-0 right-0 bg-terra-cotta text-paper-cream px-6 py-2 font-label-sm uppercase tracking-widest">Recommended</div>
+<h3 class="font-label-md text-terra-cotta uppercase tracking-[0.2em] mb-12">Elite Architect</h3>
+<div class="flex items-baseline gap-2 mb-12">
+<span class="font-display-lg text-[64px] text-paper-cream">$49</span>
+<span class="font-body-md opacity-60">/mo</span>
+</div>
+<ul class="space-y-6 mb-16">
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Unlimited Orchestration</li>
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Neural Logic Add-ons</li>
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Priority Node Access</li>
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Global 24/7 Support</li>
+</ul>
+<button class="w-full py-5 bg-terra-cotta text-paper-cream font-label-md hover:brightness-110 transition-all editorial-shadow">Go Professional</button>
+</div>
+<!-- Enterprise -->
+<div class="p-12 border border-ink-deep/10 hover:border-ink-deep transition-colors group animate-fade-in-up stagger-3">
+<h3 class="font-label-md text-on-surface-variant uppercase tracking-[0.2em] mb-12">Enterprise</h3>
+<div class="mb-12">
+<span class="font-display-lg text-[48px] text-ink-deep">Custom</span>
+</div>
+<p class="font-body-md text-on-surface-variant mb-12 leading-relaxed">Bespoke infrastructure for global conglomerates requiring isolated environments.</p>
+<ul class="space-y-6 mb-16 opacity-70">
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Dedicated Node clusters</li>
+<li class="flex items-center gap-4"><span class="w-1.5 h-1.5 bg-terra-cotta"></span> Custom SLA agreements</li>
+</ul>
+<button class="w-full py-5 border border-ink-deep text-ink-deep font-label-md hover:bg-ink-deep hover:text-paper-cream transition-all">Speak to Sales</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-white border-t border-muted-border pt-32 pb-16">
+<div class="max-w-container-max mx-auto px-margin-desktop">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-16 mb-32">
+<div class="md:col-span-6">
+<div class="font-display-lg text-[32px] text-ink-deep mb-8">StudioSaaS</div>
+<p class="font-body-lg text-on-surface-variant max-w-sm mb-12">
+                        Setting the architectural gold standard for digital operations. Built by systems engineers, for systems engineers.
+                    </p>
+<div class="flex gap-8">
+<a class="text-ink-deep hover:text-terra-cotta transition-colors font-label-md" href="#">Twitter</a>
+<a class="text-ink-deep hover:text-terra-cotta transition-colors font-label-md" href="#">LinkedIn</a>
+<a class="text-ink-deep hover:text-terra-cotta transition-colors font-label-md" href="#">Github</a>
+</div>
+</div>
+<div class="md:col-span-3">
+<h4 class="font-label-md text-terra-cotta uppercase tracking-widest mb-10">Platform</h4>
+<nav class="flex flex-col gap-6">
+<a class="text-on-surface-variant hover:text-ink-deep transition-colors" href="#">Infrastructure</a>
+<a class="text-on-surface-variant hover:text-ink-deep transition-colors" href="#">Neural Logic</a>
+<a class="text-on-surface-variant hover:text-ink-deep transition-colors" href="#">Edge Nodes</a>
+<a class="text-on-surface-variant hover:text-ink-deep transition-colors" href="#">Security</a>
+</nav>
+</div>
+<div class="md:col-span-3">
+<h4 class="font-label-md text-terra-cotta uppercase tracking-widest mb-10">Legal</h4>
+<nav class="flex flex-col gap-6">
+<a class="text-on-surface-variant hover:text-ink-deep transition-colors" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-ink-deep transition-colors" href="#">Terms of Service</a>
+<a class="text-on-surface-variant hover:text-ink-deep transition-colors" href="#">SLA Agreement</a>
+</nav>
+</div>
+</div>
+<div class="pt-16 border-t border-muted-border flex flex-col md:row justify-between items-center gap-8 text-on-surface-variant font-label-sm">
+<span>© 2024 StudioSaaS Inc. Handcrafted for performance.</span>
+<div class="flex gap-12">
+<span>SYSTEM STATUS: OPERATIONAL</span>
+<span>LATENCY: 0.8ms</span>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Shader Implementation
+        const canvas = document.getElementById('shader-canvas');
+        const gl = canvas.getContext('webgl');
+
+        if (gl) {
+            const vs = `
+                attribute vec2 position;
+                varying vec2 v_texCoord;
+                void main() {
+                    v_texCoord = position * 0.5 + 0.5;
+                    gl_Position = vec4(position, 0.0, 1.0);
+                }
+            `;
+
+            const fs = `
+                precision highp float;
+                varying vec2 v_texCoord;
+                uniform float u_time;
+                uniform vec2 u_resolution;
+                uniform vec2 u_mouse;
+
+                void main() {
+                    vec2 uv = v_texCoord;
+                    vec2 mouse = u_mouse / u_resolution;
+                    
+                    float noise = sin(uv.x * 10.0 + u_time * 0.5) * 0.1;
+                    noise += cos(uv.y * 8.0 - u_time * 0.3) * 0.1;
+                    
+                    vec3 color1 = vec3(0.23, 0.14, 0.10); 
+                    vec3 color2 = vec3(0.98, 0.98, 0.96); 
+                    vec3 color3 = vec3(0.85, 0.45, 0.33); 
+
+                    float mixer = smoothstep(0.3, 0.7, uv.x + noise + (mouse.x - 0.5) * 0.2);
+                    vec3 color = mix(color1, color2, mixer);
+                    color = mix(color, color3, sin(u_time * 0.2) * 0.05);
+
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `;
+
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                return shader;
+            }
+
+            const program = gl.createProgram();
+            gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vs));
+            gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fs));
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+
+            const positionLocation = gl.getAttribLocation(program, "position");
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+            const timeLoc = gl.getUniformLocation(program, "u_time");
+            const resLoc = gl.getUniformLocation(program, "u_resolution");
+            const mouseLoc = gl.getUniformLocation(program, "u_mouse");
+
+            let mouseX = 0, mouseY = 0;
+            window.addEventListener('mousemove', e => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            function render(time) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                gl.uniform1f(timeLoc, time * 0.001);
+                gl.uniform2f(resLoc, canvas.width, canvas.height);
+                gl.uniform2f(mouseLoc, mouseX, mouseY);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        }
+
+        // Three.js Hero Scene Implementation
+        const container = document.getElementById('hero-3d-container');
+        if (container) {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xd97354, 1.5);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            const group = new THREE.Group();
+            for(let i = 0; i < 8; i++) {
+                const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: 0x3b241a, 
+                    transparent: true, 
+                    opacity: 0.3, 
+                    wireframe: true 
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
+                mesh.rotation.set(Math.random(), Math.random(), Math.random());
+                group.add(mesh);
+            }
+            scene.add(group);
+
+            camera.position.z = 6;
+
+            let mX = 0, mY = 0;
+            window.addEventListener('mousemove', (e) => {
+                mX = (e.clientX / window.innerWidth) - 0.5;
+                mY = (e.clientY / window.innerHeight) - 0.5;
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                group.rotation.y += 0.003;
+                group.rotation.x += 0.001;
+                group.position.x += (mX * 2 - group.position.x) * 0.05;
+                group.position.y += (-mY * 2 - group.position.y) * 0.05;
+                renderer.render(scene, camera);
+            }
+
+            window.addEventListener('resize', () => {
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            });
+
+            animate();
+        }
+
+        // Scroll Reveal Logic
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = "1";
+                    entry.target.classList.add('animate-fade-in-up');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('section > div').forEach(el => observer.observe(el));
+        
+        // Dynamic Nav
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 100) {
+                nav.classList.add('h-16', 'bg-white/80');
+                nav.classList.remove('h-20', 'bg-paper-cream/40');
+            } else {
+                nav.classList.add('h-20', 'bg-paper-cream/40');
+                nav.classList.remove('h-16', 'bg-white/80');
+            }
+        });
+    </script>
+</body></html>

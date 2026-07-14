@@ -9,6 +9,7 @@ import { formatCurrency, timeAgo } from "@/lib/format";
 import { ArrowRight, Check, Sparkles, Wand2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export const Route = createFileRoute("/_authenticated/pricing")({
   head: () => ({ meta: [{ title: "Pricing Studio — Studio" }] }),
@@ -44,6 +45,7 @@ function PricingPage() {
     (selected?.client?.tier as "standard" | "preferred" | "enterprise") ?? "standard",
   );
   const [selectedRun, setSelectedRun] = useState<any>(null);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   const mut = useMutation({
     mutationFn: () =>
@@ -57,13 +59,8 @@ function PricingPage() {
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : "Failed";
-      if (msg.includes("free trial limit")) {
-        toast.error(msg, {
-          action: {
-            label: "Go to Settings",
-            onClick: () => navigate({ to: "/settings" }),
-          },
-        });
+      if (msg.includes("free trial limit") || msg.includes("exhausted your Basic plan limit")) {
+        setUpgradeModalOpen(true);
       } else {
         toast.error(msg);
       }
@@ -83,11 +80,13 @@ function PricingPage() {
 
   return (
     <AppShell title="Pricing Studio" subtitle="AI grounded in your context">
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
+
       {latest && (
         <section className="relative overflow-hidden rounded-3xl p-5 mb-5 bg-gradient-to-br from-primary/15 via-accent/40 to-secondary border border-primary/15">
           <div className="flex items-center gap-2 mb-2">
             <span className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center">
-              <Sparkles className="size-3.5" />
+              
             </span>
             <p className="text-xs uppercase tracking-[0.18em] font-semibold text-primary">
               AI estimate

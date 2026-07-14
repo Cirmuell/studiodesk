@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar } from "@/components/ClientBadge";
 import { listProjects, createProject, deleteProject } from "@/lib/projects.functions";
 import { listClients } from "@/lib/clients.functions";
@@ -16,7 +17,7 @@ type Status = "lead" | "active" | "completed" | "archived";
 export const Route = createFileRoute("/_authenticated/projects")({
   head: () => ({ meta: [{ title: "Projects — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Projects">{null}</AppShell>}>
+    <Suspense fallback={<ListPageSkeleton title="Projects" />}>
       <ProjectsLayout />
     </Suspense>
   ),
@@ -86,7 +87,7 @@ function ProjectsPage() {
   return (
     <AppShell
       title="Projects"
-      subtitle={`${projects.length} total`}
+      //subtitle={`${projects.length} total`}
       action={
         <button
           onClick={() => setOpen(true)}
@@ -125,7 +126,7 @@ function ProjectsPage() {
 
       {filtered.length === 0 ? (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-2xl px-4 py-6 text-center">
-          No projects in this view.
+          No projects yet — tap + to create one.
         </p>
       ) : (
         <div className="space-y-3">

@@ -1,3 +1,6 @@
+-- Add is_admin column to profiles if not exists
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false;
+
 -- Create secure admin settings table
 CREATE TABLE IF NOT EXISTS public.admin_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
@@ -39,9 +42,6 @@ WITH CHECK (
     WHERE profiles.id = auth.uid() AND profiles.is_admin = true
   )
 );
-
--- Add is_admin column to profiles if not exists
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false;
 
 -- Clean up legacy insecure API key columns from profiles
 ALTER TABLE public.profiles DROP COLUMN IF EXISTS gemini_api_key;

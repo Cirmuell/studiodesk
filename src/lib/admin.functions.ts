@@ -53,6 +53,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
       gemini_api_key: findSecret("gemini_api_key"),
       openai_api_key: findSecret("openai_api_key"),
       lovable_api_key: findSecret("lovable_api_key"),
+      is_superadmin: context.claims?.email === "mzsolex@gmail.com",
     };
   });
 
@@ -108,5 +109,101 @@ export const updateAdminSettings = createServerFn({ method: "POST" })
       }
     }
 
+    return { ok: true };
+  });
+
+export const getAdminSubscribers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      page: z.number().default(1),
+      limit: z.number().default(10),
+    }).parse(d)
+  )
+  .handler(async ({ context, data }) => {
+    await verifyIsAdmin(context.supabase, context.userId);
+    const { page, limit } = data;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data: profiles, error, count } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, plan, restricted, subscription_status, subscription_ends_at, trial_generations_limit, trial_generations_used, is_admin, created_at", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) throw new Error(error.message);
+
+    return { profiles, count: count ?? 0, page, limit };
+  });
+
+export const updateAdminSubscriber = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      userId: z.string(),
+      plan: z.string().optional(),
+      trial_generations_limit: z.number().optional(),
+      restricted: z.boolean().optional(),
+      is_admin: z.boolean().optional(),
+    }).parse(d)
+  )
+  .handler(async ({ context, data }) => {
+    await verifyIsAdmin(context.supabase, context.userId);
+    
+    if (data.userId === context.userId && data.is_admin === false) {
+      throw new Error("You cannot remove your own admin privileges.");
+    }
+
+    const updates: any = {};
+    if (data.plan !== undefined) {
+      updates.plan = data.plan;
+      // Auto-update limit if plan changes and limit wasn't explicitly provided
+      if (data.trial_generations_limit === undefined) {
+        if (data.plan === "premium") updates.trial_generations_limit = 100;
+        else if (data.plan === "basic") updates.trial_generations_limit = 50;
+        else if (data.plan === "trial") updates.trial_generations_limit = 5;
+      }
+    }
+    if (data.trial_generations_limit !== undefined) {
+      updates.trial_generations_limit = data.trial_generations_limit;
+    }
+    if (data.restricted !== undefined) {
+      updates.restricted = data.restricted;
+    }
+    if (data.is_admin !== undefined) {
+      updates.is_admin = data.is_admin;
+    }
+
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update(updates)
+      .eq("id", data.userId);
+
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const restrictAdminSubscriber = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      userId: z.string(),
+      restricted: z.boolean(),
+    }).parse(d)
+  )
+  .handler(async ({ context, data }) => {
+    await verifyIsAdmin(context.supabase, context.userId);
+
+    if (data.userId === context.userId) {
+      throw new Error("You cannot restrict your own account.");
+    }
+
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ restricted: data.restricted })
+      .eq("id", data.userId);
+
+    if (error) throw new Error(error.message);
     return { ok: true };
   });

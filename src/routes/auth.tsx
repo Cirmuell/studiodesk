@@ -60,7 +60,7 @@ function AuthPage() {
 
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (otp.length !== 6) return;
+    if (otp.length !== 8) return;
     setOtpLoading(true);
     try {
       const { data, error } = await supabase.auth.verifyOtp({
@@ -70,7 +70,7 @@ function AuthPage() {
       });
       if (error) throw error;
       toast.success("Email verified successfully!");
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Verification failed");
     } finally {
@@ -80,10 +80,10 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/" });
+      if (data.user) navigate({ to: "/dashboard" });
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") navigate({ to: "/" });
+      if (event === "SIGNED_IN") navigate({ to: "/dashboard" });
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
@@ -134,9 +134,16 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Authentication failed");
+      const errorMessage = err instanceof Error ? err.message : "Authentication failed";
+      
+      // Supabase masks trigger exceptions with this generic message
+      if (errorMessage.includes("Database error saving new user")) {
+        toast.error("Sorry, you cannot create an account.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -144,7 +151,7 @@ function AuthPage() {
 
   if (verificationEmail) {
     return (
-      <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10 relative">
+      <div className="min-h-[100dvh] bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10 relative">
         <button
           onClick={() => {
             setVerificationEmail("");
@@ -157,19 +164,19 @@ function AuthPage() {
           Back to sign in
         </button>
 
-        <div className="flex-1 flex flex-col justify-center text-center">
-          <div className="size-16 rounded-full bg-primary/10 text-primary grid place-items-center mx-auto mb-6 mt-8">
+        <div className="flex flex-col text-center w-full my-auto">
+          <div className="size-16 rounded-full bg-primary/10 text-primary grid place-items-center mx-auto mb-6">
             <Mail className="size-8" />
           </div>
           <h1 className="font-display text-3xl leading-tight">Check your email</h1>
           <p className="text-muted-foreground mt-4 text-sm leading-relaxed mb-8">
-            We have sent a 6-digit verification code to{" "}
+            We have sent an 8-digit verification code to{" "}
             <strong className="text-foreground">{verificationEmail}</strong>. Please enter the code
             below to activate your account.
           </p>
 
           <form onSubmit={handleVerifyOtp} className="flex flex-col items-center gap-6 w-full">
-            <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+            <InputOTP maxLength={8} value={otp} onChange={setOtp}>
               <InputOTPGroup>
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
@@ -177,17 +184,19 @@ function AuthPage() {
                 <InputOTPSlot index={3} />
                 <InputOTPSlot index={4} />
                 <InputOTPSlot index={5} />
+                <InputOTPSlot index={6} />
+                <InputOTPSlot index={7} />
               </InputOTPGroup>
             </InputOTP>
 
             <button
               type="submit"
-              disabled={otpLoading || otp.length !== 6}
+              disabled={otpLoading || otp.length !== 8}
               className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)] disabled:opacity-60 cursor-pointer"
             >
               {otpLoading ? "Verifying…" : "Verify code"}
             </button>
-            
+
             <div className="text-sm text-center">
               <button
                 type="button"
@@ -210,8 +219,8 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
-      <div className="flex-1 flex flex-col justify-center">
+    <div className="min-h-[100dvh] bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
+      <div className="flex flex-col w-full my-auto">
         <div className="flex justify-center mb-6">
           <img
             src={logoImg}
@@ -223,7 +232,7 @@ function AuthPage() {
           {mode === "signup" ? "Start your creative studio." : "Welcome back."}
         </h1>
         <p className="text-muted-foreground mt-3 text-sm leading-relaxed text-center">
-          AI-grounded pricing, proposals, invoices and contracts — built for independent creatives.
+          AI-grounded pricing and branded documents creation — built for creatives.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-3">

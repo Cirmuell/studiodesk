@@ -3,9 +3,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
+import { SettingsSkeleton } from "@/components/PageSkeleton";
 import { getProfile, updateProfile } from "@/lib/profile.functions";
 import { listRateCards, createRateCard, deleteRateCard } from "@/lib/rate-cards.functions";
-import { getBillingInfo, subscribeToPlan } from "@/lib/subscription.functions";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   Building2,
@@ -14,9 +15,11 @@ import {
   Plus,
   Receipt,
   Sparkles,
-  Trash2,
   Upload,
   Shield,
+  Crown,
+  Lock,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -26,27 +29,28 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Settings">{null}</AppShell>}>
+    <Suspense fallback={<SettingsSkeleton />}>
       <SettingsPage />
     </Suspense>
   ),
 });
 
-const getPlanPrice = (plan: "basic" | "premium", userCurrency: string) => {
-  const cur = (userCurrency || "NGN").toUpperCase();
-  const prices: Record<string, { basic: string; premium: string }> = {
-    NGN: { basic: "₦7,500", premium: "₦15,000" }, // Downward-reviewed from ₦15,000 / ₦35,000
-    USD: { basic: "$9", premium: "$19" },
-    EUR: { basic: "€9", premium: "€19" },
-    GBP: { basic: "£8", premium: "£16" },
-  };
-  const set = prices[cur] || { basic: plan === "basic" ? "$9" : "$19", premium: "$19" };
-  return plan === "basic" ? set.basic : set.premium;
-};
+
 
 function SettingsPage() {
   const router = useRouter();
@@ -55,8 +59,6 @@ function SettingsPage() {
   const fetchRates = useServerFn(listRateCards);
   const addRate = useServerFn(createRateCard);
   const delRate = useServerFn(deleteRateCard);
-  const fetchBilling = useServerFn(getBillingInfo);
-  const upgradePlan = useServerFn(subscribeToPlan);
   const qc = useQueryClient();
 
   const { data: profile } = useSuspenseQuery({
@@ -67,13 +69,7 @@ function SettingsPage() {
     queryKey: ["rate_cards"],
     queryFn: () => fetchRates(),
   });
-  const { data: billing } = useSuspenseQuery({
-    queryKey: ["billing"],
-    queryFn: () => fetchBilling(),
-  });
 
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<"basic" | "premium">("basic");
 
   const [form, setForm] = useState({
     owner_name: profile?.owner_name ?? "",
@@ -89,6 +85,7 @@ function SettingsPage() {
     currency: profile?.currency ?? "NGN",
     logo_url: profile?.logo_url ?? "",
     signature_url: profile?.signature_url ?? "",
+    custom_font_url: (profile as any)?.custom_font_url ?? "",
     brand_color: (profile as any)?.brand_color ?? "#8B5CF6",
     brand_color_primary:
       (profile as any)?.brand_color_primary ?? (profile as any)?.brand_color ?? "#8B5CF6",
@@ -114,6 +111,7 @@ function SettingsPage() {
         currency: profile.currency ?? "NGN",
         logo_url: profile.logo_url ?? "",
         signature_url: profile.signature_url ?? "",
+        custom_font_url: (profile as any).custom_font_url ?? "",
         brand_color: (profile as any).brand_color ?? "#8B5CF6",
         brand_color_primary:
           (profile as any).brand_color_primary ?? (profile as any).brand_color ?? "#8B5CF6",
@@ -125,24 +123,32 @@ function SettingsPage() {
     }
   }, [profile]);
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("payment") === "success") {
-      toast.success("Payment successful! Your subscription is being processed.");
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
+
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [uploadingFont, setUploadingFont] = useState(false);
 
-  const handleFileUpload = async (file: File, type: "logo" | "signature") => {
+  const plan = (profile as any)?.plan || "trial";
+  const logoEdits = (profile as any)?.logo_edits_this_month || 0;
+  const sigEdits = (profile as any)?.signature_edits_this_month || 0;
+  const colorEdits = (profile as any)?.color_edits_this_month || 0;
+
+  const canEditLogo = plan === "premium" || (plan === "basic" && logoEdits < 3);
+  const canEditSig = (plan === "premium" && sigEdits < 3) || ((plan === "trial" || plan === "basic") && !form.signature_url);
+  const canEditColors = plan === "premium" || (plan === "basic" && colorEdits < 5) || (plan === "trial" && colorEdits < 1);
+  const canUploadFont = plan === "premium";
+
+  const rateLimit = plan === "premium" ? Infinity : plan === "basic" ? 20 : 3;
+  const canAddRate = rates.length < rateLimit;
+
+  const handleFileUpload = async (file: File, type: "logo" | "signature" | "custom_font") => {
     if (!profile?.id) {
       toast.error("User profile not loaded yet");
       return;
     }
 
-    const setUploading = type === "logo" ? setUploadingLogo : setUploadingSignature;
+    const setUploading = type === "logo" ? setUploadingLogo : type === "signature" ? setUploadingSignature : setUploadingFont;
     setUploading(true);
 
     try {
@@ -164,9 +170,9 @@ function SettingsPage() {
 
       setForm((prev) => ({
         ...prev,
-        [type === "logo" ? "logo_url" : "signature_url"]: publicUrl,
+        [type === "logo" ? "logo_url" : type === "signature" ? "signature_url" : "custom_font_url"]: publicUrl,
       }));
-      toast.success(`${type === "logo" ? "Logo" : "Signature"} uploaded successfully`);
+      toast.success(`${type === "logo" ? "Logo" : type === "signature" ? "Signature" : "Font"} uploaded successfully`);
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Failed to upload file");
@@ -192,6 +198,7 @@ function SettingsPage() {
           currency: form.currency,
           logo_url: form.logo_url || null,
           signature_url: form.signature_url || null,
+          custom_font_url: (form as any).custom_font_url || null,
           brand_color: form.brand_color_primary,
           brand_color_primary: form.brand_color_primary,
           brand_color_secondary: form.brand_color_secondary,
@@ -206,49 +213,7 @@ function SettingsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const upgradeMut = useMutation({
-    mutationFn: (plan: "basic" | "premium") =>
-      upgradePlan({ data: { plan, origin: window.location.origin } }),
-    onSuccess: (res: any) => {
-      if (res?.accessCode) {
-        const paystackKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
-        if (!paystackKey) {
-          toast.error(
-            "Paystack Public Key not configured. Please add VITE_PAYSTACK_PUBLIC_KEY to your environment.",
-          );
-          return;
-        }
 
-        const loadPaystack = () => {
-          const handler = (window as any).PaystackPop.setup({
-            key: paystackKey,
-            email: res.email,
-            amount: res.amount,
-            access_code: res.accessCode,
-            callback: function () {
-              toast.success("Payment successful! Your subscription is being processed.");
-              qc.invalidateQueries({ queryKey: ["billing"] });
-              setCheckoutOpen(false);
-            },
-            onClose: function () {
-              toast.info("Payment window closed.");
-            },
-          });
-          handler.openIframe();
-        };
-
-        if (!(window as any).PaystackPop) {
-          const script = document.createElement("script");
-          script.src = "https://js.paystack.co/v1/inline.js";
-          script.onload = loadPaystack;
-          document.body.appendChild(script);
-        } else {
-          loadPaystack();
-        }
-      }
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to subscribe"),
-  });
 
   const addRateMut = useMutation({
     mutationFn: (v: { name: string; unit: string; rate: number }) =>
@@ -265,9 +230,23 @@ function SettingsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["rate_cards"] }),
   });
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    router.navigate({ to: "/auth" });
+  async function deleteAccount() {
+    try {
+      toast.loading("Deleting account...", { id: "delete-account" });
+      
+      const { error } = await supabase.functions.invoke("delete-account", {
+        method: "POST",
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Account deleted successfully", { id: "delete-account" });
+      await supabase.auth.signOut();
+      window.location.href = "/auth";
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete account", { id: "delete-account" });
+    }
   }
 
   return (
@@ -291,12 +270,16 @@ function SettingsPage() {
             value={form.owner_name}
             onChange={(v) => setForm({ ...form, owner_name: v })}
           />
-          <Input
-            label="Business name"
-            value={form.business_name}
-            onChange={(v) => setForm({ ...form, business_name: v })}
-            icon={Building2}
-          />
+          <div title="Contact support to change your business name" className="cursor-not-allowed opacity-70 relative group">
+            <div className="absolute top-1 right-2 z-10 text-[10px] text-muted-foreground bg-background px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Contact support to change</div>
+            <Input
+              label="Business name"
+              value={form.business_name}
+              onChange={() => { }}
+              icon={Building2}
+              disabled
+            />
+          </div>
           <Input
             label="Tagline"
             value={form.tagline}
@@ -323,37 +306,47 @@ function SettingsPage() {
       <Group title="Brand assets">
         <div className="card-soft p-4 space-y-4">
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-2">
               Brand Logo
+              {!canEditLogo && (
+                <span className="flex items-center gap-1 text-primary bg-primary/10 px-1.5 py-0.5 rounded ml-2">
+                  <Crown className="size-3" /> <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider">Upgrade to modify</span>
+                </span>
+              )}
             </span>
             <div className="flex items-center gap-4">
               {form.logo_url ? (
-                <div className="relative group border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0">
+                <div className={cn("relative border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0", canEditLogo ? "group" : "")}>
                   <img
                     src={form.logo_url}
                     alt="Brand Logo"
-                    className="max-w-full max-h-full object-contain"
+                    className={cn("max-w-full max-h-full object-contain", !canEditLogo && "opacity-60")}
                   />
-                  <button
-                    onClick={() => setForm({ ...form, logo_url: "" })}
-                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
-                    title="Remove Logo"
-                  >
-                    ×
-                  </button>
+                  {canEditLogo && (
+                    <button
+                      onClick={() => setForm({ ...form, logo_url: "" })}
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
+                      title="Remove Logo"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="border border-dashed border-border rounded-lg size-20 flex flex-col items-center justify-center text-muted-foreground bg-muted shrink-0">
-                  <span className="text-[10px]">No Logo</span>
+                  {canEditLogo ? <span className="text-[10px]">No Logo</span> : <Lock className="size-4 opacity-50" />}
                 </div>
               )}
-              <label className="flex items-center gap-2 px-4 h-10 rounded-lg bg-muted border border-border text-sm font-medium cursor-pointer hover:bg-muted/80 transition-colors">
-                <Upload className="size-4 text-muted-foreground" />
-                {uploadingLogo ? "Uploading..." : form.logo_url ? "Replace Logo" : "Upload Logo"}
+              <label className={cn(
+                "flex items-center gap-2 px-4 h-10 rounded-lg border border-border text-sm font-medium transition-colors",
+                canEditLogo ? "bg-muted cursor-pointer hover:bg-muted/80 text-foreground" : "bg-muted/50 cursor-not-allowed opacity-60 text-muted-foreground"
+              )}>
+                {canEditLogo ? <Upload className="size-4 text-muted-foreground" /> : <Lock className="size-4 text-muted-foreground" />}
+                {uploadingLogo ? "Uploading..." : form.logo_url ? (canEditLogo ? "Replace Logo" : "Limit Reached") : "Upload Logo"}
                 <input
                   type="file"
                   accept="image/*"
-                  disabled={uploadingLogo}
+                  disabled={uploadingLogo || !canEditLogo}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileUpload(file, "logo");
@@ -365,41 +358,51 @@ function SettingsPage() {
           </div>
 
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-2">
               Signature (for documents)
+              {!canEditSig && (
+                <span className="flex items-center gap-1 text-primary bg-primary/10 px-1.5 py-0.5 rounded ml-2">
+                  <Crown className="size-3" /> <span className="hidden sm:inline text-[9px] uppercase font-bold tracking-wider">Upgrade to modify</span>
+                </span>
+              )}
             </span>
             <div className="flex items-center gap-4">
               {form.signature_url ? (
-                <div className="relative group border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0">
+                <div className={cn("relative border border-border rounded-lg p-2 bg-white flex items-center justify-center size-20 shrink-0", canEditSig ? "group" : "")}>
                   <img
                     src={form.signature_url}
                     alt="Brand Signature"
-                    className="max-w-full max-h-full object-contain"
+                    className={cn("max-w-full max-h-full object-contain", !canEditSig && "opacity-60")}
                   />
-                  <button
-                    onClick={() => setForm({ ...form, signature_url: "" })}
-                    className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
-                    title="Remove Signature"
-                  >
-                    ×
-                  </button>
+                  {canEditSig && (
+                    <button
+                      onClick={() => setForm({ ...form, signature_url: "" })}
+                      className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground size-5 rounded-full flex items-center justify-center text-[10px]"
+                      title="Remove Signature"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="border border-dashed border-border rounded-lg size-20 flex flex-col items-center justify-center text-muted-foreground bg-muted shrink-0">
-                  <span className="text-[10px]">No Signature</span>
+                  {canEditSig ? <span className="text-[10px]">No Signature</span> : <Lock className="size-4 opacity-50" />}
                 </div>
               )}
-              <label className="flex items-center gap-2 px-4 h-10 rounded-lg bg-muted border border-border text-sm font-medium cursor-pointer hover:bg-muted/80 transition-colors">
-                <Upload className="size-4 text-muted-foreground" />
+              <label className={cn(
+                "flex items-center gap-2 px-4 h-10 rounded-lg border border-border text-sm font-medium transition-colors",
+                canEditSig ? "bg-muted cursor-pointer hover:bg-muted/80 text-foreground" : "bg-muted/50 cursor-not-allowed opacity-60 text-muted-foreground"
+              )}>
+                {canEditSig ? <Upload className="size-4 text-muted-foreground" /> : <Lock className="size-4 text-muted-foreground" />}
                 {uploadingSignature
                   ? "Uploading..."
                   : form.signature_url
-                    ? "Replace Signature"
+                    ? (canEditSig ? "Replace Signature" : "Modify Signature")
                     : "Upload Signature"}
                 <input
                   type="file"
                   accept="image/*"
-                  disabled={uploadingSignature}
+                  disabled={uploadingSignature || !canEditSig}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileUpload(file, "signature");
@@ -410,8 +413,15 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/60">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/60 relative">
+            {!canEditColors && (
+              <div className="absolute inset-0 z-10 bg-background/5 backdrop-blur-[1px] flex items-center justify-center">
+                <span className="flex items-center gap-1.5 bg-background shadow-md border border-border px-3 py-1.5 rounded-full text-xs font-medium text-muted-foreground">
+                  <Crown className="size-3.5 text-primary" /> Upgrade to modify colors
+                </span>
+              </div>
+            )}
+            <div className={cn(!canEditColors && "opacity-50 pointer-events-none")}>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
                 Primary Color
               </span>
@@ -475,106 +485,58 @@ function SettingsPage() {
             </div>
           </div>
 
-          <div className="pt-2">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold block mb-1.5">
+          <div className={cn("pt-2", !canEditColors && "opacity-50 pointer-events-none")}>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5 mb-1.5">
               PDF Font Style
             </span>
-            <select
-              value={form.brand_font}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  brand_font: e.target.value as "Helvetica" | "TimesRoman" | "Courier",
-                })
-              }
-              className="w-full h-9 px-2 rounded-lg bg-muted border border-border text-xs font-medium mt-0"
-            >
-              <option value="Helvetica">Helvetica (Sans)</option>
-              <option value="TimesRoman">Times Roman (Serif)</option>
-              <option value="Courier">Courier (Mono)</option>
-            </select>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <select
+                value={form.brand_font}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    brand_font: e.target.value as "Helvetica" | "TimesRoman" | "Courier",
+                  })
+                }
+                className="w-full sm:w-1/2 h-9 px-2 rounded-lg bg-muted border border-border text-xs font-medium mt-0"
+              >
+                <option value="Helvetica">Helvetica (Sans)</option>
+                <option value="TimesRoman">Times Roman (Serif)</option>
+                <option value="Courier">Courier (Mono)</option>
+              </select>
+
+              <div className="w-full sm:w-1/2 relative flex items-center">
+                {!canUploadFont && (
+                  <div className="absolute inset-0 z-10 bg-background/5 backdrop-blur-[1px] flex items-center justify-center rounded-lg">
+                    <span className="flex items-center gap-1.5 bg-background shadow-sm border border-border px-2 py-1 rounded-full text-[10px] font-medium text-muted-foreground">
+                      <Crown className="size-3 text-primary" /> Upgrade to upload font
+                    </span>
+                  </div>
+                )}
+                <label className={cn(
+                  "flex items-center gap-2 px-3 h-9 w-full rounded-lg border border-border text-xs font-medium transition-colors justify-center",
+                  canUploadFont ? "bg-muted cursor-pointer hover:bg-muted/80 text-foreground" : "bg-muted/50 cursor-not-allowed opacity-60 text-muted-foreground"
+                )}>
+                  {canUploadFont ? <Upload className="size-3.5 text-muted-foreground" /> : <Lock className="size-3.5 text-muted-foreground" />}
+                  {uploadingFont ? "Uploading..." : (form as any).custom_font_url ? "Replace Custom Font (.ttf/.woff)" : "Upload Custom Font (.ttf/.woff)"}
+                  <input
+                    type="file"
+                    accept=".ttf,.woff,.woff2,.otf"
+                    disabled={uploadingFont || !canUploadFont}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, "custom_font");
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </Group>
 
-      <Group title="Subscription & Billing">
-        <div className="card-soft p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold capitalize">{billing.plan} Tier</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {billing.plan === "trial"
-                  ? `Usage: ${billing.trial_generations_used} of ${billing.trial_generations_limit} free AI runs used`
-                  : `Status: ${billing.subscription_status} · Renews ${billing.subscription_ends_at ? new Date(billing.subscription_ends_at).toLocaleDateString() : "—"}`}
-              </p>
-            </div>
-            <span
-              className={cn(
-                "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full",
-                billing.plan === "trial"
-                  ? "bg-muted text-muted-foreground"
-                  : "bg-success/15 text-success",
-              )}
-            >
-              {billing.plan === "trial" ? "Free Trial" : "Active"}
-            </span>
-          </div>
 
-          {billing.plan === "trial" && (
-            <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-primary h-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(100, (billing.trial_generations_used / billing.trial_generations_limit) * 100)}%`,
-                }}
-              />
-            </div>
-          )}
-
-          {billing.plan === "trial" ? (
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setCheckoutOpen(true)}
-                className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
-              >
-                <CreditCard className="size-4" /> Upgrade Plan
-              </button>
-            </div>
-          ) : (
-            <div className="pt-1 flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPlan("basic");
-                  setCheckoutOpen(true);
-                }}
-                className={cn(
-                  "flex-1 h-9 rounded-lg border border-border text-xs font-medium",
-                  billing.plan === "basic" && "opacity-50 cursor-not-allowed",
-                )}
-                disabled={billing.plan === "basic"}
-              >
-                Switch to Basic
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedPlan("premium");
-                  setCheckoutOpen(true);
-                }}
-                className={cn(
-                  "flex-1 h-9 rounded-lg border border-border text-xs font-medium",
-                  billing.plan === "premium" && "opacity-50 cursor-not-allowed",
-                )}
-                disabled={billing.plan === "premium"}
-              >
-                Switch to Premium
-              </button>
-            </div>
-          )}
-        </div>
-      </Group>
 
       <Group title="Context for AI pricing">
         <div className="card-soft p-4 space-y-3">
@@ -605,7 +567,7 @@ function SettingsPage() {
             />
           </div>
           <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
-            <Sparkles className="size-3 text-primary mt-0.5 shrink-0" />
+
             AI pricing reads this profile and your rate cards to ground every recommendation.
           </p>
         </div>
@@ -626,16 +588,27 @@ function SettingsPage() {
                   {r.rate} {r.currency}/{r.unit}
                 </p>
               </div>
-              <button onClick={() => delRateMut.mutate(r.id)} className="text-muted-foreground">
+              <button onClick={() => delRateMut.mutate(r.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                 <Trash2 className="size-4" />
               </button>
             </div>
           ))}
-          <RateForm
-            currency={form.currency}
-            loading={addRateMut.isPending}
-            onSubmit={(v) => addRateMut.mutate(v)}
-          />
+          {canAddRate ? (
+            <RateForm
+              currency={form.currency}
+              loading={addRateMut.isPending}
+              onSubmit={(v) => addRateMut.mutate(v)}
+            />
+          ) : (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm">
+              <span className="text-muted-foreground text-xs flex items-center gap-1.5">
+                <Crown className="size-4 text-primary" /> Rate card limit reached ({rates.length}/{rateLimit}).
+              </span>
+              <Link to="/subscription" className="text-primary font-semibold text-xs px-2 py-1 hover:underline">
+                Upgrade Plan
+              </Link>
+            </div>
+          )}
         </div>
       </Group>
 
@@ -676,99 +649,38 @@ function SettingsPage() {
         {saveMut.isPending ? "Saving…" : "Save profile"}
       </button>
 
-      <button
-        onClick={signOut}
-        className="w-full h-12 rounded-full border border-border text-destructive font-medium flex items-center justify-center gap-2"
-      >
-        <LogOut className="size-4" /> Sign out
-      </button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button className="w-full h-12 rounded-full border border-border text-destructive font-medium flex items-center justify-center gap-2">
+            <Trash2 className="size-4" /> Delete Account
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your account
+              and remove all your data from our servers. You will not be able to register
+              using this account's details again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <p className="text-[11px] text-muted-foreground/70 text-center mt-8 flex items-center justify-center gap-1.5">
-        <Receipt className="size-3" /> Studio v1.0 · Built for independent creatives
+        Studio v1.0 · Built for creatives
       </p>
 
-      {checkoutOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs grid place-items-center p-4">
-          <div className="card-soft bg-background w-full max-w-sm p-6 space-y-4 shadow-xl border border-border animate-in fade-in zoom-in-95 duration-200">
-            <div className="text-center">
-              <h3 className="font-display text-xl">Upgrade Your Plan</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Select a plan to unlock full features
-              </p>
-            </div>
 
-            <div className="space-y-2.5">
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("basic")}
-                className={cn(
-                  "w-full text-left p-3.5 rounded-xl border transition-all flex items-start justify-between",
-                  selectedPlan === "basic"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted/30",
-                )}
-              >
-                <div>
-                  <p className="text-sm font-semibold">Basic Studio</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    30 runs/month · Standard speed
-                  </p>
-                </div>
-                <p className="text-sm font-bold">
-                  {getPlanPrice("basic", form.currency)}
-                  <span className="text-[10px] font-normal text-muted-foreground">/mo</span>
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("premium")}
-                className={cn(
-                  "w-full text-left p-3.5 rounded-xl border transition-all flex items-start justify-between",
-                  selectedPlan === "premium"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted/30",
-                )}
-              >
-                <div>
-                  <p className="text-sm font-semibold">Premium Studio</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    100 runs/month · Priority AI · portal logo
-                  </p>
-                </div>
-                <p className="text-sm font-bold">
-                  {getPlanPrice("premium", form.currency)}
-                  <span className="text-[10px] font-normal text-muted-foreground">/mo</span>
-                </p>
-              </button>
-            </div>
-
-            <div className="bg-muted/60 p-3 rounded-lg text-[10px] text-muted-foreground flex items-start gap-1.5 leading-normal">
-              <Sparkles className="size-3.5 text-primary shrink-0 mt-0.5" />
-              Select your desired tier to upgrade instantly. Payments are securely processed. You
-              can modify or cancel your subscription at any time.
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCheckoutOpen(false)}
-                className="flex-1 h-11 rounded-full border border-border text-xs font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={upgradeMut.isPending}
-                onClick={() => upgradeMut.mutate(selectedPlan)}
-                className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm disabled:opacity-60"
-              >
-                {upgradeMut.isPending ? "Connecting..." : "Proceed to Payment"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AppShell>
   );
 }
@@ -799,6 +711,7 @@ function Input({
   type = "text",
   icon: Icon,
   placeholder,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -806,6 +719,7 @@ function Input({
   type?: string;
   icon?: React.ComponentType<{ className?: string }>;
   placeholder?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -817,7 +731,8 @@ function Input({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1"
+        disabled={disabled}
+        className="w-full h-10 px-3 rounded-lg bg-muted border border-border text-sm mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
       />
     </label>
   );

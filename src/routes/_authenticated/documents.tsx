@@ -9,19 +9,21 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { listDocuments, draftDocument, deleteDocument } from "@/lib/documents.functions";
 import { listProjects } from "@/lib/projects.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
-import { FileText, Plus, Receipt, ScrollText, FileCheck2, Sparkles, Trash2 } from "lucide-react";
+import { FileText, Plus, Receipt, ScrollText, FileCheck2, Sparkles, Trash2, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
-type DocType = "proposal" | "invoice" | "contract" | "receipt";
+type DocType = "proposal" | "invoice" | "contract" | "receipt" | "quotation";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({ meta: [{ title: "Documents — Studio" }] }),
   component: () => (
-    <Suspense fallback={<AppShell title="Documents">{null}</AppShell>}>
+    <Suspense fallback={<ListPageSkeleton title="Documents" />}>
       <DocumentsLayout />
     </Suspense>
   ),
@@ -40,11 +42,13 @@ const typeMeta: Record<DocType, { label: string; icon: typeof FileText; tone: st
   invoice: { label: "Invoices", icon: FileText, tone: "bg-secondary text-secondary-foreground" },
   receipt: { label: "Receipts", icon: Receipt, tone: "bg-success/15 text-success" },
   contract: { label: "Contracts", icon: FileCheck2, tone: "bg-accent text-accent-foreground" },
+  quotation: { label: "Quotations", icon: ClipboardList, tone: "bg-blue-500/10 text-blue-500" },
 };
 
 const filters: { key: DocType | "all"; label: string }[] = [
   { key: "all", label: "All" },
   { key: "proposal", label: "Proposals" },
+  { key: "quotation", label: "Quotations" },
   { key: "invoice", label: "Invoices" },
   { key: "contract", label: "Contracts" },
   { key: "receipt", label: "Receipts" },
@@ -66,6 +70,7 @@ function DocumentsPage() {
 
   const [filter, setFilter] = useState<DocType | "all">("all");
   const [open, setOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const filtered = filter === "all" ? docs : docs.filter((d) => d.type === filter);
 
   const mut = useMutation({
@@ -79,13 +84,8 @@ function DocumentsPage() {
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : "Failed";
-      if (msg.includes("free trial limit")) {
-        toast.error(msg, {
-          action: {
-            label: "Go to Settings",
-            onClick: () => navigate({ to: "/settings" }),
-          },
-        });
+      if (msg.includes("free trial limit") || msg.includes("exhausted your Basic plan limit")) {
+        setUpgradeModalOpen(true);
       } else {
         toast.error(msg);
       }
@@ -104,7 +104,7 @@ function DocumentsPage() {
   return (
     <AppShell
       title="Documents"
-      subtitle={`${docs.length} total`}
+      //subtitle={`${docs.length} total`}
       action={
         <button
           onClick={() => setOpen(true)}
@@ -115,6 +115,8 @@ function DocumentsPage() {
         </button>
       }
     >
+      <UpgradeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
+
       <div className="grid grid-cols-4 gap-2 mb-5">
         {(Object.keys(typeMeta) as DocType[]).map((t) => {
           const m = typeMeta[t];
@@ -155,6 +157,7 @@ function DocumentsPage() {
         <NewDocForm
           projects={projects}
           loading={mut.isPending}
+          defaultType={filter !== "all" ? filter : "proposal"}
           onCancel={() => setOpen(false)}
           onSubmit={(v) => mut.mutate(v)}
         />
@@ -235,6 +238,7 @@ function NewDocForm({
   onSubmit,
   onCancel,
   loading,
+  defaultType = "proposal",
 }: {
   projects: {
     id: string;
@@ -245,8 +249,9 @@ function NewDocForm({
   onSubmit: (v: { type: DocType; project_id?: string; client_id?: string }) => void;
   onCancel: () => void;
   loading: boolean;
+  defaultType?: DocType;
 }) {
-  const [type, setType] = useState<DocType>("proposal");
+  const [type, setType] = useState<DocType>(defaultType);
   const [projectId, setProjectId] = useState("");
   const selected = projects.find((p) => p.id === projectId);
   return (
@@ -262,7 +267,7 @@ function NewDocForm({
       className="card-soft p-4 mb-4 space-y-3"
     >
       <div className="flex items-center gap-2 text-xs text-primary">
-        <Sparkles className="size-3.5" /> AI will draft this for you to review and edit.
+        AI will draft this for you to review and edit.
       </div>
       <select
         value={type}
@@ -270,6 +275,7 @@ function NewDocForm({
         className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
       >
         <option value="proposal">Proposal</option>
+        <option value="quotation">Quotation</option>
         <option value="invoice">Invoice</option>
         <option value="contract">Contract</option>
         <option value="receipt">Receipt</option>

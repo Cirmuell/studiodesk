@@ -35,6 +35,88 @@ export type Database = {
         };
         Relationships: [];
       };
+      document_draft_caches: {
+        Row: {
+          hash_key: string;
+          user_id: string;
+          content: Json;
+          created_at: string;
+        };
+        Insert: {
+          hash_key: string;
+          user_id: string;
+          content: Json;
+          created_at?: string;
+        };
+        Update: {
+          hash_key?: string;
+          user_id?: string;
+          content?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_draft_caches_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      pdf_render_caches: {
+        Row: {
+          hash_key: string;
+          pdf_base64: string;
+          created_at: string;
+        };
+        Insert: {
+          hash_key: string;
+          pdf_base64: string;
+          created_at?: string;
+        };
+        Update: {
+          hash_key?: string;
+          pdf_base64?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      client_activities: {
+        Row: {
+          id: string;
+          client_id: string;
+          user_id: string;
+          type: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          user_id: string;
+          type: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          client_id?: string;
+          user_id?: string;
+          type?: string;
+          content?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "client_activities_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       clients: {
         Row: {
           company: string | null;
@@ -45,6 +127,13 @@ export type Database = {
           notes: string | null;
           phone: string | null;
           tier: string;
+          status: string;
+          website: string | null;
+          address: string | null;
+          industry: string | null;
+          logo_url: string | null;
+          lead_source: string | null;
+          social_links: Json;
           updated_at: string;
           user_id: string;
         };
@@ -57,6 +146,13 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           tier?: string;
+          status?: string;
+          website?: string | null;
+          address?: string | null;
+          industry?: string | null;
+          logo_url?: string | null;
+          lead_source?: string | null;
+          social_links?: Json;
           updated_at?: string;
           user_id: string;
         };
@@ -69,6 +165,13 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           tier?: string;
+          status?: string;
+          website?: string | null;
+          address?: string | null;
+          industry?: string | null;
+          logo_url?: string | null;
+          lead_source?: string | null;
+          social_links?: Json;
           updated_at?: string;
           user_id?: string;
         };
@@ -124,12 +227,17 @@ export type Database = {
       documents: {
         Row: {
           client_id: string | null;
+          client_ip: string | null;
+          client_signature_data: string | null;
+          client_signed_at: string | null;
           content: Json;
           created_at: string;
           currency: string;
           due_date: string | null;
+          follow_up_count: number;
           id: string;
           issued_date: string | null;
+          last_follow_up_at: string | null;
           number: string | null;
           pdf_url: string | null;
           project_id: string | null;
@@ -144,12 +252,17 @@ export type Database = {
         };
         Insert: {
           client_id?: string | null;
+          client_ip?: string | null;
+          client_signature_data?: string | null;
+          client_signed_at?: string | null;
           content?: Json;
           created_at?: string;
           currency?: string;
           due_date?: string | null;
+          follow_up_count?: number;
           id?: string;
           issued_date?: string | null;
+          last_follow_up_at?: string | null;
           number?: string | null;
           pdf_url?: string | null;
           project_id?: string | null;
@@ -164,12 +277,17 @@ export type Database = {
         };
         Update: {
           client_id?: string | null;
+          client_ip?: string | null;
+          client_signature_data?: string | null;
+          client_signed_at?: string | null;
           content?: Json;
           created_at?: string;
           currency?: string;
           due_date?: string | null;
+          follow_up_count?: number;
           id?: string;
           issued_date?: string | null;
+          last_follow_up_at?: string | null;
           number?: string | null;
           pdf_url?: string | null;
           project_id?: string | null;
@@ -271,6 +389,7 @@ export type Database = {
           country: string;
           created_at: string;
           currency: string;
+          dashboard_stats: Json | null;
           day_rate_max: number | null;
           day_rate_min: number | null;
           email: string | null;
@@ -311,6 +430,7 @@ export type Database = {
           country?: string;
           created_at?: string;
           currency?: string;
+          dashboard_stats?: Json | null;
           day_rate_max?: number | null;
           day_rate_min?: number | null;
           email?: string | null;
@@ -351,6 +471,7 @@ export type Database = {
           country?: string;
           created_at?: string;
           currency?: string;
+          dashboard_stats?: Json | null;
           day_rate_max?: number | null;
           day_rate_min?: number | null;
           email?: string | null;
@@ -391,7 +512,9 @@ export type Database = {
           deliverables: string | null;
           id: string;
           notes: string | null;
+          progress: number | null;
           scope: string | null;
+          start_date: string | null;
           status: string;
           title: string;
           updated_at: string;
@@ -406,7 +529,9 @@ export type Database = {
           deliverables?: string | null;
           id?: string;
           notes?: string | null;
+          progress?: number | null;
           scope?: string | null;
+          start_date?: string | null;
           status?: string;
           title: string;
           updated_at?: string;
@@ -421,7 +546,9 @@ export type Database = {
           deliverables?: string | null;
           id?: string;
           notes?: string | null;
+          progress?: number | null;
           scope?: string | null;
+          start_date?: string | null;
           status?: string;
           title?: string;
           updated_at?: string;
@@ -435,6 +562,88 @@ export type Database = {
             referencedRelation: "clients";
             referencedColumns: ["id"];
           },
+        ];
+      };
+      project_links: {
+        Row: {
+          created_at: string;
+          id: string;
+          project_id: string;
+          title: string;
+          type: string;
+          url: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          project_id: string;
+          title: string;
+          type?: string;
+          url: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          project_id?: string;
+          title?: string;
+          type?: string;
+          url?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_links_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      project_tasks: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          due_date: string | null;
+          id: string;
+          priority: string;
+          project_id: string;
+          status: string;
+          title: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          priority?: string;
+          project_id: string;
+          status?: string;
+          title: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          due_date?: string | null;
+          id?: string;
+          priority?: string;
+          project_id?: string;
+          status?: string;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          }
         ];
       };
       rate_cards: {

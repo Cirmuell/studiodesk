@@ -26,6 +26,9 @@ class MemoryCache<T> {
   set(key: string, value: T): void {
     this.cache.set(key, { value, expiresAt: Date.now() + this.ttlMs });
   }
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
 }
 
 type SharedDocResult =
@@ -125,7 +128,7 @@ export const getSharedDocument = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("documents")
         .select(
-          "id, type, number, title, content, subtotal, tax, total, currency, issued_date, due_date, status, client:clients(id, name, company, email, phone)",
+          "id, type, number, title, content, subtotal, tax, total, currency, issued_date, due_date, status, client_signature_data, client_signed_at, client:clients(id, name, company, email, phone)",
         )
         .eq("id", share.document_id)
         .maybeSingle(),
@@ -149,4 +152,41 @@ export const getSharedDocument = createServerFn({ method: "GET" })
     const result = { status: "ok" as const, document: doc, profile };
     sharedDocCache.set(data.token, result);
     return result;
+  });
+
+export const signSharedDocument = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ token: z.string().min(8).max(128), signature: z.string().min(10) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. Verify token
+    const { data: share, error: shareErr } = await supabaseAdmin
+      .from("document_shares")
+      .select("document_id, expires_at, revoked_at")
+      .eq("token", data.token)
+      .maybeSingle();
+
+    if (shareErr) throw new Error(shareErr.message);
+    if (!share || share.revoked_at || (share.expires_at && new Date(share.expires_at) < new Date())) {
+      throw new Error("Invalid or expired link");
+    }
+
+    // 2. Update document with signature
+    const { error: updateErr } = await supabaseAdmin
+      .from("documents")
+      .update({
+        client_signature_data: data.signature,
+        client_signed_at: new Date().toISOString(),
+        status: "accepted", // mark as accepted
+      })
+      .eq("id", share.document_id);
+
+    if (updateErr) throw new Error(updateErr.message);
+
+    // Invalidate cache
+    sharedDocCache.delete(data.token);
+
+    return { ok: true };
   });
