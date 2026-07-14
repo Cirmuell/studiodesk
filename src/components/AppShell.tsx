@@ -70,7 +70,9 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    window.location.href = "/auth";
+    // Use router.navigate for consistent client-side routing in Capacitor WebView.
+    // window.location.href would cause a full page reload, bypassing route guards.
+    await router.navigate({ to: "/auth" });
   }
 
   return (

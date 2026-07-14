@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { Capacitor } from "@capacitor/core";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,10 @@ import { checkEmailExists, checkBusinessNameExists } from "@/lib/profile.functio
 export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: () => {
-    if (typeof window !== "undefined" && !window.localStorage.getItem("has_seen_onboarding")) {
+    // On native (Capacitor), users who sign out have already completed onboarding.
+    // Skip the onboarding redirect so they land directly on the auth screen.
+    const isNative = typeof window !== "undefined" && Capacitor.isNativePlatform();
+    if (!isNative && typeof window !== "undefined" && !window.localStorage.getItem("has_seen_onboarding")) {
       throw redirect({ to: "/onboarding" });
     }
   },
