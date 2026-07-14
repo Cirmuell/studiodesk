@@ -38,7 +38,7 @@ type Tab = {
 };
 
 const tabs: Tab[] = [
-  { to: "/", label: "Home", icon: Home, exact: true },
+  { to: "/dashboard", label: "Home", icon: Home, exact: true },
   { to: "/projects", label: "Projects", icon: Briefcase },
   { to: "/pricing", label: "Pricing", icon: Calculator, accent: true },
   { to: "/documents", label: "Docs", icon: FileText },
