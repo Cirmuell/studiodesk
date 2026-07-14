@@ -23,12 +23,13 @@
     </style>
 
     <!--
-        Launch theme — used for the Android SplashScreen compat library
-        (pre-Android 12 devices). The android:windowSplashScreenBackground
-        attribute is added in values-v31/styles.xml for Android 12+ devices.
+        Launch theme — used for the Android SplashScreen compat library.
+        No drawable reference here — we use solid brand orange only.
+        The android:windowSplashScreenBackground for Android 12+ is in
+        values-v31/styles.xml.
     -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="android:windowBackground">#e36650</item>
         <item name="windowSplashScreenBackground">#e36650</item>
     </style>
 
