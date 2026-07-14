@@ -136,7 +136,14 @@ function AuthPage() {
       }
       navigate({ to: "/" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Authentication failed");
+      const errorMessage = err instanceof Error ? err.message : "Authentication failed";
+      
+      // Supabase masks trigger exceptions with this generic message
+      if (errorMessage.includes("Database error saving new user")) {
+        toast.error("Sorry, you cannot create an account.");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

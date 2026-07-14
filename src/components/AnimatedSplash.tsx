@@ -2,42 +2,25 @@ import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 
+// Exact animation duration sourced from GIF metadata (168 frames × avg 30ms = 5040ms)
+const SPLASH_DURATION_MS = 5040;
+// Safety valve — dismisses splash if the image never loads (network error etc.)
+const MAX_WAIT_MS = SPLASH_DURATION_MS + 2000;
+
 export function AnimatedSplash({ children }: { children: React.ReactNode }) {
-  // Only show splash screen on native Capacitor app (skip on Web/SSR)
   const isNative = typeof window !== "undefined" && Capacitor.isNativePlatform();
   const [showSplash, setShowSplash] = useState(isNative);
 
-  const hideNativeSplash = async () => {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        await SplashScreen.hide();
-      } catch (e) {
-        console.error("Failed to hide native splash", e);
-      }
-    }
-  };
-
   useEffect(() => {
-    // Hide native splash screen immediately so it doesn't wait for the GIF to fully download
-    // before dismissing the static logo.
-    hideNativeSplash();
+    if (!isNative) return;
 
-    // Fallback timeout in case the image fails to load,
-    // ensuring the app doesn't stay stuck on the splash screen indefinitely.
-    const fallbackTimeout = setTimeout(() => {
-      setShowSplash(false);
-    }, 4000);
-    return () => clearTimeout(fallbackTimeout);
-  }, []);
+    // Dismiss the native Android splash immediately — our JS splash takes over.
+    SplashScreen.hide().catch(() => {});
 
-  const handleImageLoad = () => {
-    // Wait for the GIF animation to finish (e.g., 2.5 seconds)
-    // IMPORTANT: Adjust 2500 below to match the exact length of your GIF animation
-    setTimeout(() => {
-      // Completely remove it from DOM without fade
-      setShowSplash(false);
-    }, 2500);
-  };
+    // Safety fallback so the app is never permanently stuck on the splash.
+    const fallback = setTimeout(() => setShowSplash(false), MAX_WAIT_MS);
+    return () => clearTimeout(fallback);
+  }, [isNative]);
 
   if (!showSplash) {
     return <>{children}</>;
@@ -45,18 +28,33 @@ export function AnimatedSplash({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[9999] bg-[#e36650] flex items-center justify-center">
+      <div className="fixed inset-0 z-[9999] bg-[#e36650] overflow-hidden">
+        {/*
+          Animated WebP is 87% smaller than the original GIF (0.79 MB vs 6.18 MB).
+          It loads fast on mobile and plays smoothly in the Android WebView.
+          onLoad fires once the first frame is decoded → we then wait the exact
+          animation duration before dismissing the splash.
+        */}
         <img
-          src="/splash.gif"
-          alt="Splash Screen Animation"
-          onLoad={handleImageLoad}
-          onError={handleImageLoad}
-          style={{ pointerEvents: "none" }}
-          className="w-full h-full object-cover"
+          src="/splash.webp"
+          alt=""
+          aria-hidden="true"
+          onLoad={() => {
+            // Image loaded — wait exactly one full animation cycle then proceed.
+            setTimeout(() => setShowSplash(false), SPLASH_DURATION_MS);
+          }}
+          onError={() => setShowSplash(false)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+          }}
         />
       </div>
-      {/* We render children behind the splash screen so the app loads in the background */}
+      {/* App renders behind the splash so it's fully loaded when the splash exits */}
       {children}
     </>
   );
 }
+

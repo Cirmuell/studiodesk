@@ -28,6 +28,17 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — Studio" }] }),
@@ -218,9 +229,23 @@ function SettingsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["rate_cards"] }),
   });
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    window.location.href = "/auth";
+  async function deleteAccount() {
+    try {
+      toast.loading("Deleting account...", { id: "delete-account" });
+      
+      const { error } = await supabase.functions.invoke("delete-account", {
+        method: "POST",
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Account deleted successfully", { id: "delete-account" });
+      await supabase.auth.signOut();
+      window.location.href = "/auth";
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete account", { id: "delete-account" });
+    }
   }
 
   return (
@@ -623,12 +648,32 @@ function SettingsPage() {
         {saveMut.isPending ? "Saving…" : "Save profile"}
       </button>
 
-      <button
-        onClick={signOut}
-        className="w-full h-12 rounded-full border border-border text-destructive font-medium flex items-center justify-center gap-2"
-      >
-        <LogOut className="size-4" /> Sign out
-      </button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button className="w-full h-12 rounded-full border border-border text-destructive font-medium flex items-center justify-center gap-2">
+            <Trash2 className="size-4" /> Delete Account
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your account
+              and remove all your data from our servers. You will not be able to register
+              using this account's details again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteAccount}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <p className="text-[11px] text-muted-foreground/70 text-center mt-8 flex items-center justify-center gap-1.5">
         Studio v1.0 · Built for creatives
