@@ -34,12 +34,12 @@ const tiers = {
   trial: {
     name: "Free Trial",
     features: [
-      "5 AI Project Runs",
-      "Standard PDF Document Export",
-      "Max 1 Client Profile",
-      "Max 3 Rate Cards",
-      "Set Brand Colors once",
-      "Upload Signature once",
+      "3-Day Full System Access",
+      "Unlimited AI Project Runs",
+      "Unlimited Client Profiles",
+      "Unlimited Rate Cards",
+      "Set Brand Colors",
+      "Upload Signature",
     ],
   },
   basic: {
@@ -144,7 +144,7 @@ function SubscriptionPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to subscribe"),
   });
 
-  const limit = billing.plan === "premium" ? 100 : billing.plan === "basic" ? 50 : billing.trial_generations_limit || 5;
+  const limit = billing.plan === "premium" ? 100 : billing.plan === "basic" ? 50 : 0;
   const used = billing.trial_generations_used || 0;
   const currency = profile?.currency || "NGN";
 
@@ -169,26 +169,28 @@ function SubscriptionPage() {
             </div>
             <p className="text-sm text-muted-foreground">
               {billing.plan === "trial"
-                ? "Experience the full power of Studio AI for free before deciding."
+                ? `Experience the full power of Studio AI for free before deciding. Your trial expires on ${billing.subscription_ends_at ? new Date(billing.subscription_ends_at).toLocaleDateString() : "—"}.`
                 : `Your subscription is active and renews on ${billing.subscription_ends_at ? new Date(billing.subscription_ends_at).toLocaleDateString() : "—"}.`}
             </p>
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-muted/30 border border-border">
-          <div className="flex justify-between items-end mb-2">
-            <p className="text-sm font-semibold">{billing.plan === "trial" ? "Trial Usage" : "Monthly Usage"}</p>
-            <p className="text-xs font-medium text-muted-foreground">{used} of {limit} runs used</p>
+        {billing.plan !== "trial" && (
+          <div className="p-4 rounded-xl bg-muted/30 border border-border">
+            <div className="flex justify-between items-end mb-2">
+              <p className="text-sm font-semibold">Monthly Usage</p>
+              <p className="text-xs font-medium text-muted-foreground">{used} of {limit} runs used</p>
+            </div>
+            <div className="w-full bg-muted/80 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-primary h-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(100, (used / limit) * 100)}%`,
+                }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-muted/80 h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-primary h-full transition-all duration-300"
-              style={{
-                width: `${Math.min(100, (used / limit) * 100)}%`,
-              }}
-            />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Pricing Tiers */}

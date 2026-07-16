@@ -296,7 +296,7 @@ function AdminSubscribers() {
                     <span className="capitalize">{profile.plan}</span>
                   </td>
                   <td className="px-4 py-3">
-                    {profile.trial_generations_used} / {profile.plan === "premium" ? 100 : profile.plan === "basic" ? 50 : (profile.trial_generations_limit || 5)}
+                    {profile.plan === "trial" ? `${profile.trial_generations_used} / Unlimited` : `${profile.trial_generations_used} / ${profile.plan === "premium" ? 100 : 50}`}
                   </td>
                   <td className="px-4 py-3">
                     {profile.restricted ? (

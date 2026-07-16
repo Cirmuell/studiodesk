@@ -48,7 +48,7 @@ export async function enforceUsageLimits(
   // 2. Fetch user profile statistics
   const { data: profile, error } = await supabaseAdmin
     .from("profiles")
-    .select("restricted, plan, trial_generations_used, trial_generations_limit, last_generation_at, signup_ip")
+    .select("restricted, plan, trial_generations_used, trial_generations_limit, last_generation_at, signup_ip, subscription_ends_at")
     .eq("id", userId)
     .single();
 
@@ -94,12 +94,18 @@ export async function enforceUsageLimits(
   }
 
   // 6. Enforce plan-specific limits
-  const planLimit = profile.plan === "premium" ? 100 : profile.plan === "basic" ? 50 : profile.trial_generations_limit || 5;
+  if (profile.plan === "trial") {
+    if (profile.subscription_ends_at && new Date(profile.subscription_ends_at) < new Date()) {
+      throw new Error("Your 3-day free trial has expired. Please subscribe in Settings to continue using the AI pricing and drafting features.");
+    }
+    // No generation limits during active 3-day trial
+    return;
+  }
+
+  const planLimit = profile.plan === "premium" ? 100 : profile.plan === "basic" ? 50 : 5;
 
   if (profile.trial_generations_used >= planLimit) {
-    if (profile.plan === "trial") {
-      throw new Error(`You have exhausted your free trial limit (${planLimit} AI generations). Please subscribe in Settings to continue using the AI pricing and drafting features.`);
-    } else if (profile.plan === "basic") {
+    if (profile.plan === "basic") {
       throw new Error(`You have exhausted your Basic plan limit (${planLimit} AI generations). Please renew or upgrade to Premium in Settings to continue using the AI pricing and drafting features.`);
     } else {
       throw new Error(`You have exhausted your Premium plan limit (${planLimit} AI generations). Please contact support to request additional generations.`);
