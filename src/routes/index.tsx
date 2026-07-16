@@ -449,40 +449,121 @@ function LandingPage() {
               <p className="text-lg text-[#504440]">Simple, transparent, architectural tiers.</p>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-4xl mx-auto">
-              {/* Starter */}
-              <div className="p-10 border border-[#3B241A]/15 hover:border-[#3B241A] transition-colors group scroll-reveal rounded-md bg-white">
-                <h3 className="text-sm font-semibold text-[#504440] uppercase tracking-[0.2em] mb-10">Foundation</h3>
-                <div className="flex items-baseline gap-2 mb-10">
-                  <span className="font-serif text-[64px] font-bold text-[#3B241A]">$0</span>
-                  <span className="text-[#504440]">/mo</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {/* Free Trial */}
+              <div className="p-8 border border-[#3B241A]/15 hover:border-[#3B241A] transition-all duration-300 group scroll-reveal rounded-md bg-white flex flex-col justify-between shadow-sm hover:shadow-md">
+                <div>
+                  <h3 className="text-xs font-semibold text-[#504440] uppercase tracking-[0.2em] mb-8">Free Trial</h3>
+                  <div className="flex items-baseline gap-2 mb-8">
+                    <span className="font-serif text-5xl font-bold text-[#3B241A]">$0</span>
+                    <span className="text-[#504440] text-xs">/ 3 days</span>
+                  </div>
+                  <ul className="space-y-4 mb-10 opacity-80 text-sm">
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>3-Day Full System Access</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Unlimited AI Project Runs</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Unlimited Client Profiles</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Unlimited Rate Cards</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Set Brand Colors & Signature</span>
+                    </li>
+                  </ul>
                 </div>
-                <ul className="space-y-5 mb-12 opacity-80 text-base">
-                  <li className="flex items-center gap-4"><span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full"></span> 3 Active Projects</li>
-                  <li className="flex items-center gap-4"><span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full"></span> AI Pricing Engine (Basic)</li>
-                  <li className="flex items-center gap-4"><span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full"></span> Standard Templates</li>
-                </ul>
-                <Link to="/onboarding" className="block text-center w-full py-4 border-2 border-[#3B241A] text-[#3B241A] font-semibold hover:bg-[#3B241A] hover:text-[#FAF8F3] transition-all rounded-sm">
-                  Start for Free
+                <Link to="/onboarding" className="block text-center w-full py-3.5 border-2 border-[#3B241A] text-[#3B241A] font-semibold hover:bg-[#3B241A] hover:text-[#FAF8F3] transition-all rounded-sm text-sm">
+                  Start Free Trial
                 </Link>
               </div>
 
-              {/* Pro */}
-              <div className="p-10 bg-[#3B241A] text-[#FAF8F3] relative overflow-hidden group scroll-reveal shadow-2xl rounded-md">
-                <div className="absolute top-0 right-0 bg-[#D96B52] text-[#FAF8F3] px-6 py-1.5 text-xs font-semibold uppercase tracking-widest">Recommended</div>
-                <h3 className="text-sm font-semibold text-[#D96B52] uppercase tracking-[0.2em] mb-10">Elite Architect</h3>
-                <div className="flex items-baseline gap-2 mb-10">
-                  <span className="font-serif text-[64px] font-bold text-[#FAF8F3]">$19</span>
-                  <span className="opacity-70">/mo</span>
+              {/* Basic Studio */}
+              <div className="p-8 border border-[#3B241A]/15 hover:border-[#3B241A] transition-all duration-300 group scroll-reveal rounded-md bg-white flex flex-col justify-between shadow-sm hover:shadow-md">
+                <div>
+                  <h3 className="text-xs font-semibold text-[#504440] uppercase tracking-[0.2em] mb-8">Basic Studio</h3>
+                  <div className="flex items-baseline gap-2 mb-8">
+                    <span className="font-serif text-5xl font-bold text-[#3B241A]">$9</span>
+                    <span className="text-[#504440] text-xs">/mo</span>
+                  </div>
+                  <ul className="space-y-4 mb-10 opacity-80 text-sm">
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>50 AI Project Runs / month</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Standard PDF Document Export</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Max 10 Client Profiles</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Max 20 Rate Cards</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>3 Logo & 5 Color edits / mo</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Standard Email Support</span>
+                    </li>
+                  </ul>
                 </div>
-                <ul className="space-y-5 mb-12 text-base">
-                  <li className="flex items-center gap-4"><span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full"></span> Unlimited Projects</li>
-                  <li className="flex items-center gap-4"><span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full"></span> Advanced Neural Logic AI</li>
-                  <li className="flex items-center gap-4"><span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full"></span> Custom Client Portals</li>
-                  <li className="flex items-center gap-4"><span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full"></span> White-label Invoicing</li>
-                </ul>
-                <Link to="/onboarding" className="block text-center w-full py-4 bg-[#D96B52] text-[#FAF8F3] font-semibold hover:brightness-110 transition-all shadow-xl rounded-sm">
-                  Go Professional
+                <Link to="/onboarding" className="block text-center w-full py-3.5 border-2 border-[#3B241A] text-[#3B241A] font-semibold hover:bg-[#3B241A] hover:text-[#FAF8F3] transition-all rounded-sm text-sm">
+                  Go Basic
+                </Link>
+              </div>
+
+              {/* Premium Studio */}
+              <div className="p-8 bg-[#3B241A] text-[#FAF8F3] relative overflow-hidden group scroll-reveal shadow-2xl rounded-md flex flex-col justify-between">
+                <div className="absolute top-0 right-0 bg-[#D96B52] text-[#FAF8F3] px-5 py-1.5 text-[10px] font-semibold uppercase tracking-widest">Recommended</div>
+                <div>
+                  <h3 className="text-xs font-semibold text-[#D96B52] uppercase tracking-[0.2em] mb-8">Premium Studio</h3>
+                  <div className="flex items-baseline gap-2 mb-8">
+                    <span className="font-serif text-5xl font-bold text-[#FAF8F3]">$19</span>
+                    <span className="opacity-70 text-xs">/mo</span>
+                  </div>
+                  <ul className="space-y-4 mb-10 text-sm">
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span className="text-[#FAF8F3]/90 font-medium">Everything in Basic</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>100 AI Project Runs / month</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Unlimited Clients & Rate Cards</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Unlimited Logo & Color edits</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Custom PDF Fonts upload</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[#D96B52] rounded-full shrink-0 mt-2"></span>
+                      <span>Priority AI Processing</span>
+                    </li>
+                  </ul>
+                </div>
+                <Link to="/onboarding" className="block text-center w-full py-3.5 bg-[#D96B52] text-[#FAF8F3] font-semibold hover:brightness-110 transition-all shadow-xl rounded-sm text-sm">
+                  Go Premium
                 </Link>
               </div>
             </div>
