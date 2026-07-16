@@ -25,6 +25,7 @@ const ONBOARDING_STEPS = [
     blobClass: "bg-[#3B241A] w-[400px] h-[400px] -top-[80px] -left-[80px]",
     navBtnClass: "bg-[#3B241A] text-white",
     skipBtnClass: "bg-[#D96B52] text-white",
+    accentColor: "#D96B52",
   },
   {
     title: "Price\nwith\nConfidence",
@@ -36,6 +37,7 @@ const ONBOARDING_STEPS = [
     blobClass: "bg-[#FAF8F3] w-[340px] h-[340px] -top-[40px] -right-[40px]",
     navBtnClass: "bg-[#FAF8F3] text-[#3B241A]",
     skipBtnClass: "bg-[#241A15] text-white",
+    accentColor: "#FAF8F3",
   },
   {
     title: "Automate\nYour\nPaperwork",
@@ -47,6 +49,7 @@ const ONBOARDING_STEPS = [
     blobClass: "bg-[#D96B52] w-[360px] h-[360px] -top-[60px] -left-[60px]",
     navBtnClass: "bg-[#D96B52] text-white",
     skipBtnClass: "bg-[#3B241A] text-white",
+    accentColor: "#D96B52",
   },
   {
     title: "Everything\nin One\nPlace",
@@ -59,6 +62,7 @@ const ONBOARDING_STEPS = [
     navBtnClass: "",
     skipBtnClass: "",
     startBtnClass: "bg-[#FAF8F3] text-[#3B241A]",
+    accentColor: "#FAF8F3",
   },
 ];
 
@@ -69,20 +73,14 @@ function OnboardingPage() {
 
   useEffect(() => {
     if (!api) return;
-
     setCurrent(api.selectedScrollSnap());
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap());
     });
   }, [api]);
 
-  const handleNext = () => {
-    api?.scrollNext();
-  };
-
-  const handlePrev = () => {
-    api?.scrollPrev();
-  };
+  const handleNext = () => api?.scrollNext();
+  const handlePrev = () => api?.scrollPrev();
 
   const handleComplete = () => {
     localStorage.setItem("has_seen_onboarding", "true");
@@ -90,12 +88,96 @@ function OnboardingPage() {
   };
 
   const step = ONBOARDING_STEPS[current];
+  const isLast = current === ONBOARDING_STEPS.length - 1;
 
   return (
-    <div className={`h-dvh w-full overflow-hidden flex items-center justify-center transition-colors duration-500 md:bg-muted/30 ${step.bgClass}`}>
-      <div className={`flex-1 min-h-0 flex flex-col w-full h-full md:max-w-[400px] md:h-[800px] md:max-h-[90vh] md:rounded-[2.5rem] md:shadow-2xl overflow-hidden relative transition-colors duration-500 md:flex-none mx-auto ${step.bgClass}`}>
+    <div className={`h-dvh w-full overflow-hidden transition-colors duration-500 ${step.bgClass}`}>
 
-        {/* Carousel fills all space above the footer */}
+      {/* ── DESKTOP LAYOUT (md+) ── side-by-side */}
+      <div className="hidden md:flex h-full">
+        {/* Left panel — illustration */}
+        <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+          <div className={`absolute rounded-full transition-all duration-500 ${step.blobClass}`} />
+          <div className="relative z-10 w-full h-full flex items-center justify-center p-16">
+            {step.image && (
+              <img
+                src={step.image}
+                alt="illustration"
+                className="w-full h-full max-h-[75vh] object-contain drop-shadow-2xl"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Right panel — text + navigation */}
+        <div className="w-[440px] shrink-0 flex flex-col justify-between px-14 py-16">
+          {/* Step dots */}
+          <div className="flex gap-2">
+            {ONBOARDING_STEPS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => api?.scrollTo(i)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === current ? "w-8 opacity-100" : "w-3 opacity-30"
+                }`}
+                style={{ backgroundColor: step.accentColor ?? "currentColor" }}
+              />
+            ))}
+          </div>
+
+          {/* Heading + description */}
+          <div className="space-y-6">
+            <h1
+              className={`font-serif text-[clamp(2.5rem,4vw,3.5rem)] leading-[1.05] font-bold whitespace-pre-line tracking-tight ${step.textClass}`}
+            >
+              {step.title}
+            </h1>
+            <p className={`text-lg leading-relaxed opacity-80 ${step.textClass}`}>
+              {step.description}
+            </p>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between">
+            {isLast ? (
+              <button
+                onClick={handleComplete}
+                className={`px-10 h-14 rounded-full font-bold tracking-widest text-sm flex items-center justify-center active:scale-95 transition-all ${step.startBtnClass}`}
+              >
+                GET STARTED
+              </button>
+            ) : (
+              <>
+                <div className="flex gap-3">
+                  {current > 0 && (
+                    <button
+                      onClick={handlePrev}
+                      className={`size-14 rounded-full flex items-center justify-center active:scale-95 transition-all ${step.navBtnClass}`}
+                    >
+                      <ArrowLeft size={22} />
+                    </button>
+                  )}
+                  <button
+                    onClick={handleNext}
+                    className={`size-14 rounded-full flex items-center justify-center active:scale-95 transition-all ${step.navBtnClass}`}
+                  >
+                    <ArrowRight size={22} />
+                  </button>
+                </div>
+                <button
+                  onClick={handleComplete}
+                  className={`px-8 h-12 rounded-full font-bold text-xs tracking-[0.2em] flex items-center justify-center active:scale-95 transition-all ${step.skipBtnClass}`}
+                >
+                  SKIP
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── MOBILE LAYOUT (< md) ── original carousel */}
+      <div className="md:hidden flex flex-col h-full">
         <Carousel setApi={setApi} className="flex-1 min-h-0 flex flex-col w-full" opts={{ loop: false }}>
           <CarouselContent className="h-full m-0 flex-1">
             {ONBOARDING_STEPS.map((s, index) => (
@@ -103,18 +185,8 @@ function OnboardingPage() {
                 key={index}
                 className="flex flex-col h-full pl-0 relative overflow-hidden"
               >
-                {/* ── Illustration Section ──────────────────────────────────
-                    Uses flex-[0_0_55%] — 55% of the carousel container height
-                    (NOT 58vh which was 58% of the full viewport and caused
-                    overflow when combined with text + footer).
-                    The blob circles are absolute-positioned with fixed px so
-                    they are completely unaffected by this change. */}
                 <div className="flex-[0_0_55%] w-full relative flex items-center justify-center">
-                  {/* Blob Background */}
-                  <div
-                    className={`absolute rounded-full transition-all duration-500 ${s.blobClass}`}
-                  />
-                  {/* Illustration Image */}
+                  <div className={`absolute rounded-full transition-all duration-500 ${s.blobClass}`} />
                   <div className="relative z-10 w-full h-full flex items-center justify-center p-8 pb-0">
                     {s.image ? (
                       <img
@@ -133,11 +205,6 @@ function OnboardingPage() {
                     )}
                   </div>
                 </div>
-
-                {/* ── Text Section ─────────────────────────────────────────
-                    flex-1 min-h-0 = takes all remaining space below illustration.
-                    Font sizes are clamped so they scale down gracefully on
-                    very small screens without overflowing. */}
                 <div className="flex-1 min-h-0 w-full px-10 pt-6 pb-2 flex flex-col justify-start overflow-hidden">
                   <h1
                     className={`font-serif text-[clamp(1.85rem,7vw,2.5rem)] leading-[1.1] mb-4 font-bold whitespace-pre-line tracking-tight ${s.textClass}`}
@@ -153,11 +220,8 @@ function OnboardingPage() {
           </CarouselContent>
         </Carousel>
 
-        {/* ── Footer Navigation ────────────────────────────────────────────
-            shrink-0 = never compressed. Lives outside the carousel so it is
-            always pinned to the bottom of the screen regardless of content. */}
         <div className="px-10 pb-10 pt-3 flex items-center justify-between shrink-0">
-          {current === ONBOARDING_STEPS.length - 1 ? (
+          {isLast ? (
             <div className="w-full flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <button
                 onClick={handleComplete}
@@ -194,7 +258,6 @@ function OnboardingPage() {
             </>
           )}
         </div>
-
       </div>
     </div>
   );
