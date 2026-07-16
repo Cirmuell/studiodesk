@@ -1,5 +1,7 @@
 import { Link, useRouterState, useRouter } from "@tanstack/react-router";
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { NotificationBell } from "@/components/NotificationBell";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +64,9 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
     queryKey: ["profile"],
     queryFn: () => fetchProfile(),
   });
+
+  // Register push notification subscription once the user is in the app shell
+  usePushSubscription();
 
   const currencySymbol = profile?.currency
     ? new Intl.NumberFormat("en-US", { style: "currency", currency: profile.currency, currencyDisplay: "narrowSymbol" })
@@ -136,6 +141,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button

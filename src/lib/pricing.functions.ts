@@ -4,6 +4,7 @@ import { generateText } from "ai";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
 import { enforceUsageLimits, incrementUsageLimit } from "./security.server";
+import { sendNotification } from "./notifications.functions";
 
 const PricingSchema = z.object({
   recommended_total: z.number(),
@@ -219,6 +220,16 @@ Produce a pricing recommendation with line items (realistic deliverables and tas
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    // Fire pricing-ready notification (best-effort)
+    sendNotification({
+      user_id: context.userId,
+      type: "pricing_ready",
+      title: "AI pricing report ready 📊",
+      body: `Recommended total: ${new Intl.NumberFormat("en", { style: "currency", currency: currency ?? "USD" }).format(rec)}`,
+      link: "/pricing",
+    }).catch(() => {});
+
     return row;
   });
 

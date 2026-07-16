@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { sendNotification } from "./notifications.functions";
 
 function randomToken(bytes = 24): string {
   const arr = new Uint8Array(bytes);
@@ -141,6 +142,7 @@ export const getSharedDocument = createServerFn({ method: "GET" })
     if (!doc) return { status: "not_found" as const };
 
     // Best-effort: bump view metrics
+    const prevLastViewed = (share as Record<string, unknown>).last_viewed_at as string | undefined;
     await supabaseAdmin
       .from("document_shares")
       .update({
@@ -148,6 +150,24 @@ export const getSharedDocument = createServerFn({ method: "GET" })
         last_viewed_at: new Date().toISOString(),
       })
       .eq("id", share.id);
+
+    // Fire a document_viewed notification to the owner — throttled to once per hour
+    const oneHourMs = 60 * 60 * 1000;
+    const shouldNotify =
+      !prevLastViewed ||
+      Date.now() - new Date(prevLastViewed).getTime() > oneHourMs;
+
+    if (shouldNotify && doc) {
+      const docLabel = (doc as Record<string, unknown>).title as string ||
+        `${(doc as Record<string, unknown>).type ?? "Document"} ${(doc as Record<string, unknown>).number ?? ""}`.trim();
+      sendNotification({
+        user_id: share.user_id,
+        type: "document_viewed",
+        title: "Client opened your document 👀",
+        body: `Someone just viewed ${docLabel}.`,
+        link: `/documents/${share.document_id}`,
+      }).catch(() => {});
+    }
 
     const result = { status: "ok" as const, document: doc, profile };
     sharedDocCache.set(data.token, result);
@@ -184,6 +204,32 @@ export const signSharedDocument = createServerFn({ method: "POST" })
       .eq("id", share.document_id);
 
     if (updateErr) throw new Error(updateErr.message);
+
+    // Notify the document owner that their document was signed
+    const { data: shareOwner } = await supabaseAdmin
+      .from("document_shares")
+      .select("user_id")
+      .eq("token", data.token)
+      .maybeSingle();
+
+    if (shareOwner?.user_id) {
+      const { data: signedDoc } = await supabaseAdmin
+        .from("documents")
+        .select("title, type, number")
+        .eq("id", share.document_id)
+        .maybeSingle();
+
+      const docLabel = signedDoc?.title ||
+        `${signedDoc?.type ?? "Document"} ${signedDoc?.number ?? ""}`.trim();
+
+      sendNotification({
+        user_id: shareOwner.user_id,
+        type: "document_accepted",
+        title: "Document signed ✍️",
+        body: `Your client just signed ${docLabel}.`,
+        link: `/documents/${share.document_id}`,
+      }).catch(() => {});
+    }
 
     // Invalidate cache
     sharedDocCache.delete(data.token);

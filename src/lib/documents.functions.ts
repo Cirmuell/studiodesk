@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getAiProvider } from "./ai-gateway.server";
 import { enforceUsageLimits, incrementUsageLimit } from "./security.server";
 import { invalidateDashboardStats } from "./dashboard.functions";
+import { sendNotification } from "./notifications.functions";
 
 async function sha256(message: string) {
   const msgBuffer = new TextEncoder().encode(message);
@@ -103,12 +104,43 @@ export const updateDocument = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    // Fetch document title before updating for notification body
+    let docTitle: string | undefined;
+    if (data.patch.status === "paid" || data.patch.status === "accepted") {
+      const { data: existing } = await context.supabase
+        .from("documents")
+        .select("title, type, number")
+        .eq("id", data.id)
+        .maybeSingle();
+      docTitle = existing?.title || `${existing?.type ?? "Document"} ${existing?.number ?? ""}`.trim();
+    }
+
     const { error } = await context.supabase
       .from("documents")
       .update(data.patch as never)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     await invalidateDashboardStats(context.userId);
+
+    // Fire notifications for key status transitions
+    if (data.patch.status === "paid" && docTitle) {
+      sendNotification({
+        user_id: context.userId,
+        type: "document_paid",
+        title: "Payment received 🎉",
+        body: `${docTitle} has been marked as paid.`,
+        link: `/documents/${data.id}`,
+      }).catch(() => {});
+    } else if (data.patch.status === "accepted" && docTitle) {
+      sendNotification({
+        user_id: context.userId,
+        type: "document_accepted",
+        title: "Document signed ✍️",
+        body: `Your client just signed ${docTitle}.`,
+        link: `/documents/${data.id}`,
+      }).catch(() => {});
+    }
+
     return { ok: true };
   });
 

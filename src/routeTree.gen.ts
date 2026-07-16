@@ -26,6 +26,8 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicGeoRouteImport } from './routes/api/public/geo'
+import { Route as ApiNotificationsSendPushRouteImport } from './routes/api/notifications/send-push'
+import { Route as ApiCronTrialExpiryRouteImport } from './routes/api/cron/trial-expiry'
 import { Route as ApiCronFollowUpsRouteImport } from './routes/api/cron/follow-ups'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
@@ -118,6 +120,17 @@ const ApiPublicGeoRoute = ApiPublicGeoRouteImport.update({
   path: '/api/public/geo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiNotificationsSendPushRoute =
+  ApiNotificationsSendPushRouteImport.update({
+    id: '/api/notifications/send-push',
+    path: '/api/notifications/send-push',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiCronTrialExpiryRoute = ApiCronTrialExpiryRouteImport.update({
+  id: '/api/cron/trial-expiry',
+  path: '/api/cron/trial-expiry',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCronFollowUpsRoute = ApiCronFollowUpsRouteImport.update({
   id: '/api/cron/follow-ups',
   path: '/api/cron/follow-ups',
@@ -170,6 +183,8 @@ export interface FileRoutesByFullPath {
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/api/cron/follow-ups': typeof ApiCronFollowUpsRoute
+  '/api/cron/trial-expiry': typeof ApiCronTrialExpiryRoute
+  '/api/notifications/send-push': typeof ApiNotificationsSendPushRoute
   '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
@@ -194,6 +209,8 @@ export interface FileRoutesByTo {
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/api/cron/follow-ups': typeof ApiCronFollowUpsRoute
+  '/api/cron/trial-expiry': typeof ApiCronTrialExpiryRoute
+  '/api/notifications/send-push': typeof ApiNotificationsSendPushRoute
   '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
@@ -220,6 +237,8 @@ export interface FileRoutesById {
   '/_authenticated/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/api/cron/follow-ups': typeof ApiCronFollowUpsRoute
+  '/api/cron/trial-expiry': typeof ApiCronTrialExpiryRoute
+  '/api/notifications/send-push': typeof ApiNotificationsSendPushRoute
   '/api/public/geo': typeof ApiPublicGeoRoute
   '/api/documents/$id/pdf': typeof ApiDocumentsIdPdfRoute
   '/api/public/portal/$token/pdf': typeof ApiPublicPortalTokenPdfRoute
@@ -246,6 +265,8 @@ export interface FileRouteTypes {
     | '/documents/$id'
     | '/projects/$id'
     | '/api/cron/follow-ups'
+    | '/api/cron/trial-expiry'
+    | '/api/notifications/send-push'
     | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
@@ -270,6 +291,8 @@ export interface FileRouteTypes {
     | '/documents/$id'
     | '/projects/$id'
     | '/api/cron/follow-ups'
+    | '/api/cron/trial-expiry'
+    | '/api/notifications/send-push'
     | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
@@ -295,6 +318,8 @@ export interface FileRouteTypes {
     | '/_authenticated/documents/$id'
     | '/_authenticated/projects/$id'
     | '/api/cron/follow-ups'
+    | '/api/cron/trial-expiry'
+    | '/api/notifications/send-push'
     | '/api/public/geo'
     | '/api/documents/$id/pdf'
     | '/api/public/portal/$token/pdf'
@@ -307,6 +332,8 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PortalTokenRoute: typeof PortalTokenRoute
   ApiCronFollowUpsRoute: typeof ApiCronFollowUpsRoute
+  ApiCronTrialExpiryRoute: typeof ApiCronTrialExpiryRoute
+  ApiNotificationsSendPushRoute: typeof ApiNotificationsSendPushRoute
   ApiPublicGeoRoute: typeof ApiPublicGeoRoute
   ApiDocumentsIdPdfRoute: typeof ApiDocumentsIdPdfRoute
   ApiPublicPortalTokenPdfRoute: typeof ApiPublicPortalTokenPdfRoute
@@ -433,6 +460,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGeoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/notifications/send-push': {
+      id: '/api/notifications/send-push'
+      path: '/api/notifications/send-push'
+      fullPath: '/api/notifications/send-push'
+      preLoaderRoute: typeof ApiNotificationsSendPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/trial-expiry': {
+      id: '/api/cron/trial-expiry'
+      path: '/api/cron/trial-expiry'
+      fullPath: '/api/cron/trial-expiry'
+      preLoaderRoute: typeof ApiCronTrialExpiryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/follow-ups': {
       id: '/api/cron/follow-ups'
       path: '/api/cron/follow-ups'
@@ -554,6 +595,8 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PortalTokenRoute: PortalTokenRoute,
   ApiCronFollowUpsRoute: ApiCronFollowUpsRoute,
+  ApiCronTrialExpiryRoute: ApiCronTrialExpiryRoute,
+  ApiNotificationsSendPushRoute: ApiNotificationsSendPushRoute,
   ApiPublicGeoRoute: ApiPublicGeoRoute,
   ApiDocumentsIdPdfRoute: ApiDocumentsIdPdfRoute,
   ApiPublicPortalTokenPdfRoute: ApiPublicPortalTokenPdfRoute,
