@@ -92,8 +92,8 @@ function OnboardingPage() {
   const step = ONBOARDING_STEPS[current];
 
   return (
-    <div className={`h-dvh overflow-hidden flex flex-col transition-colors duration-500 ${step.bgClass}`}>
-      <div className="flex-1 min-h-0 flex flex-col max-w-md mx-auto w-full relative">
+    <div className={`h-dvh w-full overflow-hidden flex items-center justify-center transition-colors duration-500 md:bg-muted/30 ${step.bgClass}`}>
+      <div className={`flex-1 min-h-0 flex flex-col w-full h-full md:max-w-[400px] md:h-[800px] md:max-h-[90vh] md:rounded-[2.5rem] md:shadow-2xl overflow-hidden relative transition-colors duration-500 md:flex-none mx-auto ${step.bgClass}`}>
 
         {/* Carousel fills all space above the footer */}
         <Carousel setApi={setApi} className="flex-1 min-h-0 flex flex-col w-full" opts={{ loop: false }}>

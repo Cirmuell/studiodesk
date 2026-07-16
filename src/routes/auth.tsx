@@ -24,7 +24,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const checkEmail = useServerFn(checkEmailExists);
   const checkBusiness = useServerFn(checkBusinessNameExists);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot_password" | "recovery_otp" | "update_password">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -46,11 +46,18 @@ function AuthPage() {
   async function handleResendOtp() {
     if (resendTimer > 0) return;
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: verificationEmail,
-      });
-      if (error) throw error;
+      if (mode === "recovery_otp") {
+        const { error } = await supabase.auth.resetPasswordForEmail(verificationEmail, {
+          redirectTo: window.location.origin + "/auth",
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.resend({
+          type: "signup",
+          email: verificationEmail,
+        });
+        if (error) throw error;
+      }
       toast.success("Verification code resent!");
       setResendTimer(60);
     } catch (err) {
@@ -60,17 +67,25 @@ function AuthPage() {
 
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
-    if (otp.length !== 8) return;
+    if (otp.length < 6) return; // Can be 6 or 8 digits depending on Supabase settings
     setOtpLoading(true);
     try {
       const { data, error } = await supabase.auth.verifyOtp({
         email: verificationEmail,
         token: otp,
-        type: "signup",
+        type: mode === "recovery_otp" ? "recovery" : "signup",
       });
       if (error) throw error;
-      toast.success("Email verified successfully!");
-      navigate({ to: "/dashboard" });
+      
+      if (mode === "recovery_otp") {
+        toast.success("Code verified! Please set a new password.");
+        setVerificationEmail("");
+        setMode("update_password");
+        setOtp("");
+      } else {
+        toast.success("Email verified successfully!");
+        navigate({ to: "/dashboard" });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Verification failed");
     } finally {
@@ -80,10 +95,20 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/dashboard" });
+      // Don't auto-redirect if we just clicked a recovery link
+      if (data.user && !window.location.hash.includes("type=recovery")) {
+        navigate({ to: "/dashboard" });
+      }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") navigate({ to: "/dashboard" });
+      if (event === "PASSWORD_RECOVERY") {
+        setMode("update_password");
+        setVerificationEmail(""); // Close OTP screen if open
+      } else if (event === "SIGNED_IN") {
+        if (!window.location.hash.includes("type=recovery")) {
+          navigate({ to: "/dashboard" });
+        }
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
@@ -92,6 +117,28 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      if (mode === "forgot_password") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + "/auth",
+        });
+        if (error) throw error;
+        toast.success("Password reset instructions sent to your email.");
+        setVerificationEmail(email);
+        setMode("recovery_otp");
+        setResendTimer(60);
+        setLoading(false);
+        return;
+      }
+      
+      if (mode === "update_password") {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+        toast.success("Password updated successfully!");
+        navigate({ to: "/dashboard" });
+        setLoading(false);
+        return;
+      }
+
       if (mode === "signup") {
         const { exists: emailExists } = await checkEmail({ data: { email } });
         if (emailExists) {
@@ -132,7 +179,15 @@ function AuthPage() {
         toast.success("Account created — welcome!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          if (error.message.toLowerCase().includes("email not confirmed")) {
+            setVerificationEmail(email);
+            setResendTimer(60);
+            setLoading(false);
+            return;
+          }
+          throw error;
+        }
       }
       navigate({ to: "/dashboard" });
     } catch (err) {
@@ -151,7 +206,8 @@ function AuthPage() {
 
   if (verificationEmail) {
     return (
-      <div className="min-h-[100dvh] bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10 relative">
+      <div className="min-h-[100dvh] bg-background md:bg-muted/30 flex flex-col items-center justify-center p-0 md:p-8 relative">
+        <div className="w-full max-w-md bg-background md:bg-surface px-6 py-10 md:p-10 md:rounded-[2.5rem] md:shadow-2xl md:border border-border/50 mx-auto flex flex-col relative min-h-[100dvh] md:min-h-0">
         <button
           onClick={() => {
             setVerificationEmail("");
@@ -219,8 +275,9 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col mx-auto max-w-md w-full px-6 py-10">
-      <div className="flex flex-col w-full my-auto">
+    <div className="min-h-[100dvh] bg-background md:bg-muted/30 flex flex-col items-center justify-center p-0 md:p-8 relative">
+      <div className="w-full max-w-md bg-background md:bg-surface px-6 py-10 md:p-10 md:rounded-[2.5rem] md:shadow-2xl md:border border-border/50 mx-auto flex flex-col min-h-[100dvh] md:min-h-0">
+        <div className="flex flex-col w-full my-auto">
         <div className="flex justify-center mb-6">
           <img
             src={logoImg}
@@ -229,10 +286,10 @@ function AuthPage() {
           />
         </div>
         <h1 className="font-display text-4xl leading-tight text-center">
-          {mode === "signup" ? "Start your creative studio." : "Welcome back."}
+          {mode === "signup" ? "Start your creative studio." : mode === "forgot_password" ? "Reset password." : mode === "update_password" ? "New password." : "Welcome back."}
         </h1>
         <p className="text-muted-foreground mt-3 text-sm leading-relaxed text-center">
-          AI-grounded pricing and branded documents creation — built for creatives.
+          {mode === "forgot_password" ? "Enter your email to receive recovery instructions." : mode === "update_password" ? "Secure your account with a new password." : "AI-grounded pricing and branded documents creation — built for creatives."}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-3">
@@ -256,18 +313,21 @@ function AuthPage() {
               />
             </>
           )}
-          <input
-            type="email"
-            placeholder="you@studio.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          <div className="relative">
+          {mode !== "update_password" && (
             <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
+              type="email"
+              placeholder="you@studio.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full h-12 px-4 rounded-2xl bg-surface border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          )}
+          {(mode === "signin" || mode === "signup" || mode === "update_password") && (
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder={mode === "update_password" ? "New Password" : "Password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -288,17 +348,37 @@ function AuthPage() {
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
+          )}
+          {mode === "signin" && (
+            <div className="flex justify-end mt-1">
+              <button
+                type="button"
+                onClick={() => setMode("forgot_password")}
+                className="text-xs text-primary hover:underline cursor-pointer font-medium"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
           <button
             type="submit"
             disabled={loading}
             className="w-full h-12 rounded-full bg-primary text-primary-foreground font-medium flex items-center justify-center shadow-[var(--shadow-pop)] disabled:opacity-60"
           >
-            {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
+            {loading ? "Please wait…" : mode === "signup" ? "Create account" : mode === "forgot_password" ? "Send Instructions" : mode === "update_password" ? "Update Password" : "Sign in"}
           </button>
         </form>
 
         <div className="text-sm text-muted-foreground mt-6 text-center">
-          {mode === "signin" ? (
+          {mode === "forgot_password" || mode === "update_password" ? (
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className="font-medium text-primary hover:underline cursor-pointer"
+            >
+              Return to sign in
+            </button>
+          ) : mode === "signin" ? (
             <>
               New here?{" "}
               <button
@@ -322,11 +402,11 @@ function AuthPage() {
             </>
           )}
         </div>
+        </div>
+        <p className="text-[11px] text-muted-foreground/70 text-center mt-8">
+          By continuing you agree to our Terms & Privacy.
+        </p>
       </div>
-
-      <p className="text-[11px] text-muted-foreground/70 text-center mt-8">
-        By continuing you agree to our Terms & Privacy.
-      </p>
       <Toaster position="top-center" richColors />
     </div>
   );

@@ -28,6 +28,7 @@ function AdminDashboard() {
 
   return (
     <AppShell title="Admin" subtitle="SaaS Administration">
+      <div className="max-w-5xl w-full">
       <div className="flex bg-muted/50 p-1 rounded-xl mb-6 w-full max-w-sm">
         <button
           onClick={() => setTab("settings")}
@@ -50,6 +51,7 @@ function AdminDashboard() {
       </div>
 
       {tab === "settings" ? <AdminSettings /> : isSuperAdmin ? <AdminSubscribers /> : null}
+      </div>
     </AppShell>
   );
 }

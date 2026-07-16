@@ -26,6 +26,7 @@ import {
   Scale,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import logoImg from "@/assets/studiodesk-logo.png";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -76,7 +77,52 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col mx-auto max-w-md sm:max-w-lg w-full">
+    <div className="min-h-screen bg-background flex w-full">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 border-r border-border/60 bg-surface/30 fixed inset-y-0 left-0 z-40">
+        <div className="p-6 pb-2">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="StudioDesk" className="size-8 rounded-xl shadow-[var(--shadow-pop)]" />
+            <span className="font-display text-xl font-bold tracking-tight">StudioDesk</span>
+          </div>
+        </div>
+        <nav className="flex-1 px-4 space-y-1.5 mt-8 overflow-y-auto">
+          {tabs.map((t) => {
+            const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
+            const Icon = t.icon;
+            if (t.accent) {
+              return (
+                <Link
+                  key={t.to}
+                  id={`tour-desktop-${t.label.toLowerCase()}`}
+                  to={t.to as never}
+                  className="flex items-center gap-3 px-4 py-3 mt-8 mb-4 rounded-2xl bg-primary text-primary-foreground font-medium shadow-[var(--shadow-pop)] transition hover:opacity-90"
+                >
+                  {profile ? <span className="text-xl font-medium w-5 text-center">{currencySymbol}</span> : <Plus className="size-5" />}
+                  <span>{t.label}</span>
+                </Link>
+              );
+            }
+            return (
+              <Link
+                key={t.to}
+                id={`tour-desktop-${t.label.toLowerCase()}`}
+                to={t.to as never}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-2.5 rounded-2xl transition font-medium text-sm",
+                  active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-surface/60"
+                )}
+              >
+                <Icon className="size-[18px]" strokeWidth={active ? 2.4 : 1.8} />
+                <span>{t.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 md:ml-64 w-full">
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border/60 px-5 pt-5 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -147,18 +193,19 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
         </div>
       </header>
 
-      <main className="flex-1 px-5 pt-4 pb-28">{children}</main>
+      <main className="flex-1 px-5 pt-6 pb-28 md:pb-12 max-w-6xl w-full mx-auto">{children}</main>
 
       {/* Floating Action Area */}
       {action && (
-        <div className="fixed bottom-[90px] inset-x-0 mx-auto max-w-md sm:max-w-lg px-5 z-50 pointer-events-none flex justify-end">
+        <div className="fixed bottom-[90px] md:bottom-8 right-5 md:right-8 z-50 pointer-events-none flex justify-end">
           <div className="pointer-events-auto shadow-2xl rounded-full">
             {action}
           </div>
         </div>
       )}
 
-      <nav className="fixed bottom-0 inset-x-0 z-40 mx-auto max-w-md sm:max-w-lg px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
+      {/* Mobile Navigation */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 mx-auto w-full px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
         <div className="bg-surface/95 backdrop-blur-md border border-border rounded-2xl shadow-[var(--shadow-pop)] px-2 py-2 grid grid-cols-5">
           {tabs.map((t) => {
             const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
@@ -203,6 +250,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
           })}
         </div>
       </nav>
+      </div>
       <OnboardingTour />
     </div>
   );

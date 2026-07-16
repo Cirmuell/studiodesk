@@ -150,6 +150,7 @@ function SubscriptionPage() {
 
   return (
     <AppShell title="Subscription" subtitle="Manage your plan">
+      <div className="max-w-5xl mx-auto w-full">
       {/* Usage Progress Bar */}
       <div className="card-soft p-5 mb-8 border-border bg-surface shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
@@ -339,6 +340,7 @@ function SubscriptionPage() {
           </div>
         </div>
       )}
+      </div>
     </AppShell>
   );
 }

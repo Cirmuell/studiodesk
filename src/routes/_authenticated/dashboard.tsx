@@ -88,6 +88,7 @@ function DashboardInner() {
       })}
       title={`Hello, ${profile?.owner_name?.split(" ")[0] ?? "there"}`}
     >
+      <div className="max-w-5xl w-full">
       <section className="relative overflow-hidden rounded-3xl bg-foreground text-background p-5 mb-5">
         <div className="absolute -top-12 -right-10 size-44 rounded-full bg-primary/40 blur-2xl" />
         <div className="absolute -bottom-12 -left-8 size-32 rounded-full bg-accent/40 blur-2xl" />
@@ -263,6 +264,7 @@ function DashboardInner() {
           ))}
         </div>
       )}
+      </div>
     </AppShell>
   );
 }
