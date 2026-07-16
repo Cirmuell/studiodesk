@@ -48,7 +48,7 @@ function AuthPage() {
     try {
       if (mode === "recovery_otp") {
         const { error } = await supabase.auth.resetPasswordForEmail(verificationEmail, {
-          redirectTo: window.location.origin + "/auth",
+          redirectTo: "https://studiodesk-rouge.vercel.app/auth",
         });
         if (error) throw error;
       } else {
@@ -119,7 +119,7 @@ function AuthPage() {
     try {
       if (mode === "forgot_password") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + "/auth",
+          redirectTo: "https://studiodesk-rouge.vercel.app/auth",
         });
         if (error) throw error;
         toast.success("Password reset instructions sent to your email.");
