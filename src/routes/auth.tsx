@@ -270,6 +270,7 @@ function AuthPage() {
             <strong>Spam</strong> or <strong>Junk</strong> folder.
           </p>
         </div>
+        </div>
       </div>
     );
   }
