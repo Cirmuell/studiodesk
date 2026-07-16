@@ -251,7 +251,7 @@ export function AppShell({ title, subtitle, children, action }: AppShellProps) {
         </div>
       </nav>
       </div>
-      <OnboardingTour />
+      {profile?.onboarded && <OnboardingTour />}
     </div>
   );
 }
