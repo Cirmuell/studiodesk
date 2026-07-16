@@ -79,8 +79,32 @@ function OnboardingPage() {
     });
   }, [api]);
 
-  const handleNext = () => api?.scrollNext();
-  const handlePrev = () => api?.scrollPrev();
+  const handleNext = () => {
+    if (current < ONBOARDING_STEPS.length - 1) {
+      const nextIndex = current + 1;
+      setCurrent(nextIndex);
+      if (api) {
+        api.scrollTo(nextIndex);
+      }
+    }
+  };
+
+  const handlePrev = () => {
+    if (current > 0) {
+      const prevIndex = current - 1;
+      setCurrent(prevIndex);
+      if (api) {
+        api.scrollTo(prevIndex);
+      }
+    }
+  };
+
+  const handleDotClick = (index: number) => {
+    setCurrent(index);
+    if (api) {
+      api.scrollTo(index);
+    }
+  };
 
   const handleComplete = () => {
     localStorage.setItem("has_seen_onboarding", "true");
@@ -96,7 +120,7 @@ function OnboardingPage() {
       {/* ── DESKTOP LAYOUT (md+) ── side-by-side */}
       <div className="hidden md:flex h-full">
         {/* Left panel — illustration */}
-        <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+        <div className="w-[61.8%] relative overflow-hidden flex items-center justify-center">
           <div className={`absolute rounded-full transition-all duration-500 ${step.blobClass}`} />
           <div className="relative z-10 w-full h-full flex items-center justify-center p-16">
             {step.image && (
@@ -110,13 +134,13 @@ function OnboardingPage() {
         </div>
 
         {/* Right panel — text + navigation */}
-        <div className="w-[440px] shrink-0 flex flex-col justify-between px-14 py-16">
+        <div className="w-[38.2%] min-w-[360px] max-w-[560px] shrink-0 flex flex-col justify-between px-14 py-16">
           {/* Step dots */}
           <div className="flex gap-2">
             {ONBOARDING_STEPS.map((_, i) => (
               <button
                 key={i}
-                onClick={() => api?.scrollTo(i)}
+                onClick={() => handleDotClick(i)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   i === current ? "w-8 opacity-100" : "w-3 opacity-30"
                 }`}

@@ -284,7 +284,6 @@ function LandingPage() {
             <a className="text-[#504440] hover:text-[#D96B52] transition-colors" href="#pricing">Pricing</a>
           </div>
           <div className="flex items-center gap-4 md:gap-6 text-sm font-medium">
-            <Link to="/auth" className="hover:text-[#D96B52] transition-colors">Sign In</Link>
             <Link to="/onboarding" className="bg-[#3B241A] text-[#FAF8F3] px-6 py-2.5 shadow-xl hover:bg-opacity-90 transition-all rounded-sm">
               Get Started
             </Link>
