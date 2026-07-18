@@ -42,7 +42,7 @@ export function usePushSubscription() {
         if (!sub) {
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey),
+            applicationServerKey: urlBase64ToUint8Array(vapidKey!) as BufferSource,
           });
         }
 
@@ -50,9 +50,11 @@ export function usePushSubscription() {
         if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
 
         await saveSubFn({
-          endpoint: json.endpoint,
-          p256dh: json.keys.p256dh,
-          auth: json.keys.auth,
+          data: {
+            endpoint: json.endpoint,
+            p256dh: json.keys.p256dh,
+            auth: json.keys.auth,
+          }
         });
 
         registered.current = true;
@@ -64,7 +66,7 @@ export function usePushSubscription() {
             status.addEventListener("change", async () => {
               if (status.state !== "granted") {
                 try {
-                  await deleteSubFn({ endpoint: json.endpoint! });
+                  await deleteSubFn({ data: { endpoint: json.endpoint! } });
                   await sub?.unsubscribe();
                   registered.current = false;
                 } catch {

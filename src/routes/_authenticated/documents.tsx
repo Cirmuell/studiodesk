@@ -93,12 +93,30 @@ function DocumentsPage() {
   });
 
   const deleteDocMut = useMutation({
+    mutationKey: ["documents", "delete"],
     mutationFn: (id: string) => deleteDoc({ data: { id } }),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["documents"] });
+      const prev = qc.getQueryData<any[]>(["documents"]);
+      if (prev) {
+        qc.setQueryData<any[]>(["documents"], (old) =>
+          old ? old.filter((d) => d.id !== id) : []
+        );
+      }
+      return { prev };
+    },
     onSuccess: () => {
       toast.success("Document deleted");
+    },
+    onError: (e, id, context) => {
+      if (context?.prev) {
+        qc.setQueryData(["documents"], context.prev);
+      }
+      toast.error(e instanceof Error ? e.message : "Failed to delete document");
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["documents"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete document"),
   });
 
   return (

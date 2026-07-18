@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, onlineManager } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import {
   Outlet,
   Link,
@@ -13,6 +14,33 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
+import { toast } from "sonner";
+import { persister } from "../router";
+
+function useNetworkStatus() {
+  useEffect(() => {
+    const handleOnline = () => {
+      toast.success("Back online", { id: "network-status", duration: 3000 });
+      onlineManager.setOnline(true);
+    };
+    const handleOffline = () => {
+      toast.error("You are offline", { id: "network-status", duration: Infinity });
+      onlineManager.setOnline(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      handleOffline();
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+}
 
 function NotFoundComponent() {
   return (
@@ -147,17 +175,42 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useNetworkStatus();
 
   useEffect(() => {
     void import("../pwa/register").then(({ registerPwa }) => registerPwa());
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: 1000 * 60 * 60 * 24, // 24 hours
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            // Do not cache sensitive user data locally
+            const sensitiveKeys = ["profile", "user", "account", "subscription"];
+            const isSensitive = query.queryKey.some(
+              (key) => typeof key === "string" && sensitiveKeys.includes(key)
+            );
+            return !isSensitive;
+          },
+          shouldDehydrateMutation: (mutation) => {
+            // Only persist explicitly safe mutations (must be paused/offline to need persistence)
+            const safeMutationKeys = ["notifications", "documents"];
+            const isSafe = mutation.options.mutationKey?.some(
+              (key) => typeof key === "string" && safeMutationKeys.includes(key)
+            );
+            return mutation.state.isPaused && Boolean(isSafe);
+          },
+        },
+      }}
+    >
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AnimatedSplash>
         <Outlet />
       </AnimatedSplash>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

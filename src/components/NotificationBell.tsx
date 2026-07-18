@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useRouter } from "@tanstack/react-router";
 import {
@@ -104,13 +104,59 @@ export function NotificationBell() {
   const markReadFn = useServerFn(markNotificationRead);
   const markAllFn = useServerFn(markAllNotificationsRead);
 
+  const markReadMut = useMutation({
+    mutationKey: ["notifications", "markRead"],
+    mutationFn: (id: string) => markReadFn({ data: { id } }),
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const prev = queryClient.getQueryData<Notification[]>(["notifications"]);
+      if (prev) {
+        queryClient.setQueryData<Notification[]>(["notifications"], (old) =>
+          old ? old.map((n) => (n.id === id ? { ...n, read: true } : n)) : []
+        );
+      }
+      return { prev };
+    },
+    onError: (err, id, context) => {
+      if (context?.prev) {
+        queryClient.setQueryData(["notifications"], context.prev);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const markAllMut = useMutation({
+    mutationKey: ["notifications", "markAll"],
+    mutationFn: () => markAllFn(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const prev = queryClient.getQueryData<Notification[]>(["notifications"]);
+      if (prev) {
+        queryClient.setQueryData<Notification[]>(["notifications"], (old) =>
+          old ? old.map((n) => ({ ...n, read: true })) : []
+        );
+      }
+      return { prev };
+    },
+    onError: (err, vars, context) => {
+      if (context?.prev) {
+        queryClient.setQueryData(["notifications"], context.prev);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => listFn(),
     refetchInterval: 60_000, // poll every 60 s as fallback
   });
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
 
   // ── Supabase Realtime subscription ────────────────────────────────────────
   useEffect(() => {
@@ -149,19 +195,17 @@ export function NotificationBell() {
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleRead = useCallback(
-    async (id: string, link: string | null) => {
+    (id: string, link: string | null) => {
       setOpen(false);
-      await markReadFn({ id });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      markReadMut.mutate(id);
       if (link) router.navigate({ to: link as never });
     },
-    [markReadFn, queryClient, router],
+    [markReadMut, router],
   );
 
-  const handleMarkAll = useCallback(async () => {
-    await markAllFn();
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
-  }, [markAllFn, queryClient]);
+  const handleMarkAll = useCallback(() => {
+    markAllMut.mutate();
+  }, [markAllMut]);
 
   return (
     <div className="relative">
@@ -219,7 +263,7 @@ export function NotificationBell() {
                 </p>
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n: any) => (
                 <NotificationItem key={n.id} n={n as Notification} onRead={handleRead} />
               ))
             )}

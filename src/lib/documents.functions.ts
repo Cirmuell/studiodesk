@@ -93,7 +93,7 @@ export const updateDocument = createServerFn({ method: "POST" })
         patch: z.object({
           title: z.string().optional(),
           content: z.unknown().optional(),
-          status: z.enum(["draft", "ready", "sent", "paid", "failed"]).optional(),
+          status: z.enum(["draft", "ready", "sent", "paid", "failed", "accepted"]).optional(),
           subtotal: z.number().optional(),
           tax: z.number().optional(),
           total: z.number().optional(),

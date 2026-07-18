@@ -31,7 +31,7 @@ export async function sendNotification(notif: NewNotification): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // 1. Persist in DB
-  const { error } = await supabaseAdmin.from("notifications").insert({
+  const { error } = await (supabaseAdmin as any).from("notifications").insert({
     user_id: notif.user_id,
     type: notif.type,
     title: notif.title,
@@ -77,7 +77,7 @@ export async function sendNotification(notif: NewNotification): Promise<void> {
 export const listNotifications = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { data, error } = await (context.supabase as any)
       .from("notifications")
       .select("*")
       .order("created_at", { ascending: false })
@@ -90,7 +90,7 @@ export const markNotificationRead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("notifications")
       .update({ read: true })
       .eq("id", data.id);
@@ -101,7 +101,7 @@ export const markNotificationRead = createServerFn({ method: "POST" })
 export const markAllNotificationsRead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("notifications")
       .update({ read: true })
       .eq("user_id", context.userId)
@@ -123,7 +123,7 @@ export const savePushSubscription = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     // Upsert by endpoint (conflict on unique constraint)
-    const { error } = await context.supabase.from("push_subscriptions").upsert(
+    const { error } = await (context.supabase as any).from("push_subscriptions").upsert(
       {
         user_id: context.userId,
         endpoint: data.endpoint,
@@ -142,7 +142,7 @@ export const deletePushSubscription = createServerFn({ method: "POST" })
     z.object({ endpoint: z.string().url() }).parse(d),
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase
+    const { error } = await (context.supabase as any)
       .from("push_subscriptions")
       .delete()
       .eq("user_id", context.userId)
