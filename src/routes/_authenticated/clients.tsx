@@ -5,8 +5,8 @@ import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
-import { listClients, createClient } from "@/lib/clients.functions";
-import { Plus, Search, ChevronRight, Globe, Building2, Crown } from "lucide-react";
+import { listClients, createClient, deleteClient, updateClient } from "@/lib/clients.functions";
+import { Plus, Search, ChevronRight, Globe, Building2, Crown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { getProfile } from "@/lib/profile.functions";
@@ -31,6 +31,7 @@ function ClientsLayout() {
 function ClientsPage() {
   const fetchClients = useServerFn(listClients);
   const addClient = useServerFn(createClient);
+  const delClient = useServerFn(deleteClient);
   const fetchProfile = useServerFn(getProfile);
   const qc = useQueryClient();
 
@@ -63,6 +64,26 @@ function ClientsPage() {
       setOpen(false);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const updateClientFn = useServerFn(updateClient);
+  const mutDelete = useMutation({
+    mutationFn: (id: string) => delClient({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Client deleted");
+      qc.invalidateQueries({ queryKey: ["clients"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete client"),
+  });
+
+  const mutUpdateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "lead" | "active" | "past" | "archived" }) =>
+      updateClientFn({ data: { id, status } }),
+    onSuccess: () => {
+      toast.success("Client status updated");
+      qc.invalidateQueries({ queryKey: ["clients"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update client status"),
   });
 
   const filtered = clients.filter((c) =>
@@ -137,11 +158,33 @@ function ClientsPage() {
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm truncate">{c.name}</p>
                   <TierBadge tier={c.tier} />
-                  {c.status && c.status !== 'active' && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase font-bold tracking-wider">
-                      {c.status}
-                    </span>
-                  )}
+                  <select
+                    value={c.status || "active"}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onChange={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      mutUpdateStatus.mutate({ id: c.id, status: e.target.value as any });
+                    }}
+                    className={cn(
+                      "text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border-none cursor-pointer focus:outline-none bg-transparent",
+                      c.status === "active"
+                        ? "bg-emerald-500/10 text-emerald-500"
+                        : c.status === "lead"
+                        ? "bg-amber-500/10 text-amber-500"
+                        : c.status === "past"
+                        ? "bg-blue-500/10 text-blue-500"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <option value="lead" className="bg-background text-foreground">LEAD</option>
+                    <option value="active" className="bg-background text-foreground">ACTIVE</option>
+                    <option value="past" className="bg-background text-foreground">PAST</option>
+                    <option value="archived" className="bg-background text-foreground">ARCHIVED</option>
+                  </select>
                 </div>
                 <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
                   {c.company ? (
@@ -154,7 +197,24 @@ function ClientsPage() {
                   )}
                 </p>
               </div>
-              <ChevronRight className="size-4 text-muted-foreground/40" />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.confirm(`Are you sure you want to delete "${c.name}"?`)) {
+                      mutDelete.mutate(c.id);
+                    }
+                  }}
+                  disabled={mutDelete.isPending}
+                  className="size-8 grid place-items-center rounded-full text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition"
+                  title="Delete client"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+                <ChevronRight className="size-4 text-muted-foreground/40" />
+              </div>
             </Link>
           ))}
         </div>

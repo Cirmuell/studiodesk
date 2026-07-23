@@ -5,7 +5,7 @@ import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar } from "@/components/ClientBadge";
-import { listProjects, createProject, deleteProject } from "@/lib/projects.functions";
+import { listProjects, createProject, deleteProject, updateProject } from "@/lib/projects.functions";
 import { listClients } from "@/lib/clients.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
 import { Plus, Trash2 } from "lucide-react";
@@ -75,6 +75,7 @@ function ProjectsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const updateProjFn = useServerFn(updateProject);
   const deleteProjMut = useMutation({
     mutationFn: (id: string) => deleteProj({ data: { id } }),
     onSuccess: () => {
@@ -82,6 +83,16 @@ function ProjectsPage() {
       qc.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete project"),
+  });
+
+  const updateStatusMut = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Status }) =>
+      updateProjFn({ data: { id, patch: { status } } }),
+    onSuccess: () => {
+      toast.success("Project stage updated");
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update status"),
   });
 
   return (
@@ -143,14 +154,27 @@ function ProjectsPage() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-display text-base leading-tight truncate">{p.title}</p>
                     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <span
+                      <select
+                        value={p.status}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onChange={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          updateStatusMut.mutate({ id: p.id, status: e.target.value as Status });
+                        }}
                         className={cn(
-                          "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold",
+                          "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold border-none cursor-pointer focus:outline-none bg-transparent",
                           statusStyle[p.status as Status],
                         )}
                       >
-                        {p.status}
-                      </span>
+                        <option value="lead" className="bg-background text-foreground">LEAD</option>
+                        <option value="active" className="bg-background text-foreground">ACTIVE</option>
+                        <option value="completed" className="bg-background text-foreground">COMPLETED</option>
+                        <option value="archived" className="bg-background text-foreground">ARCHIVED</option>
+                      </select>
                       <button
                         onClick={async (e) => {
                           e.preventDefault();

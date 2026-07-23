@@ -63,6 +63,7 @@ export const getClient = createServerFn({ method: "GET" })
       .select(`
         *,
         projects (*),
+        documents (*),
         client_activities (*)
       `)
       .eq("id", data.id)

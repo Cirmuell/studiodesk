@@ -196,6 +196,28 @@ export const updateTaskStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      id: z.string().uuid(),
+      patch: z.object({
+        title: z.string().min(1).optional(),
+        description: z.string().optional().nullable(),
+        status: z.enum(["todo", "in_progress", "review", "done"]).optional(),
+        priority: z.enum(["low", "medium", "high"]).optional(),
+      }),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { error } = await context.supabase
+      .from("project_tasks")
+      .update(data.patch as never)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const deleteTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))

@@ -232,8 +232,8 @@ export function NotificationBell() {
           role="dialog"
           aria-label="Notifications panel"
           className={cn(
-            "absolute right-0 top-12 z-50",
-            "w-[340px] max-h-[480px] flex flex-col",
+            "absolute -right-12 sm:right-0 top-12 z-50",
+            "w-[340px] max-w-[calc(100vw-2.5rem)] max-h-[480px] flex flex-col",
             "bg-background border border-border/80 rounded-2xl shadow-[0_20px_60px_-12px_rgba(0,0,0,0.4)]",
             "animate-in slide-in-from-top-2 fade-in-0 duration-200",
           )}

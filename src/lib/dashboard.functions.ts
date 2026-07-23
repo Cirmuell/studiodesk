@@ -42,6 +42,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
 
     let invoicedThisMonth = 0;
     let outstandingBalance = 0;
+    let outstandingInvoicesCount = 0;
     let proposalsCount = 0;
     let wonProposalsCount = 0;
 
@@ -59,7 +60,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
     for (const d of safeDocs) {
       const total = Number(d.total ?? 0);
       
-      if (d.type === "proposal") {
+      if (d.type === "proposal" || d.type === "contract") {
         proposalsCount++;
         if (d.status === "accepted" || d.status === "won" || d.status === "paid") {
           wonProposalsCount++;
@@ -67,7 +68,10 @@ export const getDashboardStats = createServerFn({ method: "GET" })
       }
 
       if (d.type === "invoice") {
-        if (d.status === "sent") outstandingBalance += total;
+        if (d.status === "ready" || d.status === "sent" || d.status === "unpaid" || d.status === "overdue") {
+          outstandingBalance += total;
+          outstandingInvoicesCount++;
+        }
         if (d.status !== "draft" && d.updated_at) {
           const ud = new Date(d.updated_at);
           if (ud.getMonth() === currentMonth && ud.getFullYear() === currentYear) {
@@ -92,6 +96,7 @@ export const getDashboardStats = createServerFn({ method: "GET" })
     const stats = {
       invoicedThisMonth,
       outstandingBalance,
+      outstandingInvoicesCount,
       proposalsCount,
       wonProposalsCount,
       winRate,

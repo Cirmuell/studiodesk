@@ -5,15 +5,13 @@ import { Suspense, useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DetailPageSkeleton } from "@/components/PageSkeleton";
 import { getDocument, updateDocument, type DocContent } from "@/lib/documents.functions";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, getDocumentFilename } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Download, Save, Sparkles, Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
-import { Filesystem, Directory } from "@capacitor/filesystem";
-import { Share } from "@capacitor/share";
 import { SharePanel } from "@/components/SharePanel";
+import { DownloadConfirmModal } from "@/components/DownloadConfirmModal";
+import { executeInAppDownload } from "@/lib/download";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/documents/$id")({
@@ -46,8 +44,10 @@ function DocPage() {
   const [content, setContent] = useState<DocContent>(initialContent);
   const [title, setTitle] = useState(doc.title ?? "");
   const [downloading, setDownloading] = useState(false);
+  const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [savedOnce, setSavedOnce] = useState(doc.status !== "draft");
+  const filename = getDocumentFilename(doc);
 
   useEffect(() => {
     setContent((doc.content as DocContent) ?? initialContent);
@@ -104,46 +104,26 @@ function DocPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  async function handleDownload() {
+  function triggerDownload() {
+    setShowDownloadConfirm(true);
+  }
+
+  async function executeDownload() {
     setDownloading(true);
     try {
-      // Persist edits first
-      await saveMut.mutateAsync(true);
+      if (dirty || !savedOnce) {
+        await saveMut.mutateAsync(true);
+      }
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      toast.info("Downloading PDF...");
       const fullUrl = `${window.location.origin}/api/documents/${id}/pdf?token=${token}`;
-      
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const download = await Filesystem.downloadFile({
-            url: fullUrl,
-            path: `StudioDesk_Document_${id.slice(0, 8)}.pdf`,
-            directory: Directory.Cache
-          });
-          
-          if (download.path) {
-            await Share.share({
-              title: 'StudioDesk Document',
-              text: 'Here is your PDF document from StudioDesk',
-              url: download.path,
-              dialogTitle: 'Share or Save PDF',
-            });
-          }
-        } catch (downloadError: any) {
-          console.error("Native download error:", downloadError);
-          // Fallback to browser if filesystem download fails
-          await Browser.open({ url: fullUrl });
-        }
-      } else {
-        window.open(fullUrl, "_blank");
-      }
+      await executeInAppDownload(fullUrl, filename);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "PDF failed");
+      toast.error(e instanceof Error ? e.message : "PDF download failed");
     } finally {
-      setTimeout(() => setDownloading(false), 1000);
+      setDownloading(false);
     }
   }
 
@@ -189,7 +169,7 @@ function DocPage() {
       subtitle={doc.number ?? "draft"}
       action={
         <button
-          onClick={handleDownload}
+          onClick={triggerDownload}
           disabled={downloading || dirty || !savedOnce}
           className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
           aria-label="Download PDF"
@@ -199,6 +179,13 @@ function DocPage() {
         </button>
       }
     >
+      <DownloadConfirmModal
+        open={showDownloadConfirm}
+        onOpenChange={setShowDownloadConfirm}
+        filename={filename}
+        onConfirm={executeDownload}
+        isDownloading={downloading}
+      />
       <Link
         to="/documents"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground mb-4"
@@ -631,7 +618,7 @@ function DocPage() {
           {saveMut.isPending ? "Saving…" : dirty || !savedOnce ? "Step 1 · Save edits" : "Saved"}
         </button>
         <button
-          onClick={handleDownload}
+          onClick={triggerDownload}
           disabled={downloading || saveMut.isPending || dirty || !savedOnce}
           className="w-full h-12 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 shadow-[var(--shadow-pop)]"
         >

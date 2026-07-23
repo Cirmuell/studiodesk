@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sendNotification } from "./notifications.functions";
+import { invalidateDashboardStats } from "./dashboard.functions";
 
 function randomToken(bytes = 24): string {
   const arr = new Uint8Array(bytes);
@@ -213,6 +214,8 @@ export const signSharedDocument = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (shareOwner?.user_id) {
+      await invalidateDashboardStats(shareOwner.user_id);
+
       const { data: signedDoc } = await supabaseAdmin
         .from("documents")
         .select("title, type, number")

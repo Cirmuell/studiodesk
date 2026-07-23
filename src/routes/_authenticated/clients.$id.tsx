@@ -1,12 +1,26 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DetailPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
-import { getClient, updateClient, addClientActivity } from "@/lib/clients.functions";
-import { Building2, Globe, MapPin, Briefcase, FileText, Activity, MessageSquare, PhoneCall, Mail, ChevronLeft, Calendar } from "lucide-react";
+import { getClient, updateClient, addClientActivity, deleteClient } from "@/lib/clients.functions";
+import { getProfile } from "@/lib/profile.functions";
+import { formatCurrency } from "@/lib/format";
+import {
+  Building2,
+  Globe,
+  MapPin,
+  Briefcase,
+  FileText,
+  PhoneCall,
+  Mail,
+  ChevronLeft,
+  Calendar,
+  Trash2,
+  ChevronRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -24,14 +38,21 @@ function ClientProfilePage() {
   const { id } = Route.useParams();
   const router = useRouter();
   const fetchClient = useServerFn(getClient);
+  const fetchProfile = useServerFn(getProfile);
   const addActivityFn = useServerFn(addClientActivity);
+  const delClientFn = useServerFn(deleteClient);
   const qc = useQueryClient();
 
   const { data: client } = useSuspenseQuery({
     queryKey: ["client", id],
     queryFn: () => fetchClient({ data: { id } }),
   });
+  const { data: profile } = useSuspenseQuery({
+    queryKey: ["profile"],
+    queryFn: () => fetchProfile(),
+  });
 
+  const currency = profile?.currency || "NGN";
   const [activeTab, setActiveTab] = useState<"overview" | "activity">("overview");
 
   const mutActivity = useMutation({
@@ -44,36 +65,123 @@ function ClientProfilePage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to log activity"),
   });
 
+  const updateClientFn = useServerFn(updateClient);
+  const mutDelete = useMutation({
+    mutationFn: () => delClientFn({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Client deleted");
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      router.navigate({ to: "/clients" });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete client"),
+  });
+
+  const mutUpdateStatus = useMutation({
+    mutationFn: (status: "lead" | "active" | "past" | "archived") =>
+      updateClientFn({ data: { id, status } }),
+    onSuccess: (_, status) => {
+      toast.success(`Client status updated to ${status}`);
+      qc.invalidateQueries({ queryKey: ["client", id] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update client status"),
+  });
+
   if (!client) return <AppShell title="Not Found">Client not found.</AppShell>;
 
-  const totalBilled = client.projects?.reduce((acc: number, p: any) => acc + (Number(p.budget) || 0), 0) || 0;
-  const activeProjects = client.projects?.filter((p: any) => p.status === "active").length || 0;
+  const activeProjectsCount = (client.projects ?? []).filter((p: any) => p.status === "active").length;
+  const totalProjectsCount = client.projects?.length || 0;
+
+  const projectBudgetTotal = (client.projects ?? []).reduce((acc: number, p: any) => acc + (Number(p.budget) || 0), 0);
+  const docTotal = (client.documents ?? []).filter((d: any) => d.status !== "draft").reduce((acc: number, d: any) => acc + (Number(d.total) || 0), 0);
+  const standaloneDocTotal = (client.documents ?? []).filter((d: any) => !d.project_id && d.status !== "draft").reduce((acc: number, d: any) => acc + (Number(d.total) || 0), 0);
+  const totalValue = Math.max(projectBudgetTotal, docTotal, projectBudgetTotal + standaloneDocTotal);
 
   return (
     <AppShell
       title=""
       action={
-        <button onClick={() => window.history.back()} className="size-10 grid place-items-center rounded-full bg-surface border border-border">
-          <ChevronLeft className="size-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete ${client.name}?`)) {
+                mutDelete.mutate();
+              }
+            }}
+            disabled={mutDelete.isPending}
+            className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-destructive hover:border-destructive/30 transition"
+            title="Delete Client"
+          >
+            <Trash2 className="size-4" />
+          </button>
+          <button
+            onClick={() => window.history.back()}
+            className="size-10 grid place-items-center rounded-full bg-surface border border-border"
+            title="Back"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+        </div>
       }
     >
+      {/* Client Stage Controller Bar */}
+      <div className="card-soft p-3 mb-4 flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Client Stage</p>
+        <div className="flex gap-1.5 flex-wrap">
+          {(["lead", "active", "past", "archived"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => mutUpdateStatus.mutate(s)}
+              disabled={mutUpdateStatus.isPending}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-bold capitalize transition-all border",
+                client.status === s
+                  ? s === "lead"
+                    ? "bg-amber-500 text-white border-amber-500 shadow-sm"
+                    : s === "active"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : s === "past"
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    : "bg-muted-foreground text-white border-muted-foreground shadow-sm"
+                  : "bg-muted/40 text-muted-foreground border-transparent hover:bg-muted"
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Profile Header */}
-      <div className="flex flex-col items-center text-center mt-4 mb-8">
+      <div className="flex flex-col items-center text-center mt-2 mb-8">
         <div className="text-2xl shadow-xl border-4 border-background mb-4 rounded-full">
           <ClientAvatar name={client.name} size={80} />
         </div>
         <h1 className="font-display text-2xl mb-1">{client.name}</h1>
         <div className="flex items-center justify-center gap-2 mb-3">
           <TierBadge tier={client.tier} />
-          {client.status && (
-            <span className={cn(
-              "text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider",
-              client.status === "active" ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"
-            )}>
-              {client.status}
-            </span>
-          )}
+          <select
+            value={client.status || "active"}
+            onChange={(e) => mutUpdateStatus.mutate(e.target.value as any)}
+            disabled={mutUpdateStatus.isPending}
+            className={cn(
+              "text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider cursor-pointer border-none focus:outline-none bg-transparent",
+              client.status === "active"
+                ? "bg-emerald-500/10 text-emerald-500"
+                : client.status === "lead"
+                ? "bg-amber-500/10 text-amber-500"
+                : client.status === "past"
+                ? "bg-blue-500/10 text-blue-500"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            <option value="lead" className="bg-background text-foreground">LEAD</option>
+            <option value="active" className="bg-background text-foreground">ACTIVE</option>
+            <option value="past" className="bg-background text-foreground">PAST</option>
+            <option value="archived" className="bg-background text-foreground">ARCHIVED</option>
+          </select>
         </div>
         
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-2">
@@ -88,11 +196,17 @@ function ClientProfilePage() {
       <div className="grid grid-cols-2 gap-3 mb-8">
         <div className="card-soft p-4 flex flex-col items-center justify-center text-center">
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-1">Active Projects</p>
-          <p className="font-display text-2xl text-foreground">{activeProjects}</p>
+          <p className="font-display text-2xl text-foreground">{activeProjectsCount}</p>
+          <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+            {totalProjectsCount} total project{totalProjectsCount === 1 ? "" : "s"}
+          </p>
         </div>
         <div className="card-soft p-4 flex flex-col items-center justify-center text-center">
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-1">Total Value</p>
-          <p className="font-display text-2xl text-foreground">${totalBilled.toLocaleString()}</p>
+          <p className="font-display text-2xl text-foreground">{formatCurrency(totalValue, currency)}</p>
+          <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+            {client.documents?.length || 0} document{client.documents?.length === 1 ? "" : "s"}
+          </p>
         </div>
       </div>
 
@@ -128,21 +242,85 @@ function ClientProfilePage() {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Projects</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Projects</h3>
+              <span className="text-xs text-muted-foreground">{client.projects?.length || 0} total</span>
+            </div>
             {client.projects && client.projects.length > 0 ? (
               <div className="space-y-2">
                 {client.projects.map((p: any) => (
-                  <div key={p.id} className="card-soft p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{p.title}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{p.status}</p>
+                  <Link
+                    key={p.id}
+                    to="/projects/$id"
+                    params={{ id: p.id }}
+                    className="card-soft p-4 flex items-center justify-between hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer group"
+                  >
+                    <div className="min-w-0 pr-3">
+                      <p className="text-sm font-medium group-hover:text-primary transition truncate">{p.title}</p>
+                      <span className={cn(
+                        "inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider",
+                        p.status === "active" ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"
+                      )}>
+                        {p.status}
+                      </span>
                     </div>
-                    {p.budget && <span className="text-sm font-medium">${Number(p.budget).toLocaleString()}</span>}
-                  </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {p.budget ? (
+                        <span className="text-sm font-semibold tabular-nums">
+                          {formatCurrency(Number(p.budget), currency)}
+                        </span>
+                      ) : null}
+                      <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-primary transition" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             ) : (
               <div className="card-soft p-6 text-center text-sm text-muted-foreground">No projects yet</div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Documents</h3>
+              <span className="text-xs text-muted-foreground">{client.documents?.length || 0} total</span>
+            </div>
+            {client.documents && client.documents.length > 0 ? (
+              <div className="space-y-2">
+                {client.documents.map((d: any) => (
+                  <Link
+                    key={d.id}
+                    to="/documents/$id"
+                    params={{ id: d.id }}
+                    className="card-soft p-4 flex items-center justify-between hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer group"
+                  >
+                    <div className="min-w-0 pr-3">
+                      <p className="text-sm font-medium group-hover:text-primary transition truncate">
+                        {d.title || `${d.type.toUpperCase()} ${d.number ? `#${d.number}` : ""}`}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground capitalize">{d.type}</span>
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider",
+                          d.status === "paid" || d.status === "accepted" ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"
+                        )}>
+                          {d.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {d.total ? (
+                        <span className="text-sm font-semibold tabular-nums">
+                          {formatCurrency(Number(d.total), currency)}
+                        </span>
+                      ) : null}
+                      <ChevronRight className="size-4 text-muted-foreground/40 group-hover:text-primary transition" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="card-soft p-6 text-center text-sm text-muted-foreground">No documents yet</div>
             )}
           </div>
         </div>

@@ -4,7 +4,9 @@ import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import { Suspense, useState } from "react";
 import { getSharedDocument, signSharedDocument } from "@/lib/shares.functions";
 import { SignaturePad } from "@/components/SignaturePad";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, getDocumentFilename } from "@/lib/format";
+import { DownloadConfirmModal } from "@/components/DownloadConfirmModal";
+import { executeInAppDownload } from "@/lib/download";
 import { Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +37,8 @@ function PortalPage() {
   const fetchShared = useServerFn(getSharedDocument);
   const signDoc = useServerFn(signSharedDocument);
   const [signatureData, setSignatureData] = useState("");
+  const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const { data } = useSuspenseQuery({
     queryKey: ["shared", token],
@@ -68,6 +72,20 @@ function PortalPage() {
   }
 
   const { document: doc, profile } = data;
+  const filename = getDocumentFilename(doc);
+
+  async function handlePortalDownload() {
+    setDownloading(true);
+    try {
+      const fullUrl = `${window.location.origin}/api/public/portal/${token}/pdf`;
+      await executeInAppDownload(fullUrl, filename);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to download PDF");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   const content = (doc.content ?? {}) as {
     title?: string;
     intro?: string;
@@ -88,6 +106,13 @@ function PortalPage() {
 
   return (
     <div className="min-h-dvh bg-background">
+      <DownloadConfirmModal
+        open={showDownloadConfirm}
+        onOpenChange={setShowDownloadConfirm}
+        filename={filename}
+        onConfirm={handlePortalDownload}
+        isDownloading={downloading}
+      />
       <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12">
         <header className="flex items-start justify-between gap-3 mb-6">
           <div>
@@ -99,12 +124,14 @@ function PortalPage() {
             </h1>
             {doc.title && <p className="text-sm text-muted-foreground mt-1">{doc.title}</p>}
           </div>
-          <a
-            href={`/api/public/portal/${token}/pdf`}
-            className="shrink-0 h-11 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center gap-2 shadow-[var(--shadow-pop)]"
+          <button
+            type="button"
+            onClick={() => setShowDownloadConfirm(true)}
+            disabled={downloading}
+            className="shrink-0 h-11 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center gap-2 shadow-[var(--shadow-pop)] disabled:opacity-50"
           >
-            <Download className="size-4" /> PDF
-          </a>
+            <Download className="size-4" /> {downloading ? "Downloading..." : "PDF"}
+          </button>
         </header>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-6">

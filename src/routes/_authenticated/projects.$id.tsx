@@ -5,9 +5,33 @@ import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DetailPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
-import { getProject, addTask, updateTaskStatus, deleteTask, addProjectLink, deleteProjectLink } from "@/lib/projects.functions";
+import {
+  getProject,
+  updateProject,
+  addTask,
+  updateTask,
+  updateTaskStatus,
+  deleteTask,
+  addProjectLink,
+  deleteProjectLink,
+} from "@/lib/projects.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
-import { ArrowLeft, Calculator, FileText, Sparkles, CheckCircle2, Circle, Clock, Columns, ExternalLink, Plus, Github, Figma, HelpCircle, HardDrive, Trash2 } from "lucide-react";
+import { TaskDetailModal } from "@/components/TaskDetailModal";
+import {
+  ArrowLeft,
+  Calculator,
+  FileText,
+  CheckCircle2,
+  Circle,
+  Clock,
+  Columns,
+  ExternalLink,
+  Plus,
+  Github,
+  Figma,
+  HardDrive,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -34,25 +58,31 @@ function EmptyHint({ text }: { text: string }) {
 
 const getIconForType = (type: string) => {
   switch (type) {
-    case 'figma': return <Figma className="size-4" />;
-    case 'github': return <Github className="size-4" />;
-    case 'drive': return <HardDrive className="size-4" />;
-    case 'notion': return <FileText className="size-4" />;
-    default: return <ExternalLink className="size-4" />;
+    case "figma":
+      return <Figma className="size-4" />;
+    case "github":
+      return <Github className="size-4" />;
+    case "drive":
+      return <HardDrive className="size-4" />;
+    case "notion":
+      return <FileText className="size-4" />;
+    default:
+      return <ExternalLink className="size-4" />;
   }
 };
 
 const determineLinkType = (url: string) => {
-  if (url.includes('figma.com')) return 'figma';
-  if (url.includes('github.com')) return 'github';
-  if (url.includes('drive.google.com')) return 'drive';
-  if (url.includes('notion.so') || url.includes('notion.site')) return 'notion';
-  return 'other';
+  if (url.includes("figma.com")) return "figma";
+  if (url.includes("github.com")) return "github";
+  if (url.includes("drive.google.com")) return "drive";
+  if (url.includes("notion.so") || url.includes("notion.site")) return "notion";
+  return "other";
 };
 
 function ProjectPage() {
   const { id } = Route.useParams();
   const fetchProject = useServerFn(getProject);
+  const updateProjFn = useServerFn(updateProject);
   const { data } = useSuspenseQuery({
     queryKey: ["project", id],
     queryFn: () => fetchProject({ data: { id } }),
@@ -62,9 +92,20 @@ function ProjectPage() {
   const { project, client, pricing_runs, documents, tasks, links } = data;
   const [activeTab, setActiveTab] = useState<"overview" | "tasks" | "resources">("overview");
 
-  const completedTasks = tasks.filter((t: any) => t.status === 'done').length;
+  const completedTasks = tasks.filter((t: any) => t.status === "done").length;
   const totalTasks = tasks.length;
   const progress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+  const mutUpdateProject = useMutation({
+    mutationFn: (status: "lead" | "active" | "completed" | "archived") =>
+      updateProjFn({ data: { id: project.id, patch: { status } } }),
+    onSuccess: (_, status) => {
+      toast.success(`Project stage updated to ${status}`);
+      qc.invalidateQueries({ queryKey: ["project", id] });
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   return (
     <AppShell
@@ -80,6 +121,35 @@ function ProjectPage() {
         </Link>
       }
     >
+      {/* Workflow Stage Controller */}
+      <div className="card-soft p-3 mb-4 flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Workflow Stage</p>
+        <div className="flex gap-1.5 flex-wrap">
+          {(["lead", "active", "completed", "archived"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => mutUpdateProject.mutate(s)}
+              disabled={mutUpdateProject.isPending}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-bold capitalize transition-all border",
+                project.status === s
+                  ? s === "lead"
+                    ? "bg-warning/20 text-warning-foreground border-warning/40 shadow-sm"
+                    : s === "active"
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : s === "completed"
+                    ? "bg-success text-success-foreground border-success shadow-sm"
+                    : "bg-muted text-foreground border-border shadow-sm"
+                  : "bg-muted/40 text-muted-foreground border-transparent hover:bg-muted"
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="mb-4">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-medium">Project Progress</p>
@@ -99,7 +169,7 @@ function ProjectPage() {
               "h-9 px-4 rounded-full text-sm font-medium whitespace-nowrap transition-all",
               activeTab === tab
                 ? "bg-foreground text-background"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted",
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
             )}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -191,11 +261,9 @@ function ProjectPage() {
                       "size-10 rounded-xl grid place-items-center",
                       r.confidence === "high"
                         ? "bg-success/15 text-success"
-                        : "bg-warning/20 text-warning-foreground",
+                        : "bg-warning/20 text-warning-foreground"
                     )}
-                  >
-                    
-                  </div>
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">
                       {formatCurrency(r.recommended_total, r.currency)}
@@ -257,13 +325,25 @@ function ProjectPage() {
   );
 }
 
-function TasksTab({ projectId, tasks, qc }: { projectId: string, tasks: any[], qc: any }) {
+function getNextStatus(curr: "todo" | "in_progress" | "review" | "done"): "todo" | "in_progress" | "review" | "done" {
+  switch (curr) {
+    case "todo": return "in_progress";
+    case "in_progress": return "review";
+    case "review": return "done";
+    case "done": return "todo";
+  }
+}
+
+function TasksTab({ projectId, tasks, qc }: { projectId: string; tasks: any[]; qc: any }) {
   const submitTask = useServerFn(addTask);
-  const updateTask = useServerFn(updateTaskStatus);
-  const delTask = useServerFn(deleteTask);
+  const updateTaskFn = useServerFn(updateTask);
+  const updateTaskStatusFn = useServerFn(updateTaskStatus);
+  const delTaskFn = useServerFn(deleteTask);
 
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
   const mutAdd = useMutation({
     mutationFn: (title: string) => submitTask({ data: { project_id: projectId, title } }),
@@ -271,28 +351,58 @@ function TasksTab({ projectId, tasks, qc }: { projectId: string, tasks: any[], q
       setNewTaskTitle("");
       setShowAdd(false);
       qc.invalidateQueries({ queryKey: ["project", projectId] });
+      toast.success("Task added");
     },
     onError: (e) => toast.error(e.message),
   });
 
-  const mutUpdate = useMutation({
-    mutationFn: ({ id, status }: { id: string, status: "todo" | "in_progress" | "review" | "done" }) =>
-      updateTask({ data: { id, status } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["project", projectId] }),
+  const mutUpdateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "todo" | "in_progress" | "review" | "done" }) =>
+      updateTaskStatusFn({ data: { id, status } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["project", projectId] });
+    },
     onError: (e) => toast.error(e.message),
   });
 
-  const columns: { id: "todo" | "in_progress" | "done", label: string }[] = [
-    { id: "todo", label: "To Do" },
-    { id: "in_progress", label: "In Progress" },
-    { id: "done", label: "Done" }
+  const mutSaveTask = async (id: string, patch: any) => {
+    await updateTaskFn({ data: { id, patch } });
+    qc.invalidateQueries({ queryKey: ["project", projectId] });
+    toast.success("Task updated");
+  };
+
+  const mutDeleteTask = async (id: string) => {
+    await delTaskFn({ data: { id } });
+    qc.invalidateQueries({ queryKey: ["project", projectId] });
+    toast.success("Task deleted");
+  };
+
+  const columns: { id: "todo" | "in_progress" | "review" | "done"; label: string; dot: string }[] = [
+    { id: "todo", label: "To Do", dot: "bg-muted-foreground" },
+    { id: "in_progress", label: "In Progress", dot: "bg-amber-500" },
+    { id: "review", label: "In Review", dot: "bg-primary" },
+    { id: "done", label: "Completed", dot: "bg-success" },
   ];
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <TaskDetailModal
+        task={selectedTask}
+        open={showModal}
+        onOpenChange={setShowModal}
+        onSave={mutSaveTask}
+        onDelete={mutDeleteTask}
+      />
+
       <div className="flex items-center justify-between mb-4 px-1">
-        <h2 className="font-semibold flex items-center gap-2"><Columns className="size-4" /> Kanban Board</h2>
-        <button onClick={() => setShowAdd(!showAdd)} className="text-primary p-1 hover:bg-muted rounded-full">
+        <h2 className="font-semibold flex items-center gap-2">
+          <Columns className="size-4" /> Kanban Board
+        </h2>
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="text-primary p-1.5 hover:bg-muted rounded-full transition"
+          aria-label="Add Task"
+        >
           <Plus className="size-5" />
         </button>
       </div>
@@ -308,69 +418,115 @@ function TasksTab({ projectId, tasks, qc }: { projectId: string, tasks: any[], q
           <input
             autoFocus
             className="flex-1 bg-transparent border-none outline-none text-sm px-2"
-            placeholder="Task description..."
+            placeholder="Task title..."
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
           />
-          <button type="submit" disabled={mutAdd.isPending} className="text-primary text-sm font-medium px-2 disabled:opacity-50">
-            Add
+          <button
+            type="submit"
+            disabled={mutAdd.isPending}
+            className="text-primary text-sm font-medium px-2 disabled:opacity-50"
+          >
+            Add Task
           </button>
         </form>
       )}
 
-      <div className="space-y-6">
-        {columns.map(col => {
+      <div className="space-y-5">
+        {columns.map((col) => {
           const colTasks = tasks.filter((t: any) => t.status === col.id);
           return (
             <div key={col.id} className="bg-muted/30 p-3 rounded-2xl border border-border/50">
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <span className={cn(
-                  "size-2 rounded-full",
-                  col.id === 'todo' ? "bg-muted-foreground" : col.id === 'in_progress' ? "bg-warning" : "bg-success"
-                )} />
-                <h3 className="font-medium text-sm">{col.label}</h3>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{colTasks.length}</span>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <span className={cn("size-2 rounded-full", col.dot)} />
+                  <h3 className="font-medium text-sm">{col.label}</h3>
+                </div>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-semibold">
+                  {colTasks.length}
+                </span>
               </div>
               <div className="space-y-2">
                 {colTasks.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4 opacity-70 border border-dashed border-border rounded-xl">Empty</p>
+                  <p className="text-xs text-muted-foreground text-center py-4 opacity-70 border border-dashed border-border rounded-xl">
+                    No tasks in {col.label.toLowerCase()}
+                  </p>
                 ) : (
                   colTasks.map((t: any) => (
-                    <div key={t.id} className="bg-surface p-3 rounded-xl border border-border shadow-sm flex items-start gap-3 group">
+                    <div
+                      key={t.id}
+                      onClick={() => {
+                        setSelectedTask(t);
+                        setShowModal(true);
+                      }}
+                      className="bg-surface p-3.5 rounded-xl border border-border shadow-sm flex items-start gap-3 group hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer"
+                    >
                       <button
-                        onClick={() => mutUpdate.mutate({ id: t.id, status: t.status === 'done' ? 'todo' : 'done' })}
-                        className="mt-0.5 text-muted-foreground hover:text-success transition-colors"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const next = getNextStatus(t.status);
+                          mutUpdateStatus.mutate({ id: t.id, status: next });
+                        }}
+                        className="mt-0.5 text-muted-foreground hover:text-primary transition-colors shrink-0"
+                        title={`Move to ${getNextStatus(t.status).replace("_", " ")}`}
                       >
-                        {t.status === 'done' ? <CheckCircle2 className="size-5 text-success" /> : <Circle className="size-5" />}
+                        {t.status === "done" ? (
+                          <CheckCircle2 className="size-5 text-success" />
+                        ) : (
+                          <Circle className="size-5" />
+                        )}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm font-medium", t.status === 'done' && "line-through opacity-60")}>
+                        <p
+                          className={cn(
+                            "text-sm font-medium leading-snug group-hover:text-primary transition",
+                            t.status === "done" && "line-through opacity-60",
+                          )}
+                        >
                           {t.title}
                         </p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          {t.priority !== 'medium' && (
-                            <span className={cn(
-                              "text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded",
-                              t.priority === 'high' ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
-                            )}>
+                        {t.description && (
+                          <p className="text-xs text-muted-foreground/80 line-clamp-1 mt-0.5">
+                            {t.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          {t.priority && t.priority !== "medium" && (
+                            <span
+                              className={cn(
+                                "text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded",
+                                t.priority === "high"
+                                  ? "bg-destructive/10 text-destructive"
+                                  : "bg-muted text-muted-foreground",
+                              )}
+                            >
                               {t.priority}
                             </span>
                           )}
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground/70 flex items-center gap-1">
                             <Clock className="size-3" /> {timeAgo(t.created_at)}
                           </span>
                         </div>
                       </div>
-                      {col.id === 'todo' && (
-                        <button onClick={() => mutUpdate.mutate({ id: t.id, status: 'in_progress' })} className="opacity-0 group-hover:opacity-100 text-xs text-primary transition-opacity font-medium">
-                          Start
+                      <div className="shrink-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = getNextStatus(t.status);
+                            mutUpdateStatus.mutate({ id: t.id, status: next });
+                          }}
+                          className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition"
+                        >
+                          {t.status === "todo"
+                            ? "Start →"
+                            : t.status === "in_progress"
+                            ? "Review →"
+                            : t.status === "review"
+                            ? "Done ✓"
+                            : "Reset ↺"}
                         </button>
-                      )}
-                      {col.id === 'done' && (
-                        <button onClick={() => delTask({ data: { id: t.id } }).then(() => qc.invalidateQueries({ queryKey: ["project", projectId] }))} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                          <Trash2 className="size-4" />
-                        </button>
-                      )}
+                      </div>
                     </div>
                   ))
                 )}
@@ -383,7 +539,7 @@ function TasksTab({ projectId, tasks, qc }: { projectId: string, tasks: any[], q
   );
 }
 
-function ResourcesTab({ projectId, links, qc }: { projectId: string, links: any[], qc: any }) {
+function ResourcesTab({ projectId, links, qc }: { projectId: string; links: any[]; qc: any }) {
   const submitLink = useServerFn(addProjectLink);
   const delLink = useServerFn(deleteProjectLink);
   const [showAdd, setShowAdd] = useState(false);
