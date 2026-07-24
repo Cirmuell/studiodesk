@@ -92,10 +92,7 @@ function ClientProfilePage() {
   const activeProjectsCount = (client.projects ?? []).filter((p: any) => p.status === "active").length;
   const totalProjectsCount = client.projects?.length || 0;
 
-  const projectBudgetTotal = (client.projects ?? []).reduce((acc: number, p: any) => acc + (Number(p.budget) || 0), 0);
-  const docTotal = (client.documents ?? []).filter((d: any) => d.status !== "draft").reduce((acc: number, d: any) => acc + (Number(d.total) || 0), 0);
-  const standaloneDocTotal = (client.documents ?? []).filter((d: any) => !d.project_id && d.status !== "draft").reduce((acc: number, d: any) => acc + (Number(d.total) || 0), 0);
-  const totalValue = Math.max(projectBudgetTotal, docTotal, projectBudgetTotal + standaloneDocTotal);
+  const totalValue = (client.projects ?? []).reduce((acc: number, p: any) => acc + (Number(p.budget) || 0), 0);
 
   return (
     <AppShell
@@ -205,7 +202,7 @@ function ClientProfilePage() {
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-1">Total Value</p>
           <p className="font-display text-2xl text-foreground">{formatCurrency(totalValue, currency)}</p>
           <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-            {client.documents?.length || 0} document{client.documents?.length === 1 ? "" : "s"}
+            across {totalProjectsCount} project{totalProjectsCount === 1 ? "" : "s"}
           </p>
         </div>
       </div>
