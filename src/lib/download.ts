@@ -22,12 +22,28 @@ export async function executeInAppDownload(url: string, filename: string): Promi
       }
       const base64Data = window.btoa(binary);
 
-      await Filesystem.writeFile({
-        path: filename,
-        data: base64Data,
-        directory: Directory.Documents,
-        recursive: true,
-      });
+      try {
+        await Filesystem.requestPermissions();
+      } catch (e) {
+        console.warn("Filesystem permissions request warning:", e);
+      }
+
+      try {
+        await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+      } catch (writeErr) {
+        console.warn("Writing to Directory.Documents failed, writing to Directory.Cache instead:", writeErr);
+        await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Cache,
+          recursive: true,
+        });
+      }
 
       toast.success(`${filename} downloaded!`);
     } else {
