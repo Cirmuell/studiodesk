@@ -58,18 +58,20 @@ export const getClient = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const { data: row, error } = await context.supabase
-      .from("clients")
-      .select(`
-        *,
-        projects (*),
-        documents (*),
-        client_activities (*)
-      `)
-      .eq("id", data.id)
-      .single();
-    if (error) throw new Error(error.message);
-    return row;
+    const [{ data: client, error: cErr }, { data: projects }, { data: documents }, { data: client_activities }] =
+      await Promise.all([
+        context.supabase.from("clients").select("*").eq("id", data.id).single(),
+        context.supabase.from("projects").select("*").eq("client_id", data.id).order("created_at", { ascending: false }),
+        context.supabase.from("documents").select("*").eq("client_id", data.id).order("updated_at", { ascending: false }),
+        context.supabase.from("client_activities").select("*").eq("client_id", data.id).order("created_at", { ascending: false }),
+      ]);
+    if (cErr || !client) throw new Error(cErr?.message ?? "Client not found");
+    return {
+      ...client,
+      projects: projects ?? [],
+      documents: documents ?? [],
+      client_activities: client_activities ?? [],
+    };
   });
 
 export const updateClient = createServerFn({ method: "POST" })

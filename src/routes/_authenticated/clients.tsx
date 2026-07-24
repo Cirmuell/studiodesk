@@ -10,6 +10,7 @@ import { Plus, Search, ChevronRight, Globe, Building2, Crown, Trash2 } from "luc
 import { toast } from "sonner";
 import { Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { getProfile } from "@/lib/profile.functions";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({ meta: [{ title: "Clients — Studio" }] }),
