@@ -58,14 +58,23 @@ export const getClient = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    const [{ data: client, error: cErr }, { data: projects }, { data: documents }, { data: client_activities }] =
+    const [{ data: client, error: cErr }, { data: projects }, { data: client_activities }] =
       await Promise.all([
         context.supabase.from("clients").select("*").eq("id", data.id).single(),
         context.supabase.from("projects").select("*").eq("client_id", data.id).order("created_at", { ascending: false }),
-        context.supabase.from("documents").select("*").eq("client_id", data.id).order("updated_at", { ascending: false }),
         context.supabase.from("client_activities").select("*").eq("client_id", data.id).order("created_at", { ascending: false }),
       ]);
     if (cErr || !client) throw new Error(cErr?.message ?? "Client not found");
+
+    const projectIds = (projects ?? []).map((p: any) => p.id);
+    let docQuery = context.supabase.from("documents").select("*");
+    if (projectIds.length > 0) {
+      docQuery = docQuery.or(`client_id.eq.${data.id},project_id.in.(${projectIds.join(",")})`);
+    } else {
+      docQuery = docQuery.eq("client_id", data.id);
+    }
+    const { data: documents } = await docQuery.order("updated_at", { ascending: false });
+
     return {
       ...client,
       projects: projects ?? [],

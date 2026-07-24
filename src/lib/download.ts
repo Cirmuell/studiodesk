@@ -1,6 +1,5 @@
 import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
-import { Share } from "@capacitor/share";
 import { toast } from "sonner";
 
 export async function executeInAppDownload(url: string, filename: string): Promise<void> {
@@ -23,22 +22,14 @@ export async function executeInAppDownload(url: string, filename: string): Promi
       }
       const base64Data = window.btoa(binary);
 
-      const savedFile = await Filesystem.writeFile({
+      await Filesystem.writeFile({
         path: filename,
         data: base64Data,
-        directory: Directory.Cache,
+        directory: Directory.Documents,
         recursive: true,
       });
 
-      if (savedFile.uri) {
-        await Share.share({
-          title: filename,
-          text: `Downloaded ${filename}`,
-          url: savedFile.uri,
-          dialogTitle: `Save or Share ${filename}`,
-        });
-      }
-      toast.success(`${filename} saved!`);
+      toast.success(`${filename} downloaded!`);
     } else {
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");

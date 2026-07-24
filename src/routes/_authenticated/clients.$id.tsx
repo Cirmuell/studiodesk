@@ -92,7 +92,9 @@ function ClientProfilePage() {
   const activeProjectsCount = (client.projects ?? []).filter((p: any) => p.status === "active").length;
   const totalProjectsCount = client.projects?.length || 0;
 
-  const totalValue = (client.projects ?? []).reduce((acc: number, p: any) => acc + (Number(p.budget) || 0), 0);
+  const invoices = (client.documents ?? []).filter((d: any) => d.type === "invoice");
+  const invoiceCount = invoices.length;
+  const totalValue = invoices.reduce((acc: number, d: any) => acc + (Number(d.total) || 0), 0);
 
   return (
     <AppShell
@@ -202,7 +204,7 @@ function ClientProfilePage() {
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-1">Total Value</p>
           <p className="font-display text-2xl text-foreground">{formatCurrency(totalValue, currency)}</p>
           <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-            across {totalProjectsCount} project{totalProjectsCount === 1 ? "" : "s"}
+            {invoiceCount} generated invoice{invoiceCount === 1 ? "" : "s"}
           </p>
         </div>
       </div>

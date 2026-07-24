@@ -126,7 +126,7 @@ function PortalPage() {
           </div>
           <button
             type="button"
-            onClick={() => setShowDownloadConfirm(true)}
+            onClick={() => handlePortalDownload()}
             disabled={downloading}
             className="shrink-0 h-11 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium flex items-center gap-2 shadow-[var(--shadow-pop)] disabled:opacity-50"
           >

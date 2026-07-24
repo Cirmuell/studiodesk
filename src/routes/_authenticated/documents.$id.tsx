@@ -105,7 +105,7 @@ function DocPage() {
   });
 
   function triggerDownload() {
-    setShowDownloadConfirm(true);
+    executeDownload();
   }
 
   async function executeDownload() {
