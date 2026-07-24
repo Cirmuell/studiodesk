@@ -3,7 +3,7 @@
  * Prevents loss of progress when app is closed, refreshed, or minimized.
  */
 
-const DEFAULT_TTL_MS = 30 * 60 * 1000; // 30 minutes short window period
+const DEFAULT_TTL_MS = 60 * 1000; // 60 seconds short window period
 
 export interface SavedDraft<T> {
   data: T;
