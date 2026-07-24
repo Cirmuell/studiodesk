@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listProjects } from "@/lib/projects.functions";
 import { listPricingRuns, runPricingAnalysis, deletePricingRun } from "@/lib/pricing.functions";
@@ -47,12 +47,30 @@ function PricingPage() {
   const [selectedRun, setSelectedRun] = useState<any>(null);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
+  useEffect(() => {
+    const draft = getDraftState<{ projectId: string; hours: number; scope: string; tier: "standard" | "preferred" | "enterprise" }>("pricing_form", "pricing");
+    if (draft) {
+      if (draft.projectId) setProjectId(draft.projectId);
+      if (draft.hours) setHours(draft.hours);
+      if (draft.scope) setScope(draft.scope);
+      if (draft.tier) setTier(draft.tier);
+      toast.info("Restored draft pricing inputs");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (scope || hours !== 40 || projectId) {
+      saveDraftState("pricing_form", { projectId, hours, scope, tier }, "pricing");
+    }
+  }, [projectId, hours, scope, tier]);
+
   const mut = useMutation({
     mutationFn: () =>
       runAnalysis({
         data: { project_id: projectId || undefined, scope, hours, client_tier: tier },
       }),
     onSuccess: () => {
+      clearDraftState("pricing_form");
       toast.success("Pricing recommendation ready");
       setSelectedRun(null);
       qc.invalidateQueries({ queryKey: ["pricing_runs"] });

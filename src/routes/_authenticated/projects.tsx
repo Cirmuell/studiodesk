@@ -279,13 +279,15 @@ const PROJECT_TYPES = {
   },
 };
 
+import { saveDraftState, getDraftState, clearDraftState } from "@/lib/draft-store";
+
 function NewProjectForm({
   clients,
   onSubmit,
   onCancel,
   loading,
 }: {
-  clients: { id: string; name: string; company: string | null }[];
+  clients: Array<{ id: string; name: string; company?: string | null }>;
   onSubmit: (v: { title: string; client_id?: string; budget?: number; scope?: string }) => void;
   onCancel: () => void;
   loading: boolean;
@@ -296,6 +298,36 @@ function NewProjectForm({
   const [scope, setScope] = useState("");
   const [projectType, setProjectType] = useState<keyof typeof PROJECT_TYPES>("custom");
   const [selectedDeliverables, setSelectedDeliverables] = useState<string[]>([]);
+
+  useEffect(() => {
+    const draft = getDraftState<{
+      title: string;
+      clientId: string;
+      budget: string;
+      scope: string;
+      projectType: keyof typeof PROJECT_TYPES;
+      selectedDeliverables: string[];
+    }>("new_project_form", "new_project");
+    if (draft) {
+      if (draft.title) setTitle(draft.title);
+      if (draft.clientId) setClientId(draft.clientId);
+      if (draft.budget) setBudget(draft.budget);
+      if (draft.scope) setScope(draft.scope);
+      if (draft.projectType) setProjectType(draft.projectType);
+      if (draft.selectedDeliverables) setSelectedDeliverables(draft.selectedDeliverables);
+      toast.info("Restored draft project info");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (title || scope || budget || clientId) {
+      saveDraftState(
+        "new_project_form",
+        { title, clientId, budget, scope, projectType, selectedDeliverables },
+        "new_project"
+      );
+    }
+  }, [title, clientId, budget, scope, projectType, selectedDeliverables]);
 
   const handleTypeChange = (type: keyof typeof PROJECT_TYPES) => {
     setProjectType(type);
@@ -315,6 +347,7 @@ function NewProjectForm({
           compiledScope = `Project Type: ${typeLabel}\n\nDeliverables:\n${deliverablesList}${compiledScope ? `\n\nAdditional Scope Notes:\n${compiledScope}` : ""}`;
         }
 
+        clearDraftState("new_project_form");
         onSubmit({
           title,
           client_id: clientId || undefined,

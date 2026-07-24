@@ -14,6 +14,8 @@ import { DownloadConfirmModal } from "@/components/DownloadConfirmModal";
 import { executeInAppDownload } from "@/lib/download";
 import { cn } from "@/lib/utils";
 
+import { saveDraftState, getDraftState, clearDraftState } from "@/lib/draft-store";
+
 export const Route = createFileRoute("/_authenticated/documents/$id")({
   head: () => ({ meta: [{ title: "Document — Studio" }] }),
   component: () => (
@@ -50,12 +52,43 @@ function DocPage() {
   const filename = getDocumentFilename(doc);
 
   useEffect(() => {
-    setContent((doc.content as DocContent) ?? initialContent);
-    setTitle(doc.title ?? "");
-    setDirty(false);
-    setSavedOnce(doc.status !== "draft");
+    const draft = getDraftState<{ title: string; content: DocContent }>(`doc_${doc.id}`, doc.id);
+    if (draft && draft.content) {
+      setContent(draft.content);
+      setTitle(draft.title ?? doc.title ?? "");
+      setDirty(true);
+      setSavedOnce(doc.status !== "draft");
+      toast.info("Restored unsaved progress from recent session");
+    } else {
+      setContent((doc.content as DocContent) ?? initialContent);
+      setTitle(doc.title ?? "");
+      setDirty(false);
+      setSavedOnce(doc.status !== "draft");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.id]);
+
+  useEffect(() => {
+    if (dirty) {
+      saveDraftState(`doc_${id}`, { title, content }, id);
+    }
+  }, [dirty, title, content, id]);
+
+  useEffect(() => {
+    const handleSaveOnMinimize = () => {
+      if (dirty) {
+        saveDraftState(`doc_${id}`, { title, content }, id);
+      }
+    };
+    window.addEventListener("visibilitychange", handleSaveOnMinimize);
+    window.addEventListener("pagehide", handleSaveOnMinimize);
+    window.addEventListener("beforeunload", handleSaveOnMinimize);
+    return () => {
+      window.removeEventListener("visibilitychange", handleSaveOnMinimize);
+      window.removeEventListener("pagehide", handleSaveOnMinimize);
+      window.removeEventListener("beforeunload", handleSaveOnMinimize);
+    };
+  }, [dirty, title, content, id]);
 
   const subtotal = (content.line_items ?? []).reduce((s, li) => s + Number(li.amount || 0), 0);
   const tax = Math.round(subtotal * 0.075);
@@ -95,6 +128,7 @@ function DocPage() {
         },
       }),
     onSuccess: () => {
+      clearDraftState(`doc_${id}`);
       toast.success("Saved");
       setDirty(false);
       setSavedOnce(true);
