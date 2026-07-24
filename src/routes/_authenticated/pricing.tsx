@@ -1,16 +1,16 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listProjects } from "@/lib/projects.functions";
 import { listPricingRuns, runPricingAnalysis, deletePricingRun } from "@/lib/pricing.functions";
-import { getProfile } from "@/lib/profile.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
 import { ArrowRight, Check, Sparkles, Wand2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { getDraftState, saveDraftState, clearDraftState } from "@/lib/draft-store";
 
 export const Route = createFileRoute("/_authenticated/pricing")({
   head: () => ({ meta: [{ title: "Pricing Studio — Studio" }] }),
@@ -27,7 +27,6 @@ function PricingPage() {
   const runAnalysis = useServerFn(runPricingAnalysis);
   const deleteRun = useServerFn(deletePricingRun);
   const qc = useQueryClient();
-  const navigate = useNavigate();
 
   const { data: projectsData } = useSuspenseQuery({
     queryKey: ["projects"],
@@ -40,11 +39,6 @@ function PricingPage() {
     queryFn: () => fetchRuns(),
   });
   const runs = Array.isArray(runsData) ? runsData : [];
-
-  const { data: profile } = useSuspenseQuery({
-    queryKey: ["profile"],
-    queryFn: () => useServerFn(getProfile)(),
-  });
 
   const [projectId, setProjectId] = useState<string>(() => projects[0]?.id ?? "");
   const selected = projects.find((p) => p.id === projectId);
