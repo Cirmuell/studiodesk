@@ -46,10 +46,12 @@ export async function sendNotification(notif: NewNotification): Promise<void> {
 
   // 2. Fire push (best-effort, non-blocking)
   const pushSecret = process.env.PUSH_SECRET;
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
+  const siteUrl = (
     process.env.VITE_SITE_URL ||
-    "https://studiodesk.app";
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.CF_PAGES_URL ||
+    "https://studiodesk.app"
+  ).replace(/\/$/, "");
 
   if (!pushSecret) {
     console.warn("[Notifications] PUSH_SECRET not set – skipping Web Push");
@@ -68,6 +70,7 @@ export async function sendNotification(notif: NewNotification): Promise<void> {
       title: notif.title,
       body: notif.body,
       link: notif.link ?? "/dashboard",
+      type: notif.type,
     }),
   }).catch((e) => console.error("[Notifications] Push fetch failed:", e));
 }

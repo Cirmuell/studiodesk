@@ -158,22 +158,33 @@ export function NotificationBell() {
 
   const unreadCount = notifications.filter((n: any) => !n.read).length;
 
-  // ── Supabase Realtime subscription ────────────────────────────────────────
+  // ── Supabase Realtime subscription (user-scoped) ─────────────────────────
   useEffect(() => {
-    const channel = supabase
-      .channel("notifications-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
-        () => {
-          // Refetch when a new notification arrives
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-        },
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data.user?.id;
+      if (!userId) return;
+
+      channel = supabase
+        .channel(`notifications-${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          },
+        )
+        .subscribe();
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [queryClient]);
 

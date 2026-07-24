@@ -37,6 +37,7 @@ export const Route = createFileRoute("/api/notifications/send-push")({
           title: string;
           body: string;
           link?: string;
+          type?: string;
         };
 
         try {
@@ -79,6 +80,7 @@ export const Route = createFileRoute("/api/notifications/send-push")({
           title: body.title,
           body: body.body,
           link: body.link ?? "/dashboard",
+          type: body.type ?? "general",
           icon: "/icon-192.png",
           badge: "/icon-192.png",
         });

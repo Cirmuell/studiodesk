@@ -81,7 +81,12 @@ export function usePushSubscription() {
       }
     }
 
-    setup();
+    // Defer permission prompt by 4s — don't interrupt the user immediately on load
+    const timer = setTimeout(() => {
+      setup();
+    }, 4000);
+
+    return () => clearTimeout(timer);
   }, [saveSubFn, deleteSubFn]);
 }
 

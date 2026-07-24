@@ -31,8 +31,9 @@ self.addEventListener("push", (event) => {
       { action: "open", title: "Open StudioDesk" },
       { action: "dismiss", title: "Dismiss" },
     ],
-    tag: "studiodesk-notification",
-    renotify: true,
+    // Use type+timestamp as tag so multiple notifications stack rather than replace
+    tag: (data.type ?? "general") + "-" + Date.now(),
+    renotify: false,
   };
 
   event.waitUntil(self.registration.showNotification(data.title, options));
