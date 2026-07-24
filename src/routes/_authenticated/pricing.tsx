@@ -5,6 +5,7 @@ import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { listProjects } from "@/lib/projects.functions";
 import { listPricingRuns, runPricingAnalysis, deletePricingRun } from "@/lib/pricing.functions";
+import { getProfile } from "@/lib/profile.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
 import { ArrowRight, Check, Sparkles, Wand2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,56 +29,89 @@ function PricingPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: projects } = useSuspenseQuery({
+  const { data: projectsData } = useSuspenseQuery({
     queryKey: ["projects"],
     queryFn: () => fetchProjects(),
   });
-  const { data: runs } = useSuspenseQuery({
+  const projects = Array.isArray(projectsData) ? projectsData : [];
+
+  const { data: runsData } = useSuspenseQuery({
     queryKey: ["pricing_runs"],
     queryFn: () => fetchRuns(),
   });
+  const runs = Array.isArray(runsData) ? runsData : [];
 
-  const [projectId, setProjectId] = useState(projects[0]?.id ?? "");
+  const { data: profile } = useSuspenseQuery({
+    queryKey: ["profile"],
+    queryFn: () => useServerFn(getProfile)(),
+  });
+
+  const [projectId, setProjectId] = useState<string>(() => projects[0]?.id ?? "");
   const selected = projects.find((p) => p.id === projectId);
   const [hours, setHours] = useState(40);
-  const [scope, setScope] = useState(selected?.scope ?? "");
+  const [scope, setScope] = useState(() => selected?.scope ?? "");
   const [tier, setTier] = useState<"standard" | "preferred" | "enterprise">(
-    (selected?.client?.tier as "standard" | "preferred" | "enterprise") ?? "standard",
+    () => (selected?.client?.tier as "standard" | "preferred" | "enterprise") ?? "standard",
   );
   const [selectedRun, setSelectedRun] = useState<any>(null);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [isFormDirty, setIsFormDirty] = useState(false);
 
   useEffect(() => {
-    const draft = getDraftState<{ projectId: string; hours: number; scope: string; tier: "standard" | "preferred" | "enterprise" }>("pricing_form", "pricing");
-    if (draft) {
-      if (draft.projectId) setProjectId(draft.projectId);
-      if (draft.hours) setHours(draft.hours);
+    const draft = getDraftState<{
+      projectId?: string;
+      hours?: number;
+      scope?: string;
+      tier?: "standard" | "preferred" | "enterprise";
+    }>("pricing_form", "pricing");
+
+    if (draft && draft.scope && draft.scope.trim().length >= 5) {
+      if (
+        draft.projectId !== undefined &&
+        (draft.projectId === "" || projects.some((p) => p.id === draft.projectId))
+      ) {
+        setProjectId(draft.projectId);
+      }
+      if (typeof draft.hours === "number") setHours(draft.hours);
       if (draft.scope) setScope(draft.scope);
       if (draft.tier) setTier(draft.tier);
       toast.info("Restored draft pricing inputs");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (scope || hours !== 40 || projectId) {
+    if (isFormDirty) {
       saveDraftState("pricing_form", { projectId, hours, scope, tier }, "pricing");
     }
-  }, [projectId, hours, scope, tier]);
+  }, [isFormDirty, projectId, hours, scope, tier]);
 
   const mut = useMutation({
-    mutationFn: () =>
-      runAnalysis({
-        data: { project_id: projectId || undefined, scope, hours, client_tier: tier },
-      }),
+    mutationFn: () => {
+      const validProjectId =
+        projectId &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)
+          ? projectId
+          : undefined;
+
+      return runAnalysis({
+        data: { project_id: validProjectId, scope, hours, client_tier: tier },
+      });
+    },
     onSuccess: () => {
       clearDraftState("pricing_form");
+      setIsFormDirty(false);
       toast.success("Pricing recommendation ready");
       setSelectedRun(null);
       qc.invalidateQueries({ queryKey: ["pricing_runs"] });
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : "Failed";
-      if (msg.includes("free trial limit") || msg.includes("exhausted your Basic plan limit")) {
+      if (
+        msg.includes("free trial limit") ||
+        msg.includes("exhausted your Basic plan limit") ||
+        msg.includes("3-day free trial has expired")
+      ) {
         setUpgradeModalOpen(true);
       } else {
         toast.error(msg);
@@ -94,7 +128,7 @@ function PricingPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete analysis"),
   });
 
-  const latest = selectedRun ?? mut.data ?? runs[0];
+  const latest = selectedRun ?? mut.data ?? (runs.length > 0 ? runs[0] : null);
 
   return (
     <AppShell title="Pricing Studio" subtitle="AI grounded in your context">
@@ -104,7 +138,7 @@ function PricingPage() {
         <section className="relative overflow-hidden rounded-3xl p-5 mb-5 bg-gradient-to-br from-primary/15 via-accent/40 to-secondary border border-primary/15">
           <div className="flex items-center gap-2 mb-2">
             <span className="size-7 rounded-full bg-primary text-primary-foreground grid place-items-center">
-              
+              <Sparkles className="size-3.5" />
             </span>
             <p className="text-xs uppercase tracking-[0.18em] font-semibold text-primary">
               AI estimate
@@ -138,8 +172,10 @@ function PricingPage() {
           <select
             value={projectId}
             onChange={(e) => {
-              setProjectId(e.target.value);
-              const p = projects.find((x) => x.id === e.target.value);
+              const val = e.target.value;
+              setProjectId(val);
+              setIsFormDirty(true);
+              const p = projects.find((x) => x.id === val);
               if (p?.scope) setScope(p.scope);
               if (p?.client?.tier) setTier(p.client.tier as typeof tier);
             }}
@@ -157,7 +193,10 @@ function PricingPage() {
         <Field label="Client tier">
           <select
             value={tier}
-            onChange={(e) => setTier(e.target.value as typeof tier)}
+            onChange={(e) => {
+              setTier(e.target.value as typeof tier);
+              setIsFormDirty(true);
+            }}
             className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
           >
             <option value="standard">Standard</option>
@@ -173,7 +212,10 @@ function PricingPage() {
             max={300}
             step={4}
             value={hours}
-            onChange={(e) => setHours(Number(e.target.value))}
+            onChange={(e) => {
+              setHours(Number(e.target.value));
+              setIsFormDirty(true);
+            }}
             className="w-full accent-[color:var(--color-primary)]"
           />
         </Field>
@@ -181,7 +223,10 @@ function PricingPage() {
         <Field label="Scope summary">
           <textarea
             value={scope}
-            onChange={(e) => setScope(e.target.value)}
+            onChange={(e) => {
+              setScope(e.target.value);
+              setIsFormDirty(true);
+            }}
             rows={4}
             placeholder="Describe deliverables, milestones, constraints…"
             className="w-full px-3 py-2.5 rounded-xl bg-muted border border-border text-sm resize-none"
