@@ -226,7 +226,8 @@ export const checkEmailExists = createServerFn({ method: "POST" })
     const normalised = data.email.toLowerCase().trim();
 
     // Check 1: any profile row (active OR soft-deleted) with this email
-    const { data: profile } = await supabaseAdmin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile } = await (supabaseAdmin as any)
       .from("profiles")
       .select("id, deleted_at")
       .eq("email", normalised)
@@ -239,7 +240,8 @@ export const checkEmailExists = createServerFn({ method: "POST" })
     }
 
     // Check 2: banned_emails table (fraud prevention safety net)
-    const { data: banned } = await supabaseAdmin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: banned } = await (supabaseAdmin as any)
       .from("banned_emails")
       .select("email")
       .eq("email", normalised)
@@ -256,7 +258,8 @@ export const checkBusinessNameExists = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ business_name: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: profile } = await supabaseAdmin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: profile } = await (supabaseAdmin as any)
       .from("profiles")
       .select("id, deleted_at")
       .ilike("business_name", data.business_name.trim())
