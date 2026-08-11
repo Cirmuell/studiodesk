@@ -53,9 +53,9 @@ function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold font-serif mb-2">6. Your Rights</h2>
+          <h2 className="text-lg font-bold font-serif mb-2">6. Your Rights & Data Retention</h2>
           <p>
-            You have the right to access, update, or permanently delete your account and all associated data at any time from your account settings. Upon deletion, your financial and client data is purged from our active databases.
+            You have the right to access, update, or deactivate your account at any time from your account settings. Upon deactivation, your personally identifiable information (such as name and phone number) is anonymized, and you are signed out. We retain core operational data securely in accordance with our legal and compliance obligations, and it will not be accessible to you or visible in the app. To request permanent erasure of your data under applicable privacy laws (e.g., GDPR), please contact support after deactivation.
           </p>
         </section>
       </div>
