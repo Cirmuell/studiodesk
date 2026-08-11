@@ -5,12 +5,12 @@ import { Suspense, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
-import { listClients, createClient, deleteClient, updateClient } from "@/lib/clients.functions";
-import { Plus, Search, ChevronRight, Globe, Building2, Crown, Trash2 } from "lucide-react";
+import { listClients, createClient, deleteClient } from "@/lib/clients.functions";
+import { Plus, Search, ChevronRight, Building2, Crown, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { getProfile } from "@/lib/profile.functions";
-import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({ meta: [{ title: "Clients — Studio" }] }),
@@ -67,7 +67,6 @@ function ClientsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const updateClientFn = useServerFn(updateClient);
   const mutDelete = useMutation({
     mutationFn: (id: string) => delClient({ data: { id } }),
     onSuccess: () => {
@@ -75,16 +74,6 @@ function ClientsPage() {
       qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete client"),
-  });
-
-  const mutUpdateStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: "lead" | "active" | "past" | "archived" }) =>
-      updateClientFn({ data: { id, status } }),
-    onSuccess: () => {
-      toast.success("Client status updated");
-      qc.invalidateQueries({ queryKey: ["clients"] });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update client status"),
   });
 
   const filtered = clients.filter((c) =>
@@ -159,33 +148,6 @@ function ClientsPage() {
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm truncate">{c.name}</p>
                   <TierBadge tier={c.tier} />
-                  <select
-                    value={c.status || "active"}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onChange={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      mutUpdateStatus.mutate({ id: c.id, status: e.target.value as any });
-                    }}
-                    className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border-none cursor-pointer focus:outline-none bg-transparent",
-                      c.status === "active"
-                        ? "bg-emerald-500/10 text-emerald-500"
-                        : c.status === "lead"
-                        ? "bg-amber-500/10 text-amber-500"
-                        : c.status === "past"
-                        ? "bg-blue-500/10 text-blue-500"
-                        : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <option value="lead" className="bg-background text-foreground">LEAD</option>
-                    <option value="active" className="bg-background text-foreground">ACTIVE</option>
-                    <option value="past" className="bg-background text-foreground">PAST</option>
-                    <option value="archived" className="bg-background text-foreground">ARCHIVED</option>
-                  </select>
                 </div>
                 <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
                   {c.company ? (
@@ -199,6 +161,15 @@ function ClientsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-1">
+                <Link
+                  to="/clients/$id"
+                  params={{ id: c.id }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="size-8 grid place-items-center rounded-full text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition"
+                  title="Edit client"
+                >
+                  <Pencil className="size-3.5" />
+                </Link>
                 <button
                   type="button"
                   onClick={(e) => {
