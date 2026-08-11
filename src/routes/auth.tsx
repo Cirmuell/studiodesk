@@ -154,9 +154,13 @@ function AuthPage() {
       }
 
       if (mode === "signup") {
-        const { exists: emailExists } = await checkEmail({ data: { email } });
+        const { exists: emailExists, reason } = await checkEmail({ data: { email } });
         if (emailExists) {
-          toast.error("multiple registration not allowed");
+          if (reason === "deactivated") {
+            toast.error("This email is associated with a deactivated account. Please contact support.");
+          } else {
+            toast.error("An account with this email already exists");
+          }
           setLoading(false);
           return;
         }
