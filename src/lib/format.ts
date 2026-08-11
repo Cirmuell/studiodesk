@@ -46,8 +46,9 @@ export function timeAgo(iso: string | Date | null | undefined): string {
   return d.toLocaleDateString();
 }
 
-export function getDocumentFilename(doc?: { type?: string; number?: string; id?: string } | null): string {
+export function getDocumentFilename(doc?: { type?: string; number?: string; id?: string; project?: { title?: string | null } | null } | null): string {
   const type = (doc?.type || "document").toLowerCase();
   const num = doc?.number || (doc?.id ? doc.id.slice(0, 8) : "0001");
-  return `${type}-${num}.pdf`;
+  const proj = doc?.project?.title ? `-${doc.project.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}` : "";
+  return `${type}-${num}${proj}.pdf`;
 }
