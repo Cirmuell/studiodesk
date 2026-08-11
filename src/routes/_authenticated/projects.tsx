@@ -8,7 +8,7 @@ import { ClientAvatar } from "@/components/ClientBadge";
 import { listProjects, createProject, deleteProject, updateProject } from "@/lib/projects.functions";
 import { listClients } from "@/lib/clients.functions";
 import { formatCurrency, timeAgo } from "@/lib/format";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -62,6 +62,7 @@ function ProjectsPage() {
 
   const [filter, setFilter] = useState<Status | "all">("all");
   const [open, setOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const filtered = filter === "all" ? projects : projects.filter((p) => p.status === filter);
 
   const mut = useMutation({
@@ -96,6 +97,7 @@ function ProjectsPage() {
   });
 
   return (
+    <>
     <AppShell
       title="Projects"
       //subtitle={`${projects.length} total`}
@@ -179,9 +181,7 @@ function ProjectsPage() {
                         onClick={async (e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          if (window.confirm("Are you sure you want to delete this project?")) {
-                            await deleteProjMut.mutateAsync(p.id);
-                          }
+                          setDeleteTarget({ id: p.id, name: p.title });
                         }}
                         className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/5 active:scale-95 transition"
                         title="Delete project"
@@ -211,6 +211,61 @@ function ProjectsPage() {
         </div>
       )}
     </AppShell>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+          onClick={() => setDeleteTarget(null)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+          {/* Sheet */}
+          <div
+            className="relative w-full max-w-sm bg-background rounded-3xl shadow-2xl p-6 space-y-5 animate-in slide-in-from-bottom-4 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div className="flex justify-center">
+              <div className="size-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="size-6 text-destructive" />
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="text-center space-y-1.5">
+              <h2 className="font-display text-lg font-semibold">Delete Project?</h2>
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{deleteTarget.name}</span> and all
+                associated documents will be permanently removed. This cannot be undone.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                disabled={deleteProjMut.isPending}
+                onClick={() => {
+                  deleteProjMut.mutate(deleteTarget.id, {
+                    onSettled: () => setDeleteTarget(null),
+                  });
+                }}
+                className="w-full h-12 rounded-full bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-60 transition active:scale-[0.98]"
+              >
+                {deleteProjMut.isPending ? "Deleting…" : "Yes, delete"}
+              </button>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="w-full h-12 rounded-full border border-border text-sm font-medium text-foreground hover:bg-muted transition active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
