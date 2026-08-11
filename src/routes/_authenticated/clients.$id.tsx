@@ -144,7 +144,7 @@ function ClientProfilePage() {
         <div className="flex items-center gap-2">
           <button
             onClick={openEdit}
-            className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition"
+            className="size-10 grid place-items-center rounded-full bg-primary text-primary-foreground shadow-sm active:scale-95 transition"
             title="Edit client"
           >
             <Pencil className="size-4" />
