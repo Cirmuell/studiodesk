@@ -20,6 +20,9 @@ import {
   Calendar,
   Trash2,
   ChevronRight,
+  Pencil,
+  X,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -41,6 +44,7 @@ function ClientProfilePage() {
   const fetchProfile = useServerFn(getProfile);
   const addActivityFn = useServerFn(addClientActivity);
   const delClientFn = useServerFn(deleteClient);
+  const updateClientFn = useServerFn(updateClient);
   const qc = useQueryClient();
 
   const { data: client } = useSuspenseQuery({
@@ -54,6 +58,23 @@ function ClientProfilePage() {
 
   const currency = profile?.currency || "NGN";
   const [activeTab, setActiveTab] = useState<"overview" | "activity">("overview");
+  const [editOpen, setEditOpen] = useState(false);
+
+  // Edit form local state
+  const [editName, setEditName] = useState("");
+  const [editCompany, setEditCompany] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editIndustry, setEditIndustry] = useState("");
+
+  const openEdit = () => {
+    setEditName(client.name ?? "");
+    setEditCompany(client.company ?? "");
+    setEditEmail(client.email ?? "");
+    setEditPhone(client.phone ?? "");
+    setEditIndustry(client.industry ?? "");
+    setEditOpen(true);
+  };
 
   const mutActivity = useMutation({
     mutationFn: (input: { type: "note" | "email" | "call" | "meeting"; content: string }) =>
@@ -65,7 +86,6 @@ function ClientProfilePage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to log activity"),
   });
 
-  const updateClientFn = useServerFn(updateClient);
   const mutDelete = useMutation({
     mutationFn: () => delClientFn({ data: { id } }),
     onSuccess: () => {
@@ -87,6 +107,27 @@ function ClientProfilePage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update client status"),
   });
 
+  const mutEdit = useMutation({
+    mutationFn: () =>
+      updateClientFn({
+        data: {
+          id,
+          name: editName.trim() || undefined,
+          company: editCompany.trim() || null,
+          email: editEmail.trim() || null,
+          phone: editPhone.trim() || null,
+          industry: editIndustry.trim() || null,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Client updated");
+      qc.invalidateQueries({ queryKey: ["client", id] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      setEditOpen(false);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to update client"),
+  });
+
   if (!client) return <AppShell title="Not Found">Client not found.</AppShell>;
 
   const activeProjectsCount = (client.projects ?? []).filter((p: any) => p.status === "active").length;
@@ -100,15 +141,86 @@ function ClientProfilePage() {
     <AppShell
       title=""
       action={
-        <button
-          onClick={() => window.history.back()}
-          className="size-10 grid place-items-center rounded-full bg-surface border border-border"
-          title="Back"
-        >
-          <ChevronLeft className="size-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openEdit}
+            className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition"
+            title="Edit client"
+          >
+            <Pencil className="size-4" />
+          </button>
+          <button
+            onClick={() => window.history.back()}
+            className="size-10 grid place-items-center rounded-full bg-surface border border-border"
+            title="Back"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+        </div>
       }
     >
+      {/* Edit Form */}
+      {editOpen && (
+        <div className="card-soft p-4 mb-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-semibold">Edit Client</h3>
+            <button onClick={() => setEditOpen(false)} className="size-8 grid place-items-center rounded-full hover:bg-muted transition text-muted-foreground">
+              <X className="size-4" />
+            </button>
+          </div>
+
+          <input
+            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+            placeholder="Name *"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+          />
+          <input
+            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+            placeholder="Company"
+            value={editCompany}
+            onChange={(e) => setEditCompany(e.target.value)}
+          />
+          <input
+            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+            placeholder="Email"
+            type="email"
+            value={editEmail}
+            onChange={(e) => setEditEmail(e.target.value)}
+          />
+          <input
+            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+            placeholder="Phone number"
+            type="tel"
+            value={editPhone}
+            onChange={(e) => setEditPhone(e.target.value)}
+          />
+          <input
+            className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+            placeholder="Industry"
+            value={editIndustry}
+            onChange={(e) => setEditIndustry(e.target.value)}
+          />
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setEditOpen(false)}
+              className="flex-1 h-11 rounded-full border border-border text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={mutEdit.isPending || !editName.trim()}
+              onClick={() => mutEdit.mutate()}
+              className="flex-1 h-11 rounded-full bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {mutEdit.isPending ? "Saving…" : <><Check className="size-4" /> Save</>}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Client Stage Controller Bar */}
       <div className="card-soft p-3 mb-4 flex items-center justify-between gap-2 flex-wrap">
         <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Client Stage</p>

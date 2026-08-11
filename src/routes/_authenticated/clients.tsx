@@ -57,7 +57,10 @@ function ClientsPage() {
       name: string;
       company?: string;
       email?: string;
+      phone?: string;
       tier: "standard" | "preferred" | "enterprise";
+      status: "lead" | "active" | "past" | "archived";
+      industry?: string;
     }) => addClient({ data: input }),
     onSuccess: () => {
       toast.success("Client added");
@@ -204,6 +207,7 @@ function NewClientForm({
     name: string;
     company?: string;
     email?: string;
+    phone?: string;
     tier: "standard" | "preferred" | "enterprise";
     status: "lead" | "active" | "past" | "archived";
     industry?: string;
@@ -214,6 +218,7 @@ function NewClientForm({
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [industry, setIndustry] = useState("");
   const [tier, setTier] = useState<"standard" | "preferred" | "enterprise">("standard");
   const [status, setStatus] = useState<"lead" | "active" | "past" | "archived">("lead");
@@ -223,7 +228,7 @@ function NewClientForm({
       onSubmit={(e) => {
         e.preventDefault();
         if (!name.trim()) return;
-        onSubmit({ name, company: company || undefined, email: email || undefined, industry: industry || undefined, tier, status });
+        onSubmit({ name, company: company || undefined, email: email || undefined, phone: phone || undefined, industry: industry || undefined, tier, status });
       }}
       className="card-soft p-4 mb-4 space-y-3"
     >
@@ -246,6 +251,13 @@ function NewClientForm({
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+      />
+      <input
+        className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
+        placeholder="Phone number"
+        type="tel"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
       />
       <input
         className="w-full h-11 px-3 rounded-xl bg-muted border border-border text-sm"
