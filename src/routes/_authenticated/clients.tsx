@@ -6,11 +6,11 @@ import { AppShell } from "@/components/AppShell";
 import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { listClients, createClient, deleteClient } from "@/lib/clients.functions";
-import { Plus, Search, ChevronRight, Building2, Crown, Trash2, Pencil } from "lucide-react";
+import { Plus, Search, ChevronRight, Building2, Crown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { getProfile } from "@/lib/profile.functions";
-
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({ meta: [{ title: "Clients — Studio" }] }),
@@ -148,9 +148,21 @@ function ClientsPage() {
             <Link key={c.id} to="/clients/$id" params={{ id: c.id }} className="card-soft p-4 flex items-center gap-3 hover:ring-2 hover:ring-primary/20 transition-all">
               <ClientAvatar name={c.name} size={44} />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium text-sm truncate">{c.name}</p>
                   <TierBadge tier={c.tier} />
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider",
+                    c.status === "active"
+                      ? "bg-emerald-500/10 text-emerald-500"
+                      : c.status === "lead"
+                      ? "bg-amber-500/10 text-amber-500"
+                      : c.status === "past"
+                      ? "bg-blue-500/10 text-blue-500"
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    {c.status ?? "active"}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
                   {c.company ? (
@@ -164,15 +176,6 @@ function ClientsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-1">
-                <Link
-                  to="/clients/$id"
-                  params={{ id: c.id }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="size-8 grid place-items-center rounded-full text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition"
-                  title="Edit client"
-                >
-                  <Pencil className="size-3.5" />
-                </Link>
                 <button
                   type="button"
                   onClick={(e) => {
