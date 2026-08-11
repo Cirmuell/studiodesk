@@ -232,7 +232,7 @@ function SettingsPage() {
 
   async function deleteAccount() {
     try {
-      toast.loading("Deleting account...", { id: "delete-account" });
+      toast.loading("Deactivating account...", { id: "delete-account" });
       
       const { error } = await supabase.functions.invoke("delete-account", {
         method: "POST",
@@ -240,12 +240,12 @@ function SettingsPage() {
       
       if (error) throw error;
       
-      toast.success("Account deleted successfully", { id: "delete-account" });
+      toast.success("Account deactivated", { id: "delete-account" });
       await supabase.auth.signOut();
       window.location.href = "/auth";
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete account", { id: "delete-account" });
+      toast.error(error instanceof Error ? error.message : "Failed to deactivate account", { id: "delete-account" });
     }
   }
 
@@ -652,16 +652,17 @@ function SettingsPage() {
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <button className="w-full h-12 rounded-full border border-border text-destructive font-medium flex items-center justify-center gap-2">
-            <Trash2 className="size-4" /> Delete Account
+            <Trash2 className="size-4" /> Deactivate Account
           </button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Deactivate your account?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your account
-              and remove all your data from our servers. You will not be able to register
-              using this account's details again.
+              Your account will be deactivated and you will be signed out immediately.
+              Your data is retained securely in accordance with our legal obligations
+              and will not be accessible to you or visible in the app.
+              To request permanent erasure of your data, contact support after deactivation.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -670,7 +671,7 @@ function SettingsPage() {
               onClick={deleteAccount}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete Account
+              Yes, deactivate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
