@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
 import { listClients, createClient, deleteClient } from "@/lib/clients.functions";
-import { Plus, Search, ChevronRight, Building2, Crown, Trash2 } from "lucide-react";
+import { Plus, Search, ChevronRight, Building2, Crown, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { getProfile } from "@/lib/profile.functions";
@@ -51,6 +51,7 @@ function ClientsPage() {
 
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const mut = useMutation({
     mutationFn: (input: {
@@ -86,6 +87,7 @@ function ClientsPage() {
   );
 
   return (
+    <>
     <AppShell
       title="Clients"
       //subtitle={`${clients.length} relationships`}
@@ -181,9 +183,7 @@ function ClientsPage() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (window.confirm(`Are you sure you want to delete "${c.name}"?`)) {
-                      mutDelete.mutate(c.id);
-                    }
+                    setDeleteTarget({ id: c.id, name: c.name });
                   }}
                   disabled={mutDelete.isPending}
                   className="size-8 grid place-items-center rounded-full text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition"
@@ -198,6 +198,61 @@ function ClientsPage() {
         </div>
       )}
     </AppShell>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+          onClick={() => setDeleteTarget(null)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+          {/* Sheet */}
+          <div
+            className="relative w-full max-w-sm bg-background rounded-3xl shadow-2xl p-6 space-y-5 animate-in slide-in-from-bottom-4 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div className="flex justify-center">
+              <div className="size-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="size-6 text-destructive" />
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="text-center space-y-1.5">
+              <h2 className="font-display text-lg font-semibold">Delete Client?</h2>
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{deleteTarget.name}</span> and all
+                associated data will be permanently removed. This cannot be undone.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                disabled={mutDelete.isPending}
+                onClick={() => {
+                  mutDelete.mutate(deleteTarget.id, {
+                    onSettled: () => setDeleteTarget(null),
+                  });
+                }}
+                className="w-full h-12 rounded-full bg-destructive text-destructive-foreground text-sm font-semibold disabled:opacity-60 transition active:scale-[0.98]"
+              >
+                {mutDelete.isPending ? "Deleting…" : "Yes, delete"}
+              </button>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="w-full h-12 rounded-full border border-border text-sm font-medium text-foreground hover:bg-muted transition active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
