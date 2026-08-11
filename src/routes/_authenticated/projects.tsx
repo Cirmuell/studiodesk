@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { ListPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar } from "@/components/ClientBadge";
