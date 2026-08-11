@@ -171,7 +171,7 @@ function AuthPage() {
           });
           if (businessExists) {
             if (reason === "deactivated") {
-              toast.error("This business name is associated with a deactivated account.");
+              toast.error("Sorry, you cannot register right now. Please contact support.");
             } else {
               toast.error("Studio / Business name already registered");
             }
