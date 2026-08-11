@@ -1,7 +1,7 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import { DetailPageSkeleton } from "@/components/PageSkeleton";
 import { ClientAvatar, TierBadge } from "@/components/ClientBadge";
@@ -67,6 +67,8 @@ function ClientProfilePage() {
   const [editPhone, setEditPhone] = useState("");
   const [editIndustry, setEditIndustry] = useState("");
 
+  const editFormRef = useRef<HTMLDivElement>(null);
+
   const openEdit = () => {
     setEditName(client.name ?? "");
     setEditCompany(client.company ?? "");
@@ -74,6 +76,10 @@ function ClientProfilePage() {
     setEditPhone(client.phone ?? "");
     setEditIndustry(client.industry ?? "");
     setEditOpen(true);
+    // Scroll to form after state update renders it
+    setTimeout(() => {
+      editFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   const mutActivity = useMutation({
@@ -161,7 +167,7 @@ function ClientProfilePage() {
     >
       {/* Edit Form */}
       {editOpen && (
-        <div className="card-soft p-4 mb-4 space-y-3">
+        <div ref={editFormRef} className="card-soft p-4 mb-4 space-y-3">
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-sm font-semibold">Edit Client</h3>
             <button onClick={() => setEditOpen(false)} className="size-8 grid place-items-center rounded-full hover:bg-muted transition text-muted-foreground">
