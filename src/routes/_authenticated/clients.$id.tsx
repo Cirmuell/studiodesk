@@ -100,28 +100,13 @@ function ClientProfilePage() {
     <AppShell
       title=""
       action={
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete ${client.name}?`)) {
-                mutDelete.mutate();
-              }
-            }}
-            disabled={mutDelete.isPending}
-            className="size-10 grid place-items-center rounded-full bg-surface border border-border text-muted-foreground hover:text-destructive hover:border-destructive/30 transition"
-            title="Delete Client"
-          >
-            <Trash2 className="size-4" />
-          </button>
-          <button
-            onClick={() => window.history.back()}
-            className="size-10 grid place-items-center rounded-full bg-surface border border-border"
-            title="Back"
-          >
-            <ChevronLeft className="size-5" />
-          </button>
-        </div>
+        <button
+          onClick={() => window.history.back()}
+          className="size-10 grid place-items-center rounded-full bg-surface border border-border"
+          title="Back"
+        >
+          <ChevronLeft className="size-5" />
+        </button>
       }
     >
       {/* Client Stage Controller Bar */}
