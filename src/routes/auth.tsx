@@ -166,11 +166,15 @@ function AuthPage() {
         }
 
         if (business.trim()) {
-          const { exists: businessExists } = await checkBusiness({
+          const { exists: businessExists, reason } = await checkBusiness({
             data: { business_name: business },
           });
           if (businessExists) {
-            toast.error("Studio / Business name already registered");
+            if (reason === "deactivated") {
+              toast.error("This business name is associated with a deactivated account.");
+            } else {
+              toast.error("Studio / Business name already registered");
+            }
             setLoading(false);
             return;
           }

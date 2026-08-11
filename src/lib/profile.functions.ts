@@ -223,13 +223,33 @@ export const checkEmailExists = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ email: z.string().email() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const normalised = data.email.toLowerCase().trim();
+
+    // Check 1: any profile row (active OR soft-deleted) with this email
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("id")
-      .eq("email", data.email.toLowerCase().trim())
+      .select("id, deleted_at")
+      .eq("email", normalised)
       .maybeSingle();
 
-    return { exists: !!profile };
+    if (profile) {
+      // Account exists — deactivated accounts are explicitly blocked from re-registration
+      const reason = profile.deleted_at ? "deactivated" : "exists";
+      return { exists: true, reason };
+    }
+
+    // Check 2: banned_emails table (fraud prevention safety net)
+    const { data: banned } = await supabaseAdmin
+      .from("banned_emails")
+      .select("email")
+      .eq("email", normalised)
+      .maybeSingle();
+
+    if (banned) {
+      return { exists: true, reason: "deactivated" as const };
+    }
+
+    return { exists: false, reason: null };
   });
 
 export const checkBusinessNameExists = createServerFn({ method: "POST" })
@@ -238,9 +258,14 @@ export const checkBusinessNameExists = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile } = await supabaseAdmin
       .from("profiles")
-      .select("id")
+      .select("id, deleted_at")
       .ilike("business_name", data.business_name.trim())
       .maybeSingle();
 
-    return { exists: !!profile };
+    if (profile) {
+      const reason = profile.deleted_at ? "deactivated" : "exists";
+      return { exists: true, reason };
+    }
+
+    return { exists: false, reason: null };
   });
